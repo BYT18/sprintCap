@@ -1,0 +1,188 @@
+.App {
+  text-align: center;
+}
+
+.App-logo {
+  height: 40vmin;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.active-link {
+  background-color: #3498db; /* Set the background color for the active link */
+  color: blue !important; /* Set the color for the active link with !important to override inline styles */
+}
+
+.App-link {
+  color: #61dafb;
+}
+
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/*
+ * style.css
+ *
+ * CSC309 Assignment 1
+ *
+ * University of Toronto
+ * Fall 2023
+ *
+ */
+
+ /* Style the header */
+    * {
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        font-family: sans-serif;
+    }
+
+    .nav {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    /*https://www.eggradients.com/gradient/thin-saz
+    #33a69e
+    */
+    .navbar{
+        background-image: linear-gradient(to right, #000000, #72c6cf);
+    }
+
+    .banner{
+        background-image: linear-gradient(to right, #000000, #72c6cf);
+        color: white;
+    }
+
+    .foot{
+        background-image: linear-gradient(to right, #000000, #72c6cf);
+    }
+
+    .carousel-caption {
+        background-color: rgba(0, 0, 0, 0.5);
+        padding: 10px;
+        border-radius: 5px;
+        color: white;
+    }
+
+    @media (min-width: 768px) {
+        .carousel-inner {
+            height: 420px; /* Set height for larger screens */
+        }
+    }
+
+    @media (max-width: 390px) {
+        .carousel-inner {
+            height: 150px; /* Set height for smaller screens */
+        }
+    }
+
+    .bubble-container {
+        position: relative;
+        height: 100%;
+        width: 100%;
+      }
+
+      .bubble {
+        position: absolute;
+        background-color: lightskyblue; /* Grey color for bubbles */
+        border-radius: 50%;
+        animation: shakeBubbles 0.5s linear infinite;
+      }
+
+      /* You can create multiple bubble classes with different sizes and positions */
+      .bubble.small {
+        width: 20px;
+        height: 20px;
+      }
+
+      .bubble.medium {
+        width: 30px;
+        height: 30px;
+      }
+
+      .bubble.large {
+        width: 50px;
+        height: 50px;
+      }
+
+      @keyframes shakeBubbles {
+        0% {
+          transform: translateX(-2px);
+        }
+        50% {
+          transform: translateX(2px);
+        }
+        100% {
+          transform: translateX(-2px);
+        }
+      }
+
+.get-started-button {
+    background-color: grey;
+    text-decoration: none;
+    text-align: center;
+    padding: 30px;
+    border-radius: 40px;
+    width: 40vw;
+    height: 15vh;
+}
+.get-started-text {
+    color: white;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 3vw;
+}
+.get-started-button:hover {
+    animation-duration: 1s;
+    animation-name: test;
+    background-color: blue;
+}
+
+.homecards{
+  background-color:lightgray!important;
+}
+
+.homecards:hover {
+  animation-duration: 1s;
+  animation-name: homeCard!important;
+  background-color: #72c6cf!important;
+}
+
+@keyframes test {
+  0%   {background-color: cornflowerblue;}
+  100% {background-color: blue;}
+}
+
+@keyframes homeCard {
+  0%   {background-color: lightgray!important;}
+  100% {background-color: cornflowerblue!important;}
+}
+
+
