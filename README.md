@@ -6,6 +6,7 @@ This project aims to analyze sprinting biomechanics using markerless tracking te
 
 Analysis is based on following papers ...
 
+
 ## Key Features
 
 - **Markerless Tracking**: Utilizes computer vision techniques to track key points on the athlete's body during sprinting.
@@ -13,7 +14,7 @@ Analysis is based on following papers ...
 - **Kinogram Generation**: Produces a kinogram, a graphical representation of key positions and movements over time during the sprint.
 - **Visualization**: Provides interactive visualizations to explore biomechanical data and kinograms.
 
-![feedback](https://github.com/BYT18/sprintCap/assets/68192622/03a896b9-eb52-411b-b587-268db339476f)
+![full_kinogram](https://github.com/BYT18/sprintCap/assets/68192622/9a37e814-f027-4cb2-838f-e5f180615a7d)
 
 ![animation](https://github.com/BYT18/sprintCap/assets/68192622/da933110-6d4a-4e0b-8b12-7ccba36c0fbb)
 
