@@ -982,6 +982,8 @@ for i in testframes:
 print("Below is imp")
 print(imp_frames)
 
+#1.33-1.72
+# can look at the consistency of contact time, which side is longer / asymetries
 # Prepare gif visualization.
 output = np.stack(output_images, axis=0)
 g = to_gif(output, fps=8, loop=True)
@@ -989,7 +991,7 @@ g = to_gif(output, fps=8, loop=True)
 ##################################
 #testframes = [47,48,49,50,51,52,53,54]
 print(testframes)
-imp_frames = [22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34]
+#imp_frames = [22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34]
 
 num_frames = len(imp_frames)
 fig, axs = plt.subplots(1, num_frames, figsize=(num_frames * 5, 5))
@@ -1103,11 +1105,65 @@ print('switches: '+str(switch))
 print('distance: '+str(total_distance))
 print('time: '+str(total_time))
 print('contacts: '+str(ground_contacts))
-feedback()
+#feedback()
+
+fps = 81 / 2
+tbf = 1 / fps
+gcontact_times = []
+flight_times = []
+counter = 0
+for i in range(len(imp_frames)-1):
+    if imp_frames[i] + 1 == imp_frames[i+1]:
+        counter += 1
+        if i+1 == len(imp_frames)-1:
+            gcontact_times.append(counter*tbf)
+            flight_times.append(0)
+    else:
+        gcontact_times.append(counter*tbf)
+        counter = 0
+        flight_times.append(tbf*(imp_frames[i+1]-imp_frames[i]))
+
+print(gcontact_times)
+print(flight_times)
+"""# Plotting the bar chart with index as categories
+plt.bar(range(len(gcontact_times)), gcontact_times)
+
+# Adding labels and title
+plt.xlabel('Contacts')
+plt.ylabel('Ground Time')
+plt.title('Bar Chart')
+
+# Display the plot
+plt.show()"""
+
+# Plotting the first set of bars
+bars1 = plt.bar(range(len(gcontact_times)), gcontact_times, color='red', label='Ground')
+
+# Plotting the second set of bars on top of the first set
+bars2 = plt.bar(range(len(flight_times)), flight_times, color='blue', label='Flight', alpha=0.5, bottom=gcontact_times)
+
+# Adding labels to the bars
+for bar1, bar2 in zip(bars1, bars2):
+    height1 = bar1.get_height()
+    height2 = bar2.get_height()
+    plt.text(bar1.get_x() + bar1.get_width() / 2., height1 / 2, '{:.3f}'.format(height1), ha='center', va='center', color='white')
+    plt.text(bar2.get_x() + bar2.get_width() / 2., height1 + height2 / 2, '{:.3f}'.format(height2), ha='center', va='center', color='black')
+
+
+# Adding labels and title
+plt.xlabel('Step')
+plt.ylabel('Time')
+plt.title('Stacked Bar Chart')
+
+# Adding legend
+plt.legend()
+
+# Display the plot
+plt.show()
 
 #clip = VideoFileClip("animation.gif")
 #clip.write_videofile("gifvid.mp4")
-
+"""
 plt.plot(angles, marker='o', linestyle='-')
 plt.title('Hip Angle Over Frames')
 plt.xlabel('Frame Index')
@@ -1138,3 +1194,4 @@ plt.xlabel('X Position')
 plt.ylabel('Y Position')
 plt.legend()
 plt.show()
+"""
