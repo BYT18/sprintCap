@@ -763,7 +763,7 @@ for frame_idx in range(num_frames):
 
     # full support left
       # should also check foot is on ground
-      if abs(kneeL['x'] - keypoint_locs[11][0]) < knee_hip_alignment_support:
+      if abs(kneeL['x'] - keypoint_locs[11][0]) < knee_hip_alignment_support and kneeAngL > 90:
         knee_hip_alignment_support = abs(kneeL['x'] - keypoint_locs[11][0])
         kinogram[4] = frame_idx
       #  key_frames = frame_idx
