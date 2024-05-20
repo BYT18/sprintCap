@@ -254,7 +254,9 @@ def draw_prediction_on_image(image, keypoints_with_scores, ground, crop_region=N
     #giffy2
    #width, height = 2132, 1200
    #fly.gif
-   width, height = 855, 1200
+   #width, height = 855, 1200
+   #adam.gif
+   width, height = 2135, 1200
 
    #width, height = 2133, 1200
 
@@ -344,7 +346,8 @@ def draw_nonfigure_prediction(image, keypoints_with_scores, crop_region=None, cl
    fig.canvas.draw()
    image_from_plot = np.frombuffer(fig.canvas.buffer_rgba(), dtype=np.uint8)
    # Determine the width and height of your canvas or image
-   width, height = 855, 1200
+   #width, height = 855, 1200
+   width, height = 2135, 1200
 
    # Adjust reshape based on the size of the array
    #print("Actual array size:", image_from_plot.size)
@@ -648,12 +651,15 @@ def run_inference(movenet, image, crop_region, crop_size):
   return keypoints_with_scores
 
 #from moviepy.editor import VideoFileClip
+#videoClip = VideoFileClip("david.mov")
 #videoClip = VideoFileClip("IMG_3852.mov")
 #videoClip = VideoFileClip("fly.mov")
 #videoClip.write_gif("fly.gif")
+#videoClip.write_gif("david.gif")
 
 #image_path = 'giffy2.gif'
-image_path = 'fly.gif'
+#image_path = 'fly.gif'
+image_path = 'david.gif'
 #image_path = 'test_giffy.gif'
 #image_path = 'perf.gif'
 image = tf.io.read_file(image_path)
@@ -674,11 +680,16 @@ total_distance = 0
 total_time = 0
 prev_pos = None
 ground_points = []
-ground = 740
-height = 0
+#ground = 740
+ground = 460
+height = 100
 knee_hip_alignment_support = 100
 knee_hip_alignment_strike = 100
+knee_ank_alignment_support = 100
 kinogram = [0,0,0,0,0]
+
+vertalign = 100
+flatalign = 100
 
 ground_contacts = 0
 testframes = []
@@ -688,14 +699,15 @@ down = 1
 search_start = 0
 search_end = 0
 
-ground_ten_frames = [750, 760]
+#ground_ten_frames = [750, 760]
+ground_ten_frames = [460, 480]
 deepest_ten = 0
 
 bar = tqdm(total=num_frames-1)
 #bar = display(progress(0, num_frames-1), display_id=True)
 
 # ask user for ground approx
-#plt.imshow(image[0, :, :, :], cmap='gray')  # Assuming you want to plot the first channel in grayscale
+#plt.imshow(image[45, :, :, :], cmap='gray')  # Assuming you want to plot the first channel in grayscale
 #plt.axis('off')
 #plt.show()
 
@@ -735,41 +747,66 @@ for frame_idx in range(num_frames):
           kinogram[0] = frame_idx
           #ground_ten_frames.append(ankR['y'])
 
-    # max proj
+    # max proj / vert
       points = np.array([keypoint_locs[13], keypoint_locs[14], (keypoint_locs[11] + keypoint_locs[12]) / 2, keypoint_locs[11], keypoint_locs[12], keypoint_locs[15], keypoint_locs[16]])
       angle = compute_angle(points[0], points[1], points[2])
       kneeAngR = compute_angle(points[4], points[1], points[6])
       kneeAngL = compute_angle(points[3], points[0], points[5])
-      '''print(((midPelvis['y'] - ground) ** 2) ** 0.5)
+      """print(((midPelvis['y'] - ground) ** 2) ** 0.5)
       print(ankL['y'])
       print(ankR['y'])
       print(angle)
+      print(kneeAngL)
+      print(kneeAngR)
       print(abs(kneeL['x'] - kneeR['x']))
-      print(abs(ankL['x'] - ankR['x']))'''
+      print(abs(ankL['x'] - ankR['x']))"""
+      #print(ankL['y'] - ankR['y'])
       #if ((midPelvis['y'] - ground) ** 2) ** 0.5 > height and ankL['y'] + 5 < ground and ankR['y'] + 5 < ground and angle > 50 and abs(kneeL['x'] - kneeR['x']) > 10:
-      if ((midPelvis['y'] - ground) ** 2) ** 0.5 > height and ankL['y'] < ground and ankR['y'] < ground and angle > 50 and abs(kneeL['x'] - kneeR['x']) > 10 and abs(ankL['x'] - ankR['x']) > 10:
-          #if frame_idx > 6 and frame_idx < 26:
+      #if ((midPelvis['y'] - ground) ** 2) ** 0.5 > height and ankL['y'] < ground and ankR['y'] < ground and angle > 50 and abs(kneeL['x'] - kneeR['x']) > 10 and abs(ankL['x'] - ankR['x']) > 10:
+      #if ((midPelvis['y'] - ground) ** 2) ** 0.5 > height and ankL['y'] < ground and ankR['y'] < ground and angle > 50 and abs(kneeL['x'] - kneeR['x']) > 10 and abs(ankL['x'] - ankR['x']) > 10 and abs(ankL['y'] - ankR['y']) < 30:
+      #if ((midPelvis['y'] - ground) ** 2) ** 0.5 > height and ankL['y'] < ground and ankR['y'] < ground and abs(ankL['x'] - ankR['x']) > 10 and abs(ankL['y'] - ankR['y']) < 30 and ankL['score'] > 0.5 and ankR['score']>0.5:
+
+      #metric for smallest value in y for both left and right ankle (average of them is smallest?
+      #if ankL['y'] < ground and ankR['y'] < ground and abs(ankL['x'] - ankR['x']) > 10 and abs(ankL['y'] - ankR['y']) < height and ankL['score'] > 0.5 and ankR['score'] > 0.5 and kneeAngL < 150 and kneeAngR < 150:
+
+      if abs(ankL['x'] - ankR['x']) > 10 and abs(
+              ankL['y'] - ankR['y']) < height and ankL['score'] > 0.5 and ankR[
+          'score'] > 0.5 and kneeAngL < 150 and kneeAngR < 150 and abs(kneeL['y']-ankL['y'])<10 and abs(kneeR['x'] - ankR['x'])<10:
+          if frame_idx > 5:
+              height = abs(ankL['y'] - ankR['y'])
+              kinogram[1] = frame_idx
           #print(kneeAngR)
           #print(kneeAngL)
-          if kneeL['x'] - kneeR['x'] > 0 and 100 < kneeAngL < 130 : #left leg is in front
-              height = ((midPelvis['y'] - ground) ** 2) ** 0.5
-              #key_frames = frame_idx
-              kinogram[1] = frame_idx
-          if kneeL['x'] - kneeR['x'] < 0 and 100 < kneeAngR < 130:  # right leg is in front
-              height = ((midPelvis['y'] - ground) ** 2) ** 0.5
-              #key_frames = frame_idx
-              kinogram[1] = frame_idx
-
+          #if kneeL['x'] - kneeR['x'] > 0 and 100 < kneeAngL < 130 : #left leg is in front
+          """
+              if kneeL['x'] - kneeR['x'] > 0 and 100 < kneeAngL < 150:  # left leg is in front
+                  height = ((midPelvis['y'] - ground) ** 2) ** 0.5
+                  #key_frames = frame_idx
+                  kinogram[1] = frame_idx
+              #if kneeL['x'] - kneeR['x'] < 0 and 100 < kneeAngR < 130:  # right leg is in front
+              if kneeL['x'] - kneeR['x'] < 0 and 100 < kneeAngR < 150:  # right leg is in front
+                  height = ((midPelvis['y'] - ground) ** 2) ** 0.5
+                  #key_frames = frame_idx
+                  kinogram[1] = frame_idx
+            """
 
     # full support left
       # should also check foot is on ground
-      if abs(kneeL['x'] - keypoint_locs[11][0]) < knee_hip_alignment_support and kneeAngL > 90:
-        knee_hip_alignment_support = abs(kneeL['x'] - keypoint_locs[11][0])
+      #print(kneeL['score'])
+      #if abs(kneeL['x'] - keypoint_locs[11][0]) < knee_hip_alignment_support and 90 < kneeAngL:
+      #if abs(kneeL['x'] - keypoint_locs[11][0]) < knee_hip_alignment_support and abs(kneeL['x'] - ankL['x']) < 15 and kneeL['score'] > 0.5:
+      #possible check ankle score too
+      #if abs(ankL['x'] - keypoint_locs[11][0]) < knee_hip_alignment_support and kneeL['score'] > 0.5:
+      if abs(ankL['x'] - midPelvis['x']) < knee_hip_alignment_support and kneeL['score'] > 0.5:
+        #knee_hip_alignment_support = abs(kneeL['x'] - keypoint_locs[11][0])
+        knee_hip_alignment_support = abs(ankL['x'] - midPelvis['x'])
+        knee_ank_alignment_support = abs(kneeL['x'] - ankL['x'])
         kinogram[4] = frame_idx
       #  key_frames = frame_idx
 
     # strike R
       if abs(kneeL['x'] - keypoint_locs[11][0]) < knee_hip_alignment_strike and ankL['y'] + 10 < ground:
+      #if abs(kneeL['x'] - keypoint_locs[11][0]) < knee_hip_alignment_strike and abs(kneeL['x'] - kneeR['x'])>15 and ankL['y']:
          knee_hip_alignment_strike = abs(kneeL['x'] - keypoint_locs[11][0])
          kinogram[2] = frame_idx
       #   key_frames = frame_idx
@@ -825,11 +862,13 @@ for frame_idx in range(num_frames):
     # based on some threshold plus knee closeness
       #if (ankL['y'] >= 745 or ankR['y'] >= 745) and down == 1:
       #if ankL['y'] - prev_ank_L < 0 and abs(ankL['x'] - midPelvis['x']) < 15:
+      #print(abs(kneeL['x'] - kneeR['x']) < 5)
       if abs(kneeL['x'] - kneeR['x']) < 5:
       #if abs(ankL['y'] - prev_ank_L) < 1:
           ground_contacts += 1
           #testframes.append(frame_idx)
           ground_points.append(max(ankL['y'],ankR['y']))
+          ground = max(ankL['y'],ankR['y'])
 
           for i in range(search_start, frame_idx):
               keypoints_with_scores = run_inference(
@@ -852,14 +891,17 @@ for frame_idx in range(num_frames):
                            "score": keypoints_with_scores[0][0][14][2]}
                   #print(abs(ankL2['y'] - max(ankL['y'],ankR['y'])))
                   #print(abs(ankR2['y'] - max(ankL['y'], ankR['y'])))
+                  #print(abs(kneeL2['x'] - kneeR2['x']) < 15)
                   if (abs(ankL2['y'] - max(ankL['y'],ankR['y'])) < 10 or abs(ankR2['y'] - max(ankL['y'],ankR['y'])) < 10) and abs(kneeL2['x'] - kneeR2['x']) < 15:
                       testframes.append(i)
 
+
         #down = 0
 
-      prev_ank_R = ankR['y']
-      prev_ank_L = ankL['y']
-      search_start = frame_idx
+          prev_ank_R = ankR['y']
+          prev_ank_L = ankL['y']
+          search_start = frame_idx
+          #print(search_start)
 
       #if  (ankL['y'] <= 735 and ankR['y'] <= 735) and down == 0:
       #    down = 1
@@ -953,33 +995,44 @@ for i in testframes:
             #print(ankL['score'])
             #print(abs(elbR['x'] - midPelvis['x']))
             #print("")
-            # ensure hand position is sufficiently far (this will ensure that no stoppages occur when knees are close
-            if (ankR['y'] - ankL['y'] <= 0):
-                #if (((kneeR['x'] - kneeL['x']) ** 2 + (kneeR['y'] - kneeL['y']) ** 2) ** 0.5 < prev_dis) and ankR['score'] > 0.5 and abs(elbR['x'] - midPelvis['x'])>25:
-                if (((kneeR['x'] - kneeL['x']) ** 2 + (kneeR['y'] - kneeL['y']) ** 2) ** 0.5 < prev_dis + 2) and ankR['score'] > 0.5 and abs(elbR['x'] - midPelvis['x']) > 25:
-                    contact = False
-                else:
-                    prev_dis = ((kneeR['x'] - kneeL['x']) ** 2 + (kneeR['y'] - kneeL['y']) ** 2) ** 0.5
-                    imp_frames.append(ind)
-                    ind += 1
-                    if ind>=num_frames:
-                        contact = False
+            if ind in imp_frames:
+                contact = False
             else:
-                #if (((kneeL['x'] - ankR['x']) ** 2 + (kneeL['y'] - ankR['y']) ** 2) ** 0.5 < prev_dis) and ankR['score'] > 0.5  and abs(elbR['x'] - midPelvis['x'])>25:
-                if (((kneeR['x'] - kneeL['x']) ** 2 + (kneeR['y'] - kneeL['y']) ** 2) ** 0.5 < prev_dis + 2) and ankR['score'] > 0.5 and abs(elbR['x'] - midPelvis['x']) > 25:
-                    contact = False
-                else:
-                    prev_dis = ((kneeR['x'] - kneeL['x']) ** 2 + (kneeR['y'] - kneeL['y']) ** 2) ** 0.5
-                    imp_frames.append(ind)
-                    ind += 1
-                    if ind>=num_frames:
+                #print(ind)
+                #print(ankL['x'] - midPelvis['x'])
+                #print(((kneeR['x'] - kneeL['x']) ** 2 + (kneeR['y'] - kneeL['y']) ** 2) ** 0.5)
+                # ensure hand position is sufficiently far (this will ensure that no stoppages occur when knees are close
+                # left foot is on the ground
+                if (ankR['y'] - ankL['y'] <= 0):
+                    #if (((kneeR['x'] - kneeL['x']) ** 2 + (kneeR['y'] - kneeL['y']) ** 2) ** 0.5 < prev_dis) and ankR['score'] > 0.5 and abs(elbR['x'] - midPelvis['x'])>25:
+                    #checking if the distance between knees does not change enough then that means we are at toe off frame
+                    if (((kneeR['x'] - kneeL['x']) ** 2 + (kneeR['y'] - kneeL['y']) ** 2) ** 0.5 < prev_dis + 2) and ankR['score'] > 0.5 and ankR['x'] - midPelvis['x'] > 0:
                         contact = False
+                    else:
+                        prev_dis = ((kneeR['x'] - kneeL['x']) ** 2 + (kneeR['y'] - kneeL['y']) ** 2) ** 0.5
+                        imp_frames.append(ind)
+                        ind += 1
+                        if ind>=num_frames:
+                            contact = False
+                else:
+                    #if (((kneeL['x'] - ankR['x']) ** 2 + (kneeL['y'] - ankR['y']) ** 2) ** 0.5 < prev_dis) and ankR['score'] > 0.5  and abs(elbR['x'] - midPelvis['x'])>25:
+                    if (((kneeR['x'] - kneeL['x']) ** 2 + (kneeR['y'] - kneeL['y']) ** 2) ** 0.5 < prev_dis + 2) and ankR['score'] > 0.5 and ankL['x'] - midPelvis['x'] > 0:
+                        contact = False
+                    else:
+                        prev_dis = ((kneeR['x'] - kneeL['x']) ** 2 + (kneeR['y'] - kneeL['y']) ** 2) ** 0.5
+                        imp_frames.append(ind)
+                        ind += 1
+                        if ind >= num_frames:
+                            contact = False
         else:
             ind += 1
-            if ind >= num_frames or ind > i + 12:
+            #if ind >= num_frames or ind > i + 12:
+            if ind >= num_frames or ind > i + 2 or ind in imp_frames:
                 contact = False
+            #else:
+            #    imp_frames.append(ind)
 
-print("Below is imp")
+print("Below is imp_frames which has all ground contact frames")
 print(imp_frames)
 
 #1.33-1.72
@@ -990,9 +1043,11 @@ g = to_gif(output, fps=8, loop=True)
 #############################
 ##################################
 #testframes = [47,48,49,50,51,52,53,54]
+#test frames holds a frame where ground contacts is approx occuring
 print(testframes)
-#imp_frames = [22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34]
-
+#print(ground_points)
+#imp_frames = [2, 3, 4, 19, 28, 29, 30, 31, 35, 65, 81, 82]
+#imp_frames = [44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 68, 69, 70, 71, 72, 73]
 num_frames = len(imp_frames)
 fig, axs = plt.subplots(1, num_frames, figsize=(num_frames * 5, 5))
 
@@ -1009,7 +1064,6 @@ num_frames = len(kinogram)
 fig, axs = plt.subplots(1, num_frames, figsize=(num_frames * 5, 5))
 # Sample text (replace with your text)
 #texts = ["Text below image 1", "Text below image 2", "Text below image 3", "Text below image 4", "Text below image 5"]
-# Formatted text for all elements
 # Formatted text for all elements
 texts = [
     "Toe Off (Last Frame Where Rear Foot is in Contact)\n"
@@ -1060,7 +1114,8 @@ texts = [
 for i in range(num_frames):
     image = output[kinogram[i]]
     display_image = tf.expand_dims(image, axis=0)
-    display_image = tf.cast(tf.image.resize_with_pad(display_image, 1200, 855), dtype=tf.int32)
+    #display_image = tf.cast(tf.image.resize_with_pad(display_image, 1200, 855), dtype=tf.int32)
+    display_image = tf.cast(tf.image.resize_with_pad(display_image, 1200, 2135), dtype=tf.int32)
     output_overlay = draw_nonfigure_prediction(np.squeeze(display_image.numpy(), axis=0), np.empty((0, 0, 0, 0)))
     axs[i].imshow(output_overlay)
     axs[i].axis('off')
@@ -1078,12 +1133,12 @@ for i in range(num_frames):
 # Step 3: Add Text
 #for i, text in enumerate(texts):
 #    axs[i].text(0.5, -0.1, text, horizontalalignment='center', verticalalignment='center', transform=axs[i].transAxes)
-
+"""
 # Add text underneath each plot
 for i, text in enumerate(texts):
     #axs[i].text(0.5, -0.5, text, ha='center', va='center', wrap=True, fontsize=3)
     axs[i].text(0.5, -0.1, text, horizontalalignment='center', verticalalignment='center', transform=axs[i].transAxes, fontsize=5)
-
+"""
 
 plt.tight_layout()
 plt.show()
@@ -1123,8 +1178,8 @@ for i in range(len(imp_frames)-1):
         counter = 0
         flight_times.append(tbf*(imp_frames[i+1]-imp_frames[i]))
 
-print(gcontact_times)
-print(flight_times)
+#print(gcontact_times)
+#print(flight_times)
 """# Plotting the bar chart with index as categories
 plt.bar(range(len(gcontact_times)), gcontact_times)
 
