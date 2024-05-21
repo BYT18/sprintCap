@@ -416,7 +416,7 @@ if "tflite" in model_name:
 else:
    if "movenet_lightning" in model_name:
      #module = hub.load("https://tfhub.dev/google/movenet/singlepose/lightning/3")
-     module = hub.load("https://www.kaggle.com/models/google/movenet/TensorFlow2/singlepose-lightning/4")
+     module = hub.load("http://www.kaggle.com/models/google/movenet/TensorFlow2/singlepose-lightning/4")
      input_size = 192
    elif "movenet_thunder" in model_name:
      module = hub.load("https://tfhub.dev/google/movenet/singlepose/thunder/3")
@@ -862,14 +862,13 @@ for frame_idx in range(num_frames):
     # based on some threshold plus knee closeness
       #if (ankL['y'] >= 745 or ankR['y'] >= 745) and down == 1:
       #if ankL['y'] - prev_ank_L < 0 and abs(ankL['x'] - midPelvis['x']) < 15:
-      #print(abs(kneeL['x'] - kneeR['x']) < 5)
       if abs(kneeL['x'] - kneeR['x']) < 5:
+          #print(abs(kneeL['x'] - kneeR['x']) < 5)
       #if abs(ankL['y'] - prev_ank_L) < 1:
           ground_contacts += 1
           #testframes.append(frame_idx)
           ground_points.append(max(ankL['y'],ankR['y']))
           ground = max(ankL['y'],ankR['y'])
-
           for i in range(search_start, frame_idx):
               keypoints_with_scores = run_inference(
                   movenet, image[i, :, :, :], crop_region,
@@ -892,7 +891,7 @@ for frame_idx in range(num_frames):
                   #print(abs(ankL2['y'] - max(ankL['y'],ankR['y'])))
                   #print(abs(ankR2['y'] - max(ankL['y'], ankR['y'])))
                   #print(abs(kneeL2['x'] - kneeR2['x']) < 15)
-                  if (abs(ankL2['y'] - max(ankL['y'],ankR['y'])) < 10 or abs(ankR2['y'] - max(ankL['y'],ankR['y'])) < 10) and abs(kneeL2['x'] - kneeR2['x']) < 15:
+                  if (abs(ankL2['y'] - max(ankL['y'],ankR['y'])) < 10 or abs(ankR2['y'] - max(ankL['y'],ankR['y'])) < 10) and abs(kneeL2['x'] - kneeR2['x']) < 15 and kneeL2['score']>0.4 and kneeR2['score']>0.4:
                       testframes.append(i)
 
 
@@ -955,11 +954,13 @@ for frame_idx in range(num_frames):
 #need to run another loop below to add the ground points to the images jsut like above
 
 #print(ground_ten_frames)
+#testframes = [2, 3, 4, 28, 29, 30, 31, 33, 35, 36, 55, 56, 57, 58, 60, 65, 81, 82]
 imp_frames = []
 for i in testframes:
     contact = True
     ind = i
     prev_dis = 0
+    print(imp_frames)
     while contact:
         keypoints_with_scores = run_inference(
             movenet, image[ind, :, :, :], crop_region,
@@ -997,16 +998,19 @@ for i in testframes:
             #print("")
             if ind in imp_frames:
                 contact = False
+                print('reached1')
             else:
-                #print(ind)
-                #print(ankL['x'] - midPelvis['x'])
-                #print(((kneeR['x'] - kneeL['x']) ** 2 + (kneeR['y'] - kneeL['y']) ** 2) ** 0.5)
+                print(ind)
+                print(ankL['x'] - midPelvis['x'])
+                print(ankR['x'] - midPelvis['x'])
+                print(((kneeR['x'] - kneeL['x']) ** 2 + (kneeR['y'] - kneeL['y']) ** 2) ** 0.5)
+                print(abs(elbR['x'] - midPelvis['x']))
                 # ensure hand position is sufficiently far (this will ensure that no stoppages occur when knees are close
                 # left foot is on the ground
                 if (ankR['y'] - ankL['y'] <= 0):
                     #if (((kneeR['x'] - kneeL['x']) ** 2 + (kneeR['y'] - kneeL['y']) ** 2) ** 0.5 < prev_dis) and ankR['score'] > 0.5 and abs(elbR['x'] - midPelvis['x'])>25:
                     #checking if the distance between knees does not change enough then that means we are at toe off frame
-                    if (((kneeR['x'] - kneeL['x']) ** 2 + (kneeR['y'] - kneeL['y']) ** 2) ** 0.5 < prev_dis + 2) and ankR['score'] > 0.5 and ankR['x'] - midPelvis['x'] > 0:
+                    if (((kneeR['x'] - kneeL['x']) ** 2 + (kneeR['y'] - kneeL['y']) ** 2) ** 0.5 < prev_dis + 2) and ankR['score'] > 0.5 and ankL['score'] > 0.5 and ankR['x'] - midPelvis['x'] > 0 and abs(elbR['x'] - midPelvis['x'])>20:
                         contact = False
                     else:
                         prev_dis = ((kneeR['x'] - kneeL['x']) ** 2 + (kneeR['y'] - kneeL['y']) ** 2) ** 0.5
@@ -1016,7 +1020,7 @@ for i in testframes:
                             contact = False
                 else:
                     #if (((kneeL['x'] - ankR['x']) ** 2 + (kneeL['y'] - ankR['y']) ** 2) ** 0.5 < prev_dis) and ankR['score'] > 0.5  and abs(elbR['x'] - midPelvis['x'])>25:
-                    if (((kneeR['x'] - kneeL['x']) ** 2 + (kneeR['y'] - kneeL['y']) ** 2) ** 0.5 < prev_dis + 2) and ankR['score'] > 0.5 and ankL['x'] - midPelvis['x'] > 0:
+                    if (((kneeR['x'] - kneeL['x']) ** 2 + (kneeR['y'] - kneeL['y']) ** 2) ** 0.5 < prev_dis + 2) and ankR['score'] > 0.5 and ankL['score'] > 0.5 and ankL['x'] - midPelvis['x'] > 0 and abs(elbR['x'] - midPelvis['x'])>20:
                         contact = False
                     else:
                         prev_dis = ((kneeR['x'] - kneeL['x']) ** 2 + (kneeR['y'] - kneeL['y']) ** 2) ** 0.5
@@ -1025,17 +1029,22 @@ for i in testframes:
                         if ind >= num_frames:
                             contact = False
         else:
+            if ind not in imp_frames:
+                imp_frames.append(ind)
+            else:
+                contact = False
             ind += 1
             #if ind >= num_frames or ind > i + 12:
-            if ind >= num_frames or ind > i + 2 or ind in imp_frames:
+            if ind >= num_frames or ind > i + 10:
+            #if ind >= num_frames or ind in imp_frames:
                 contact = False
+                print('reached2')
             #else:
             #    imp_frames.append(ind)
 
 print("Below is imp_frames which has all ground contact frames")
 print(imp_frames)
 
-#1.33-1.72
 # can look at the consistency of contact time, which side is longer / asymetries
 # Prepare gif visualization.
 output = np.stack(output_images, axis=0)
@@ -1045,9 +1054,9 @@ g = to_gif(output, fps=8, loop=True)
 #testframes = [47,48,49,50,51,52,53,54]
 #test frames holds a frame where ground contacts is approx occuring
 print(testframes)
-#print(ground_points)
-#imp_frames = [2, 3, 4, 19, 28, 29, 30, 31, 35, 65, 81, 82]
-#imp_frames = [44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 68, 69, 70, 71, 72, 73]
+
+#imp_frames = [19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40]
+#imp_frames = [2, 3, 4, 19, 28, 29, 30, 31, 33, 35, 36, 55, 56, 57, 58, 60, 65, 81, 82]
 num_frames = len(imp_frames)
 fig, axs = plt.subplots(1, num_frames, figsize=(num_frames * 5, 5))
 
