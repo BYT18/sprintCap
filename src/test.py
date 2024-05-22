@@ -1,3 +1,5 @@
+import random
+
 import tensorflow as tf
 import tensorflow_hub as hub
 from tensorflow_docs.vis import embed
@@ -657,6 +659,11 @@ def run_inference(movenet, image, crop_region, crop_size):
 #videoClip.write_gif("fly.gif")
 #videoClip.write_gif("david.gif")
 
+seed = 42
+tf.random.set_seed(seed)
+np.random.seed(seed)
+random.seed(seed)
+
 #image_path = 'giffy2.gif'
 #image_path = 'fly.gif'
 image_path = 'david.gif'
@@ -867,8 +874,15 @@ for frame_idx in range(num_frames):
       #if abs(ankL['y'] - prev_ank_L) < 1:
           ground_contacts += 1
           #testframes.append(frame_idx)
-          ground_points.append(max(ankL['y'],ankR['y']))
           ground = max(ankL['y'],ankR['y'])
+
+          """ image = tf.io.read_file(image_path)
+          image = tf.image.decode_gif(image)
+
+          # Load the input image.
+          num_frames, image_height, image_width, _ = image.shape
+          crop_region = init_crop_region(image_height, image_width)"""
+
           for i in range(search_start, frame_idx):
               keypoints_with_scores = run_inference(
                   movenet, image[i, :, :, :], crop_region,
@@ -893,6 +907,10 @@ for frame_idx in range(num_frames):
                   #print(abs(kneeL2['x'] - kneeR2['x']) < 15)
                   if (abs(ankL2['y'] - max(ankL['y'],ankR['y'])) < 10 or abs(ankR2['y'] - max(ankL['y'],ankR['y'])) < 10) and abs(kneeL2['x'] - kneeR2['x']) < 15 and kneeL2['score']>0.4 and kneeR2['score']>0.4:
                       testframes.append(i)
+                      if abs(ankL2['y'] - max(ankL['y'],ankR['y'])) < 10:
+                         ground_points.append(ankL2['y'])
+                      else:
+                          ground_points.append(ankR2['y'])
 
 
         #down = 0
@@ -916,6 +934,8 @@ for frame_idx in range(num_frames):
       # Add the new item to the end of the new array
       new_array[-len( keypoint_locs[15]):] =  keypoint_locs[15]
       ground_points = new_array'''
+  else:
+      print(len(keypoint_locs))
 
   #print(keypoints_with_scores)
   if len(ground_ten_frames) >= 2:
@@ -955,12 +975,23 @@ for frame_idx in range(num_frames):
 
 #print(ground_ten_frames)
 #testframes = [2, 3, 4, 28, 29, 30, 31, 33, 35, 36, 55, 56, 57, 58, 60, 65, 81, 82]
+image = tf.io.read_file(image_path)
+image = tf.image.decode_gif(image)
+
+# Load the input image.
+num_frames, image_height, image_width, _ = image.shape
+crop_region = init_crop_region(image_height, image_width)
+
 imp_frames = []
 for i in testframes:
     contact = True
     ind = i
+    prev_ind = i
     prev_dis = 0
     print(imp_frames)
+    max_knee_seperation = 0
+    key = 0
+    threshold = 100000
     while contact:
         keypoints_with_scores = run_inference(
             movenet, image[ind, :, :, :], crop_region,
@@ -970,6 +1001,7 @@ for i in testframes:
          edge_colors) = _keypoints_and_edges_for_display(
             keypoints_with_scores, image_height, image_width)
 
+        #print(len(keypoint_locs))
         if (len(keypoint_locs) > 16):
             # print(keypoint_locs)
             ankR = {'x': keypoint_locs[16][0], "y": keypoint_locs[16][1],
@@ -996,51 +1028,79 @@ for i in testframes:
             #print(ankL['score'])
             #print(abs(elbR['x'] - midPelvis['x']))
             #print("")
+            #if ind in imp_frames:
             if ind in imp_frames:
-                contact = False
                 print('reached1')
+                contact = False
             else:
+                #prev_ind = ind
                 print(ind)
-                print(ankL['x'] - midPelvis['x'])
-                print(ankR['x'] - midPelvis['x'])
+                #print(ankL['x'] - midPelvis['x'])
+                #print(ankR['x'] - midPelvis['x'])
                 print(((kneeR['x'] - kneeL['x']) ** 2 + (kneeR['y'] - kneeL['y']) ** 2) ** 0.5)
-                print(abs(elbR['x'] - midPelvis['x']))
+                #print(abs(elbR['x'] - midPelvis['x']))
+                print(ankL['y'])
+                print(ankR['y'])
+                print(ankR['score'])
+                print(ankL['score'])
+                print(kneeR['score'])
+                print(kneeL['score'])
+                print(threshold)
+                print("")
                 # ensure hand position is sufficiently far (this will ensure that no stoppages occur when knees are close
                 # left foot is on the ground
                 if (ankR['y'] - ankL['y'] <= 0):
-                    #if (((kneeR['x'] - kneeL['x']) ** 2 + (kneeR['y'] - kneeL['y']) ** 2) ** 0.5 < prev_dis) and ankR['score'] > 0.5 and abs(elbR['x'] - midPelvis['x'])>25:
-                    #checking if the distance between knees does not change enough then that means we are at toe off frame
-                    if (((kneeR['x'] - kneeL['x']) ** 2 + (kneeR['y'] - kneeL['y']) ** 2) ** 0.5 < prev_dis + 2) and ankR['score'] > 0.5 and ankL['score'] > 0.5 and ankR['x'] - midPelvis['x'] > 0 and abs(elbR['x'] - midPelvis['x'])>20:
+                    if ind == i:
+                        threshold = ankL['y']
+                        #checking if the distance between knees does not change enough then that means we are at toe off frame
+                    if ind >= num_frames-1 or ind >= i + 20:
+                        print('reached3')
+                        for x in range(i,key):
+                            imp_frames.append(x)
+                        #imp_frames.append(key)
                         contact = False
                     else:
-                        prev_dis = ((kneeR['x'] - kneeL['x']) ** 2 + (kneeR['y'] - kneeL['y']) ** 2) ** 0.5
-                        imp_frames.append(ind)
+                        if ((kneeR['x'] - kneeL['x']) ** 2 + (kneeR['y'] - kneeL['y']) ** 2) ** 0.5 > max_knee_seperation and kneeL['score'] > 0.3 and kneeR['score'] > 0.3 and ankL['y'] + 15 > threshold and ankR['x'] - kneeL['x'] > 0:
+                            max_knee_seperation = ((kneeR['x'] - kneeL['x']) ** 2 + (
+                                        kneeR['y'] - kneeL['y']) ** 2) ** 0.5
+                            key = ind
+                            #imp_frames.append(ind)
                         ind += 1
-                        if ind>=num_frames:
-                            contact = False
                 else:
-                    #if (((kneeL['x'] - ankR['x']) ** 2 + (kneeL['y'] - ankR['y']) ** 2) ** 0.5 < prev_dis) and ankR['score'] > 0.5  and abs(elbR['x'] - midPelvis['x'])>25:
-                    if (((kneeR['x'] - kneeL['x']) ** 2 + (kneeR['y'] - kneeL['y']) ** 2) ** 0.5 < prev_dis + 2) and ankR['score'] > 0.5 and ankL['score'] > 0.5 and ankL['x'] - midPelvis['x'] > 0 and abs(elbR['x'] - midPelvis['x'])>20:
+                    if ind == i:
+                        threshold = ankR['y']
+
+                    if ind >= num_frames-1 or ind >= i + 20:
+                        print('reached3')
+                        for x in range(i,key):
+                            imp_frames.append(x)
                         contact = False
                     else:
-                        prev_dis = ((kneeR['x'] - kneeL['x']) ** 2 + (kneeR['y'] - kneeL['y']) ** 2) ** 0.5
-                        imp_frames.append(ind)
+                        if ((kneeR['x'] - kneeL['x']) ** 2 + (kneeR['y'] - kneeL['y']) ** 2) ** 0.5 > max_knee_seperation and kneeL['score'] > 0.3 and kneeR['score'] > 0.3 and ankR['y'] + 15 > threshold and ankL['x'] - kneeR['x'] > 0:
+                            max_knee_seperation = ((kneeR['x'] - kneeL['x']) ** 2 + (kneeR['y'] - kneeL['y']) ** 2) ** 0.5
+                            key= ind
+                            #imp_frames.append(ind)
                         ind += 1
-                        if ind >= num_frames:
-                            contact = False
+        #elif len(keypoint_locs) < 15:
+        #    ind += 1
         else:
-            if ind not in imp_frames:
-                imp_frames.append(ind)
+            print(ind)
+            print(len(keypoint_locs) )
+            #print('reached6')
+            contact = False
+            #imp_frames.append(ind)
+            #ind += 1
+            """if ind not in imp_frames:
+                #imp_frames.append(ind)
+                prev_ind = ind
             else:
                 contact = False
             ind += 1
             #if ind >= num_frames or ind > i + 12:
-            if ind >= num_frames or ind > i + 10:
+            if ind >= num_frames or ind > prev_ind + 2:
             #if ind >= num_frames or ind in imp_frames:
                 contact = False
-                print('reached2')
-            #else:
-            #    imp_frames.append(ind)
+                print('reached2')"""
 
 print("Below is imp_frames which has all ground contact frames")
 print(imp_frames)
@@ -1056,7 +1116,7 @@ g = to_gif(output, fps=8, loop=True)
 print(testframes)
 
 #imp_frames = [19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40]
-#imp_frames = [2, 3, 4, 19, 28, 29, 30, 31, 33, 35, 36, 55, 56, 57, 58, 60, 65, 81, 82]
+imp_frames = [28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44]
 num_frames = len(imp_frames)
 fig, axs = plt.subplots(1, num_frames, figsize=(num_frames * 5, 5))
 
@@ -1171,7 +1231,12 @@ print('time: '+str(total_time))
 print('contacts: '+str(ground_contacts))
 #feedback()
 
-fps = 81 / 2
+#tot_frames = dur*curr_fps(slow-mo)
+#Total frames in the original video = Frame rate × Duration = 240 fps × 3 s = 720 frames
+tot_frames = 3*720
+#Frame rate of the GIF = Total frames of GIF / Duration = 93 frames / 3 s
+fps = 93 / 3
+#Time per frame in GIF = Duration / Total frames of GIF = 3 s / 93 frames
 tbf = 1 / fps
 gcontact_times = []
 flight_times = []
