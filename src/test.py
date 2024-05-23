@@ -659,10 +659,113 @@ def run_inference(movenet, image, crop_region, crop_size):
 #videoClip.write_gif("fly.gif")
 #videoClip.write_gif("david.gif")
 
-seed = 42
-tf.random.set_seed(seed)
-np.random.seed(seed)
-random.seed(seed)
+"""import cv2
+import numpy as np
+
+# Load the video
+cap = cv2.VideoCapture('david.mov')
+
+# Get video properties
+frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+# Define the codec and create VideoWriter object
+out = cv2.VideoWriter('stabilized_video.mp4', cv2.VideoWriter_fourcc(*'MP4V'), 30, (frame_width, frame_height))
+
+# Read the first frame
+ret, prev = cap.read()
+prev_gray = cv2.cvtColor(prev, cv2.COLOR_BGR2GRAY)
+
+# Pre-define transformation-store array
+transforms = np.zeros((frame_count-1, 3), np.float32)
+
+for i in range(1, frame_count):
+    # Read next frame
+    ret, curr = cap.read()
+    if not ret:
+        break
+
+    curr_gray = cv2.cvtColor(curr, cv2.COLOR_BGR2GRAY)
+
+    # Detect feature points in previous frame
+    prev_pts = cv2.goodFeaturesToTrack(prev_gray, maxCorners=200, qualityLevel=0.01, minDistance=30, blockSize=3)
+
+    # Calculate optical flow (i.e., track feature points)
+    curr_pts, status, err = cv2.calcOpticalFlowPyrLK(prev_gray, curr_gray, prev_pts, None)
+
+    # Filter only valid points
+    idx = np.where(status == 1)[0]
+    prev_pts = prev_pts[idx]
+    curr_pts = curr_pts[idx]
+
+    # Find transformation matrix
+    m, _ = cv2.estimateAffinePartial2D(prev_pts, curr_pts)
+
+    # Extract translation
+    dx = m[0, 2]
+    dy = m[1, 2]
+
+    # Extract rotation angle
+    da = np.arctan2(m[1, 0], m[0, 0])
+
+    # Store transformation
+    transforms[i-1] = [dx, dy, da]
+
+    # Move to next frame
+    prev_gray = curr_gray
+
+# Compute trajectory using cumulative sum of transformations
+trajectory = np.cumsum(transforms, axis=0)
+
+# Smooth trajectory using moving average filter
+smoothed_trajectory = trajectory.copy()
+for i in range(3):
+    smoothed_trajectory[:, i] = np.convolve(trajectory[:, i], np.ones(30)/30, mode='same')
+
+# Calculate difference in smoothed_trajectory and trajectory
+difference = smoothed_trajectory - trajectory
+
+# Calculate newer transformation array
+transforms_smooth = transforms + difference
+
+# Reset stream to first frame
+cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+
+# Write the stabilized video
+for i in range(frame_count-1):
+    # Read next frame
+    ret, frame = cap.read()
+    if not ret:
+        break
+
+    # Extract transformations
+    dx = transforms_smooth[i, 0]
+    dy = transforms_smooth[i, 1]
+    da = transforms_smooth[i, 2]
+
+    # Reconstruct transformation matrix accordingly to new values
+    m = np.zeros((2, 3), np.float32)
+    m[0, 0] = np.cos(da)
+    m[0, 1] = -np.sin(da)
+    m[1, 0] = np.sin(da)
+    m[1, 1] = np.cos(da)
+    m[0, 2] = dx
+    m[1, 2] = dy
+
+    # Apply affine wrapping to the given frame
+    frame_stabilized = cv2.warpAffine(frame, m, (frame_width, frame_height))
+
+    # Write the frame to the file
+    out.write(frame_stabilized)
+
+# Release everything
+cap.release()
+out.release()
+
+from moviepy.editor import VideoFileClip
+videoClip = VideoFileClip("stabilized_video.mp4")
+videoClip.write_gif("david.gif")"""
 
 #image_path = 'giffy2.gif'
 #image_path = 'fly.gif'
@@ -804,7 +907,7 @@ for frame_idx in range(num_frames):
       #if abs(kneeL['x'] - keypoint_locs[11][0]) < knee_hip_alignment_support and abs(kneeL['x'] - ankL['x']) < 15 and kneeL['score'] > 0.5:
       #possible check ankle score too
       #if abs(ankL['x'] - keypoint_locs[11][0]) < knee_hip_alignment_support and kneeL['score'] > 0.5:
-      if abs(ankL['x'] - midPelvis['x']) < knee_hip_alignment_support and kneeL['score'] > 0.5:
+      if abs(ankL['x'] - midPelvis['x']) < knee_hip_alignment_support and kneeL['score'] > 0.5 and ankR['y']<ankL['y']:
         #knee_hip_alignment_support = abs(kneeL['x'] - keypoint_locs[11][0])
         knee_hip_alignment_support = abs(ankL['x'] - midPelvis['x'])
         knee_ank_alignment_support = abs(kneeL['x'] - ankL['x'])
@@ -870,18 +973,8 @@ for frame_idx in range(num_frames):
       #if (ankL['y'] >= 745 or ankR['y'] >= 745) and down == 1:
       #if ankL['y'] - prev_ank_L < 0 and abs(ankL['x'] - midPelvis['x']) < 15:
       if abs(kneeL['x'] - kneeR['x']) < 5:
-          #print(abs(kneeL['x'] - kneeR['x']) < 5)
-      #if abs(ankL['y'] - prev_ank_L) < 1:
           ground_contacts += 1
-          #testframes.append(frame_idx)
           ground = max(ankL['y'],ankR['y'])
-
-          """ image = tf.io.read_file(image_path)
-          image = tf.image.decode_gif(image)
-
-          # Load the input image.
-          num_frames, image_height, image_width, _ = image.shape
-          crop_region = init_crop_region(image_height, image_width)"""
 
           for i in range(search_start, frame_idx):
               keypoints_with_scores = run_inference(
@@ -902,38 +995,25 @@ for frame_idx in range(num_frames):
                            "score": keypoints_with_scores[0][0][13][2]}
                   kneeL2 = {'x': keypoint_locs[13][0], "y": keypoint_locs[13][1],
                            "score": keypoints_with_scores[0][0][14][2]}
-                  #print(abs(ankL2['y'] - max(ankL['y'],ankR['y'])))
-                  #print(abs(ankR2['y'] - max(ankL['y'], ankR['y'])))
-                  #print(abs(kneeL2['x'] - kneeR2['x']) < 15)
-                  if (abs(ankL2['y'] - max(ankL['y'],ankR['y'])) < 10 or abs(ankR2['y'] - max(ankL['y'],ankR['y'])) < 10) and abs(kneeL2['x'] - kneeR2['x']) < 15 and kneeL2['score']>0.4 and kneeR2['score']>0.4:
+                  """print(i)
+                  print(abs(ankL2['y'] - max(ankL['y'],ankR['y'])))
+                  print(abs(ankR2['y'] - max(ankL['y'], ankR['y'])))
+                  print(abs(kneeL2['x'] - kneeR2['x']) < 15)
+                  print(kneeL2['score'])
+                  print(kneeR2['score'])
+                  print("")"""
+                  if (abs(ankL2['y'] - max(ankL['y'],ankR['y'])) < 10 or abs(ankR2['y'] - max(ankL['y'],ankR['y'])) < 10) and abs(kneeL2['x'] - kneeR2['x']) < 15 and kneeL2['score']>0.35 and kneeR2['score']>0.35:
                       testframes.append(i)
                       if abs(ankL2['y'] - max(ankL['y'],ankR['y'])) < 10:
                          ground_points.append(ankL2['y'])
                       else:
                           ground_points.append(ankR2['y'])
 
-
-        #down = 0
-
           prev_ank_R = ankR['y']
           prev_ank_L = ankL['y']
           search_start = frame_idx
           #print(search_start)
 
-      #if  (ankL['y'] <= 735 and ankR['y'] <= 735) and down == 0:
-      #    down = 1
-      #print(ground_ten_frames)
-      #ground_points.append(ankL)
-      '''
-      #ground_points = get_ground_points(keypoint_locs)
-      #g = keypoint_locs[15][:, :, np.newaxis]  # Add the new axis along axis 2
-      #ground_points.concatenate(keypoint_locs[15])
-      new_array = np.empty(ground_points.size + len(keypoint_locs[15]))
-      # Copy the original array into the new array
-      new_array[:-len(keypoint_locs[15])] = ground_points
-      # Add the new item to the end of the new array
-      new_array[-len( keypoint_locs[15]):] =  keypoint_locs[15]
-      ground_points = new_array'''
   else:
       print(len(keypoint_locs))
 
@@ -1003,7 +1083,6 @@ for i in testframes:
 
         #print(len(keypoint_locs))
         if (len(keypoint_locs) > 16):
-            # print(keypoint_locs)
             ankR = {'x': keypoint_locs[16][0], "y": keypoint_locs[16][1],
                      "score": keypoints_with_scores[0][0][13][2]}
             ankL = {'x': keypoint_locs[15][0], "y": keypoint_locs[15][1],
@@ -1019,20 +1098,12 @@ for i in testframes:
             midPelvis = {'x': (keypoint_locs[12][0] + keypoint_locs[11][0]) / 2,
                          "y": (keypoint_locs[12][1] + keypoint_locs[11][1]) / 2,
                          "score": keypoints_with_scores[0][0][12][2] - keypoints_with_scores[0][0][11][2]}
-            #print(((kneeL['x'] - ankR['x']) ** 2 + (kneeL['y'] - ankR['y']) ** 2) ** 0.5)
-            #print(((kneeR['x'] - kneeL['x']) ** 2 + (kneeR['y'] - kneeL['y']) ** 2) ** 0.5)
-            #print(prev_dis)
-            #print(ankR['y'] - ankL['y'])
-            #print(ind)
-            #print(ankR['score'])
-            #print(ankL['score'])
-            #print(abs(elbR['x'] - midPelvis['x']))
-            #print("")
-            #if ind in imp_frames:
             if ind in imp_frames:
                 print('reached1')
                 contact = False
             else:
+                #look at only x of the knees?
+
                 #prev_ind = ind
                 print(ind)
                 #print(ankL['x'] - midPelvis['x'])
@@ -1041,10 +1112,8 @@ for i in testframes:
                 #print(abs(elbR['x'] - midPelvis['x']))
                 print(ankL['y'])
                 print(ankR['y'])
-                print(ankR['score'])
-                print(ankL['score'])
-                print(kneeR['score'])
-                print(kneeL['score'])
+                print(ankR['x'] - kneeL['x'])
+                print(ankL['x'] - kneeR['x'])
                 print(threshold)
                 print("")
                 # ensure hand position is sufficiently far (this will ensure that no stoppages occur when knees are close
@@ -1057,14 +1126,12 @@ for i in testframes:
                         print('reached3')
                         for x in range(i,key):
                             imp_frames.append(x)
-                        #imp_frames.append(key)
                         contact = False
                     else:
-                        if ((kneeR['x'] - kneeL['x']) ** 2 + (kneeR['y'] - kneeL['y']) ** 2) ** 0.5 > max_knee_seperation and kneeL['score'] > 0.3 and kneeR['score'] > 0.3 and ankL['y'] + 15 > threshold and ankR['x'] - kneeL['x'] > 0:
+                        if ((kneeR['x'] - kneeL['x']) ** 2 + (kneeR['y'] - kneeL['y']) ** 2) ** 0.5 > max_knee_seperation and kneeL['score'] > 0.3 and kneeR['score'] > 0.3 and ankR['x'] - kneeL['x'] > 10:
                             max_knee_seperation = ((kneeR['x'] - kneeL['x']) ** 2 + (
                                         kneeR['y'] - kneeL['y']) ** 2) ** 0.5
                             key = ind
-                            #imp_frames.append(ind)
                         ind += 1
                 else:
                     if ind == i:
@@ -1076,31 +1143,16 @@ for i in testframes:
                             imp_frames.append(x)
                         contact = False
                     else:
-                        if ((kneeR['x'] - kneeL['x']) ** 2 + (kneeR['y'] - kneeL['y']) ** 2) ** 0.5 > max_knee_seperation and kneeL['score'] > 0.3 and kneeR['score'] > 0.3 and ankR['y'] + 15 > threshold and ankL['x'] - kneeR['x'] > 0:
+                        if ((kneeR['x'] - kneeL['x']) ** 2 + (kneeR['y'] - kneeL['y']) ** 2) ** 0.5 > max_knee_seperation and kneeL['score'] > 0.3 and kneeR['score'] > 0.3 and ankL['x'] - kneeR['x'] > 10:
                             max_knee_seperation = ((kneeR['x'] - kneeL['x']) ** 2 + (kneeR['y'] - kneeL['y']) ** 2) ** 0.5
                             key= ind
-                            #imp_frames.append(ind)
                         ind += 1
-        #elif len(keypoint_locs) < 15:
-        #    ind += 1
         else:
             print(ind)
-            print(len(keypoint_locs) )
-            #print('reached6')
+            print(len(keypoint_locs))
             contact = False
             #imp_frames.append(ind)
             #ind += 1
-            """if ind not in imp_frames:
-                #imp_frames.append(ind)
-                prev_ind = ind
-            else:
-                contact = False
-            ind += 1
-            #if ind >= num_frames or ind > i + 12:
-            if ind >= num_frames or ind > prev_ind + 2:
-            #if ind >= num_frames or ind in imp_frames:
-                contact = False
-                print('reached2')"""
 
 print("Below is imp_frames which has all ground contact frames")
 print(imp_frames)
@@ -1115,8 +1167,7 @@ g = to_gif(output, fps=8, loop=True)
 #test frames holds a frame where ground contacts is approx occuring
 print(testframes)
 
-#imp_frames = [19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40]
-imp_frames = [28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44]
+imp_frames = [56, 57, 58, 59, 60, 61, 62, 63, 64, 65,66]
 num_frames = len(imp_frames)
 fig, axs = plt.subplots(1, num_frames, figsize=(num_frames * 5, 5))
 
@@ -1131,6 +1182,7 @@ plt.show()
 print(kinogram)
 num_frames = len(kinogram)
 fig, axs = plt.subplots(1, num_frames, figsize=(num_frames * 5, 5))
+
 # Sample text (replace with your text)
 #texts = ["Text below image 1", "Text below image 2", "Text below image 3", "Text below image 4", "Text below image 5"]
 # Formatted text for all elements
