@@ -16,7 +16,9 @@ Analysis is based on following papers ...
 
 ![full_kinogram](https://github.com/BYT18/sprintCap/assets/68192622/9a37e814-f027-4cb2-838f-e5f180615a7d)
 
-![animation](https://github.com/BYT18/sprintCap/assets/68192622/da933110-6d4a-4e0b-8b12-7ccba36c0fbb)
+<div align="center">
+    <img src="https://github.com/BYT18/sprintCap/assets/68192622/da933110-6d4a-4e0b-8b12-7ccba36c0fbb" alt="animation">
+</div>
 
 ![initial_ground_contacts](https://github.com/BYT18/sprintCap/assets/68192622/156e3be2-41a9-4472-8d59-44d887af8156)
 
