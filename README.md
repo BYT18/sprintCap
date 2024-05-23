@@ -14,17 +14,25 @@ Analysis is based on following papers ...
 - **Kinogram Generation**: Produces a kinogram, a graphical representation of key positions and movements over time during the sprint.
 - **Visualization**: Provides interactive visualizations to explore biomechanical data and kinograms.
 
-![full_kinogram](https://github.com/BYT18/sprintCap/assets/68192622/9a37e814-f027-4cb2-838f-e5f180615a7d)
+<div align="center">
+    <img src="https://github.com/BYT18/sprintCap/assets/68192622/9a37e814-f027-4cb2-838f-e5f180615a7d" alt="full_kinogram">
+</div>
 
 <div align="center">
     <img src="https://github.com/BYT18/sprintCap/assets/68192622/da933110-6d4a-4e0b-8b12-7ccba36c0fbb" alt="animation">
 </div>
 
-![initial_ground_contacts](https://github.com/BYT18/sprintCap/assets/68192622/156e3be2-41a9-4472-8d59-44d887af8156)
+<div align="center">
+    <img src="https://github.com/BYT18/sprintCap/assets/68192622/156e3be2-41a9-4472-8d59-44d887af8156" alt="initial_ground_contacts">
+</div>
 
-![time_on_ground](https://github.com/BYT18/sprintCap/assets/68192622/49ad8cab-589a-481a-8258-db985488b544)
+<div align="center">
+    <img src="https://github.com/BYT18/sprintCap/assets/68192622/49ad8cab-589a-481a-8258-db985488b544" alt="time_on_ground">
+</div>
 
-![ground_vs_flight](https://github.com/BYT18/sprintCap/assets/68192622/4ccdd8ab-c00a-4868-b377-f46b524961a4)
+<div align="center">
+    <img src="https://github.com/BYT18/sprintCap/assets/68192622/4ccdd8ab-c00a-4868-b377-f46b524961a4" alt="ground_vs_flight">
+</div>
 
 
 ## Dependencies
