@@ -224,7 +224,7 @@ if "tflite" in model_name:
 else:
    if "movenet_lightning" in model_name:
      #module = hub.load("https://tfhub.dev/google/movenet/singlepose/lightning/3")
-     module = hub.load("https://kaggle.com/models/google/movenet/TensorFlow2/singlepose-lightning/3")
+     module = hub.load("http://www.kaggle.com/models/google/movenet/TensorFlow2/singlepose-lightning/4")
      input_size = 192
    elif "movenet_thunder" in model_name:
      module = hub.load("https://tfhub.dev/google/movenet/singlepose/thunder/3")

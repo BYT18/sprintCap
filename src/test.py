@@ -256,9 +256,9 @@ def draw_prediction_on_image(image, keypoints_with_scores, ground, crop_region=N
     #giffy2
    #width, height = 2132, 1200
    #fly.gif
-   #width, height = 855, 1200
+   width, height = 855, 1200
    #adam.gif
-   width, height = 2135, 1200
+   #width, height = 2139, 1200
 
    #width, height = 2133, 1200
 
@@ -348,8 +348,8 @@ def draw_nonfigure_prediction(image, keypoints_with_scores, crop_region=None, cl
    fig.canvas.draw()
    image_from_plot = np.frombuffer(fig.canvas.buffer_rgba(), dtype=np.uint8)
    # Determine the width and height of your canvas or image
-   #width, height = 855, 1200
-   width, height = 2135, 1200
+   width, height = 855, 1200
+   #width, height = 2139, 1200
 
    # Adjust reshape based on the size of the array
    #print("Actual array size:", image_from_plot.size)
@@ -659,11 +659,11 @@ def run_inference(movenet, image, crop_region, crop_size):
 #videoClip.write_gif("fly.gif")
 #videoClip.write_gif("david.gif")
 
-"""import cv2
+import cv2
 import numpy as np
 
 # Load the video
-cap = cv2.VideoCapture('david.mov')
+cap = cv2.VideoCapture('fly.mov')
 
 # Get video properties
 frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -765,11 +765,11 @@ out.release()
 
 from moviepy.editor import VideoFileClip
 videoClip = VideoFileClip("stabilized_video.mp4")
-videoClip.write_gif("david.gif")"""
+videoClip.write_gif("fly.gif")
 
 #image_path = 'giffy2.gif'
 #image_path = 'fly.gif'
-image_path = 'david.gif'
+image_path = 'fly.gif'
 #image_path = 'test_giffy.gif'
 #image_path = 'perf.gif'
 image = tf.io.read_file(image_path)
@@ -879,9 +879,8 @@ for frame_idx in range(num_frames):
       #metric for smallest value in y for both left and right ankle (average of them is smallest?
       #if ankL['y'] < ground and ankR['y'] < ground and abs(ankL['x'] - ankR['x']) > 10 and abs(ankL['y'] - ankR['y']) < height and ankL['score'] > 0.5 and ankR['score'] > 0.5 and kneeAngL < 150 and kneeAngR < 150:
 
-      if abs(ankL['x'] - ankR['x']) > 10 and abs(
-              ankL['y'] - ankR['y']) < height and ankL['score'] > 0.5 and ankR[
-          'score'] > 0.5 and kneeAngL < 150 and kneeAngR < 150 and abs(kneeL['y']-ankL['y'])<10 and abs(kneeR['x'] - ankR['x'])<10:
+      if abs(ankL['x'] - ankR['x']) > 10 and abs(ankL['y'] - ankR['y']) < height and ankL['score'] > 0.4 and ankR[
+          'score'] > 0.4 and kneeAngL < 150 and kneeAngR < 150 and abs(kneeL['y']-ankL['y'])<10 and abs(kneeR['x'] - ankR['x'])<10:
           if frame_idx > 5:
               height = abs(ankL['y'] - ankR['y'])
               kinogram[1] = frame_idx
@@ -975,6 +974,7 @@ for frame_idx in range(num_frames):
       if abs(kneeL['x'] - kneeR['x']) < 5:
           ground_contacts += 1
           ground = max(ankL['y'],ankR['y'])
+          ground_points.append(midPelvis['x'])
 
           for i in range(search_start, frame_idx):
               keypoints_with_scores = run_inference(
@@ -1004,10 +1004,10 @@ for frame_idx in range(num_frames):
                   print("")"""
                   if (abs(ankL2['y'] - max(ankL['y'],ankR['y'])) < 10 or abs(ankR2['y'] - max(ankL['y'],ankR['y'])) < 10) and abs(kneeL2['x'] - kneeR2['x']) < 15 and kneeL2['score']>0.35 and kneeR2['score']>0.35:
                       testframes.append(i)
-                      if abs(ankL2['y'] - max(ankL['y'],ankR['y'])) < 10:
+                      """if abs(ankL2['y'] - max(ankL['y'],ankR['y'])) < 10:
                          ground_points.append(ankL2['y'])
                       else:
-                          ground_points.append(ankR2['y'])
+                          ground_points.append(ankR2['y'])"""
 
           prev_ank_R = ankR['y']
           prev_ank_L = ankL['y']
@@ -1154,6 +1154,7 @@ for i in testframes:
             #imp_frames.append(ind)
             #ind += 1
 
+print(ground_points)
 print("Below is imp_frames which has all ground contact frames")
 print(imp_frames)
 
@@ -1167,7 +1168,7 @@ g = to_gif(output, fps=8, loop=True)
 #test frames holds a frame where ground contacts is approx occuring
 print(testframes)
 
-imp_frames = [56, 57, 58, 59, 60, 61, 62, 63, 64, 65,66]
+#imp_frames = [56, 57, 58, 59, 60, 61, 62, 63, 64, 65,66]
 num_frames = len(imp_frames)
 fig, axs = plt.subplots(1, num_frames, figsize=(num_frames * 5, 5))
 
@@ -1235,8 +1236,8 @@ texts = [
 for i in range(num_frames):
     image = output[kinogram[i]]
     display_image = tf.expand_dims(image, axis=0)
-    #display_image = tf.cast(tf.image.resize_with_pad(display_image, 1200, 855), dtype=tf.int32)
-    display_image = tf.cast(tf.image.resize_with_pad(display_image, 1200, 2135), dtype=tf.int32)
+    display_image = tf.cast(tf.image.resize_with_pad(display_image, 1200, 855), dtype=tf.int32)
+    #display_image = tf.cast(tf.image.resize_with_pad(display_image, 1200, 2139), dtype=tf.int32)
     output_overlay = draw_nonfigure_prediction(np.squeeze(display_image.numpy(), axis=0), np.empty((0, 0, 0, 0)))
     axs[i].imshow(output_overlay)
     axs[i].axis('off')

@@ -2,8 +2,6 @@
 
 body {
   font-family: 'Arial', sans-serif;
-  margin: 0;
-  padding: 0;
 }
 
 .App {
@@ -24,7 +22,6 @@ nav li {
   cursor: pointer;
 }
 
-
 h2 {
   color: #333;
 }
@@ -34,9 +31,217 @@ h2 {
 }
 
 .b-example-divider {
+    height: 5rem;
+}
+
+body {
+      font-family: Arial, sans-serif;
+      background-color: #f8f9fa;
+}
+
+.banner {
+      background-color: #343a40;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      min-height: 100vh;
+}
+
+.banner .container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column; /* Ensure column direction on smaller screens */
+}
+
+    .banner h1 {
+      font-size: 2.5rem;
+    }
+
+    .banner p {
+      font-size: 1.1rem;
+    }
+
+    /* Card Styling */
+.card {
+  border: none;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  min-height: 350px; /* Adjust the value as needed */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+   height: 25vh; /* Responsive height */
+  width: 25vw; /* Responsive width */
+}
+
+.card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.card-title {
+  font-size: 1.5rem;
+  color: #343a40;
+  transition: color 0.3s ease;
+}
+
+.card:hover .card-text {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.card-text {
+  font-size: 1rem;
+  color: #333;
+    opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 102, 204, 0.1);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: -1;
+}
+
+.card:hover::before {
+  opacity: 1;
+}
+
+.homecards {
+  margin: auto; /* Center the card within the column */
+}
+
+/* News Panel */
+.news-panel {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+    overflow: hidden;
+  position: relative;
+  height: 100%; /* Ensure it takes full height */
+}
+
+.news-panel h3 {
+  color: #66b2b2;
+  transition: color 0.3s ease;
+}
+
+.news-panel ul {
+  list-style: none;
+  padding: 0;
+  flex-grow: 1; /* Make the list take up remaining space */
+}
+
+.news-panel ul li a {
+  color:  #000;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.news-panel ul li {
+  margin-bottom: 10px;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.news-panel ul li a:hover {
+  text-decoration: underline;
+}
+
+.news-panel:hover ul li {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.news-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 102, 204, 0.1);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: -1;
+}
+
+.news-panel:hover::before {
+  opacity: 1;
+}
+/* Team Section */
+.team-member {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 8px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  position: relative;
+}
+
+.team-member h3 {
+  color: #66b2b2;
+  transition: color 0.3s ease;
+}
+
+.team-member:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.team-member p {
+  color: #333;
+}
+
+.team-image {
+  height: 300px; /* Set a fixed height for all images */
+  width: 100%; /* Ensure the image takes the full width of the container */
+  object-fit: cover; /* This ensures the image maintains its aspect ratio while covering the entire container */
+  margin-bottom: 15px; /* Add some space between the image and the text */
+}
+
+/* Call to Action Section */
+.testimonials-section {
+  color: #fff;
+}
+
+.testimonials-section h2 {
+  font-size: 2rem;
+}
+
+.testimonials-section p {
+  font-size: 1.2rem;
+}
+
+.testimonials-section .btn {
+  background-color: #fff;
+  color: #66b2b2;
+  border: none;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.testimonials-section .btn:hover {
+  background-color: #f8f9fa;
+  color: #0056b3;
+}
+
+
+/*.b-example-divider {
     height: 3rem;
     background-color: rgba(0, 0, 0, .1);
     border: solid rgba(0, 0, 0, .15);
     border-width: 1px 0;
     box-shadow: inset 0 0.5em 1.5em rgba(0, 0, 0, .1), inset 0 0.125em 0.5em rgba(0, 0, 0, .15);
-}
+}*/

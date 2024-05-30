@@ -24,9 +24,25 @@
   color: white;
 }
 
+/*
 .active-link {
-  background-color: #3498db; /* Set the background color for the active link */
-  color: blue !important; /* Set the color for the active link with !important to override inline styles */
+  background-color: #3498db;
+  color: blue !important;
+}
+*/
+.nav .nav-link {
+  color: white; /* Default color */
+  text-decoration: none;
+}
+
+/* Styles for the active navigation link */
+.nav .active-link {
+  color:  black!important; /* Color for the active link */
+  font-weight: bold; /* Optional: make the active link bold */
+ }
+
+.nav .nav-link:hover {
+  color: lightgray; /* Color when link is hovered */
 }
 
 .App-link {
@@ -73,10 +89,20 @@
     */
     .navbar{
         background-image: linear-gradient(to right, #000000, #72c6cf);
+        /*background: linear-gradient(to right, #ff7e5f, #feb47b);*/
+    }
+
+    .navbar-default {
+      background-image: linear-gradient(to right, #000000, #72c6cf);
+    }
+
+    .navbar-kin {
+      background-image: linear-gradient(to right, #000000, #000000);
     }
 
     .banner{
         background-image: linear-gradient(to right, #000000, #72c6cf);
+        /*background: linear-gradient(to right, #ff7e5f, #feb47b);*/
         color: white;
     }
 
