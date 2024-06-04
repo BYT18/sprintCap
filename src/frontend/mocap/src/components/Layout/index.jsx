@@ -2,8 +2,9 @@ import React from "react";
 import { useContext, useState, useEffect } from "react";
 import { Outlet, Link, useLocation, NavLink } from "react-router-dom";
 
-//import 'bootstrap/dist/css/bootstrap.min.css';
-//import * as Icon from 'react-bootstrap-icons';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import "bootstrap-icons/font/bootstrap-icons.css";
+import * as Icon from 'react-bootstrap-icons';
 import '../../App.css'; // Import the CSS file
 import logo from '../../logo.png';
 
@@ -19,8 +20,18 @@ const location = useLocation();
         return 'navbar-default';
     }
   };
+
+  const getNavStyle = () => {
+    console.log(location.pathname)
+    switch (location.pathname) {
+      case '/about/':
+        return 'nav-kin';
+      default:
+        return 'nav';
+    }
+  };
     return <>
-    <section className="nav">
+    <section className={`nav ${getNavStyle()}`}>
         {/*<nav className="navbar navbar-expand-lg bg-body-tertiary container-fluid">*/}
         <nav className={`navbar ${getNavbarStyle()} navbar-expand-lg bg-body-tertiary container-fluid`}>
           <div className="container-fluid column">
@@ -51,20 +62,20 @@ const location = useLocation();
             Home
            </NavLink>
         </li>
-        <li className="nav-item mx-2">
+        {/*<li className="nav-item mx-2">
           <NavLink
             to="/comp/"
             className={({ isActive }) => (isActive ? "nav-link active-link" : "nav-link")}
           >
             Analyze
            </NavLink>
-        </li>
+        </li>*/}
         <li className="nav-item mx-2">
           <NavLink
             to="/analysis/"
             className={({ isActive }) => (isActive ? "nav-link active-link" : "nav-link")}
           >
-            Video
+            Analyze
            </NavLink>
         </li>
         <li className="nav-item mx-2">
@@ -103,13 +114,21 @@ const location = useLocation();
       <div className="me-5 d-none d-lg-block">
         <span>Get connected with us on social networks:</span>
       </div>
-
       <div>
         <a href="" className="me-4 text-reset">
           <i className="bi bi-instagram"></i>
         </a>
         <a href="" className="me-4 text-reset">
+          <i className="bi bi-threads"></i>
+        </a>
+        <a href="" className="me-4 text-reset">
+          <i className="bi bi-snapchat"></i>
+        </a>
+        <a href="" className="me-4 text-reset">
           <i className="bi bi-facebook"></i>
+        </a>
+        <a href="" className="me-4 text-reset">
+          <i className="bi bi-twitter"></i>
         </a>
       </div>
     </section>
@@ -134,7 +153,8 @@ const location = useLocation();
   </div>
 </div>
 </section>
-<div className="text-center p-4 text-white" style={{backgroundColor: "rgba(0, 0, 0, 0.05)"}}>
+{/*<div className="text-center p-4 text-white" style={{backgroundColor: "rgba(0, 0, 0, 0.05)"}}>*/}
+<div className="text-center p-4 text-white">
   © 2021 Copyright MoCap
 </div>
 

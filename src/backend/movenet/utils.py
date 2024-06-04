@@ -1,484 +1,434 @@
-import tensorflow as tf
-import tensorflow_hub as hub
-from tensorflow_docs.vis import embed
+#!pip install -q mediapipe
+#!wget -O pose_landmarker.task -q https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_heavy/float16/1/pose_landmarker_heavy.task
+
+from mediapipe import solutions
+from mediapipe.framework.formats import landmark_pb2
 import numpy as np
 import cv2
-from matplotlib.collections import LineCollection
-import matplotlib.patches as patches
 import matplotlib.pyplot as plt
-import imageio
-from IPython.display import HTML, display
-from tqdm import tqdm
-import math
-from moviepy.editor import VideoFileClip
+import os
 
-#https://analyticsindiamag.com/how-to-do-pose-estimation-with-movenet/
-angles = []
-ankle_positions = []
-threshold = 3
-switch = 0
-# Dictionary to map joints of body part
-KEYPOINT_DICT = {
- 'nose':0,
- 'left_eye':1,
- 'right_eye':2,
- 'left_ear':3,
- 'right_ear':4,
- 'left_shoulder':5,
- 'right_shoulder':6,
- 'left_elbow':7,
- 'right_elbow':8,
- 'left_wrist':9,
- 'right_wrist':10,
- 'left_hip':11,
- 'right_hip':12,
- 'left_knee':13,
- 'right_knee':14,
- 'left_ankle':15,
- 'right_ankle':16
-}
-# map bones to matplotlib color name
-KEYPOINT_EDGE_INDS_TO_COLOR = {
- (0,1): 'm',
- (0,2): 'c',
- (1,3): 'm',
- (2,4): 'c',
- (0,5): 'm',
- (0,6): 'c',
- (5,7): 'm',
- (7,9): 'm',
- (6,8): 'c',
- (8,10): 'c',
- (5,6): 'y',
- (5,11): 'm',
- (6,12): 'c',
- (11,12): 'y',
- (11,13): 'm',
- (13,15): 'm',
- (12,14): 'c',
- (14,16): 'c'
-}
 
-def _keypoints_and_edges_for_display(keypoints_with_score,height,
-                                  width,keypoint_threshold=0.11):
-   """Returns high confidence keypoints and edges"""
-   keypoints_all = []
-   keypoint_edges_all = []
-   edge_colors = []
-   num_instances,_,_,_ = keypoints_with_score.shape
-   for id in range(num_instances):
-     kpts_x = keypoints_with_score[0,id,:,1]
-     kpts_y = keypoints_with_score[0,id,:,0]
-     kpts_scores = keypoints_with_score[0,id,:,2]
-     kpts_abs_xy = np.stack(
-         [width*np.array(kpts_x),height*np.array(kpts_y)],axis=-1)
-     kpts_above_thrs_abs = kpts_abs_xy[kpts_scores > keypoint_threshold,: ]
-     keypoints_all.append(kpts_above_thrs_abs)
-     for edge_pair,color in KEYPOINT_EDGE_INDS_TO_COLOR.items():
-       if (kpts_scores[edge_pair[0]] > keypoint_threshold and
-           kpts_scores[edge_pair[1]] > keypoint_threshold):
-         x_start = kpts_abs_xy[edge_pair[0],0]
-         y_start = kpts_abs_xy[edge_pair[0],1]
-         x_end = kpts_abs_xy[edge_pair[1],0]
-         y_end = kpts_abs_xy[edge_pair[1],1]
-         lien_seg = np.array([[x_start,y_start],[x_end,y_end]])
-         keypoint_edges_all.append(lien_seg)
-         edge_colors.append(color)
-   if keypoints_all:
-     keypoints_xy = np.concatenate(keypoints_all,axis=0)
-   else:
-     keypoints_xy = np.zeros((0,17,2))
-   if keypoint_edges_all:
-     edges_xy = np.stack(keypoint_edges_all,axis=0)
-   else:
-     edges_xy = np.zeros((0,2,2))
-   return keypoints_xy,edges_xy,edge_colors
+def draw_landmarks_on_image(rgb_image, detection_result):
+  pose_landmarks_list = detection_result.pose_landmarks
+  annotated_image = np.copy(rgb_image)
 
-def draw_prediction_on_image(
-     image, keypoints_with_scores, crop_region=None, close_figure=False,
-     output_image_height=None):
-   """Draws the keypoint predictions on image"""
-   height, width, channel = image.shape
-   aspect_ratio = float(width) / height
-   plt.switch_backend('AGG')
-   fig, ax = plt.subplots(figsize=(12 * aspect_ratio, 12))
-   # To remove the huge white borders
-   fig.tight_layout(pad=0)
-   ax.margins(0)
-   ax.set_yticklabels([])
-   ax.set_xticklabels([])
-   plt.axis('off')
-   im = ax.imshow(image)
-   line_segments = LineCollection([], linewidths=(4), linestyle='solid')
-   ax.add_collection(line_segments)
-   # Turn off tick labels
-   scat = ax.scatter([], [], s=60, color='#FF1493', zorder=3)
-   (keypoint_locs, keypoint_edges,
-    edge_colors) = _keypoints_and_edges_for_display(
-        keypoints_with_scores, height, width)
-   line_segments.set_segments(keypoint_edges)
-   line_segments.set_color(edge_colors)
-   ground_line = np.array([[[450, 100], [503, 100]]])
-   # ground_color = '#008000'  # Green color for the ground
-   ground_color = 'c'
+  # Loop through the detected poses to visualize.
+  for idx in range(len(pose_landmarks_list)):
+    pose_landmarks = pose_landmarks_list[idx]
 
-   # Reshape ground_line to match the number of vertices per line segment
-   # ground_line = ground_line.reshape(-1, 3)
-   x = np.vstack([keypoint_edges, ground_line])
-   #print(x)
+    # Draw the pose landmarks.
+    pose_landmarks_proto = landmark_pb2.NormalizedLandmarkList()
+    pose_landmarks_proto.landmark.extend([
+      landmark_pb2.NormalizedLandmark(x=landmark.x, y=landmark.y, z=landmark.z) for landmark in pose_landmarks
+    ])
+    solutions.drawing_utils.draw_landmarks(
+      annotated_image,
+      pose_landmarks_proto,
+      solutions.pose.POSE_CONNECTIONS,
+      solutions.drawing_styles.get_default_pose_landmarks_style())
+  return annotated_image
 
-   line_segments.set_segments(x)
-   # edge_colors.append(ground_color)
-   # y = np.concatenate([edge_colors, [ground_color]])
-   #print(np.concatenate([edge_colors, [ground_color]]))
-   line_segments.set_color(np.concatenate([edge_colors, [ground_color]]))
-   # line_segments.set_color(edge_colors)
 
-   if keypoint_edges.shape[0]:
-       line_segments.set_segments(keypoint_edges)
-       line_segments.set_color(edge_colors)
-       line_segments.set_segments(x)
-       line_segments.set_color(np.concatenate([edge_colors, [ground_color]]))
-   if keypoint_locs.shape[0]:
-     scat.set_offsets(keypoint_locs)
-   if crop_region is not None:
-     xmin = max(crop_region['x_min'] * width, 0.0)
-     ymin = max(crop_region['y_min'] * height, 0.0)
-     rec_width = min(crop_region['x_max'], 0.99) * width - xmin
-     rec_height = min(crop_region['y_max'], 0.99) * height - ymin
-     rect = patches.Rectangle(
-         (xmin,ymin),rec_width,rec_height,
-         linewidth=1,edgecolor='b',facecolor='none')
-     ax.add_patch(rect)
-   fig.canvas.draw()
-   #image_from_plot = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
-   image_from_plot = np.frombuffer(fig.canvas.buffer_rgba(), dtype=np.uint8)
-   # Determine the width and height of your canvas or image
-   #width, height = 2128, 1200  # Adjust these values based on your actual dimensions
-   width, height = 2132, 1200
-   #width, height = 2133, 1200
+def compute_angle(point1, point2, point3):
+    # Convert points to numpy arrays for easier calculations
+    p1 = np.array(point1)
+    p2 = np.array(point2)
+    p3 = np.array(point3)
 
-   # Adjust reshape based on the size of the array
-   #image_from_plot = image_from_plot.reshape((height, width, -1))
-   # Determine the width and height of your canvas or image
-   print("Actual array size:", fig.canvas.get_width_height()[::-1] + (3,))
-   #width, height = 1200, 1200
-   # Determine the width and height of your canvas or image
-   #width, height = 675, 1200
-   # Adjust reshape based on the size of the array
-   #image_from_plot = image_from_plot.reshape((height, width, -1))
-   #image_from_plot = image_from_plot.reshape((width,height, 3))
-   # Adjust reshape based on the size of the array
-   image_from_plot = image_from_plot.reshape((height, width, -1))
-   #image_from_plot = image_from_plot.reshape(
-   #    fig.canvas.get_width_height()[::-1] + (3,))
-   plt.close(fig)
-   if output_image_height is not None:
-     output_image_width = int(output_image_height / height * width)
-     image_from_plot = cv2.resize(
-         image_from_plot, dsize=(output_image_width, output_image_height),
-          interpolation=cv2.INTER_CUBIC)
-   return image_from_plot
+    # Calculate the vectors formed by the points
+    v1 = p1 - p2
+    v2 = p3 - p2
 
-def to_gif(images, fps, loop):
-   """Converts image sequence (4D numpy array) to gif."""
-   #imageio.mimsave('./animation.gif', images, fps=fps, loop=loop, duration = 5)
-   #return embed.embed_file('./animation.gif')
-   imageio.mimsave('./media/pics/animation.gif', images, fps=fps, loop=loop, duration = 5)
-   return embed.embed_file('./media/pics/animation.gif')
+    # Calculate the dot product of the two vectors
+    dot_product = np.dot(v1, v2)
 
-def progress(value, max=100):
-   return HTML("""
-       <progress
-           value='{value}'
-           max='{max}',
-           style='width: 100%'
-       >
-           {value}
-       </progress>
-   """.format(value=value, max=max))
+    # Calculate the magnitudes of the vectors
+    magnitude_v1 = np.linalg.norm(v1)
+    magnitude_v2 = np.linalg.norm(v2)
 
-#model_name = "movenet_thunder"
-model_name = "movenet_lightning"
-if "tflite" in model_name:
-   if "movenet_lightning" in model_name:
-       #!wget -q -O model.tflite https://tfhub.dev/google/lite-model/movenet/singlepose/lightning/3?lite-format=tflite
-     input_size = 192
-   elif "movenet_thunder" in model_name:
-     #!wget -q -O model.tflite https://tfhub.dev/google/lite-model/movenet/singlepose/thunder/3?lite-format=tflite
-     input_size = 256
-   else:
-     raise ValueError("Unsupported model name: %s" % model_name)
-   interpreter = tf.lite.Interpreter(model_path="model.tflite")
-   interpreter.allocate_tensors()
+    # Calculate the angle between the vectors using the arccosine function
+    angle = np.arccos(dot_product / (magnitude_v1 * magnitude_v2))
 
-   def movenet(input_image):
-     """Runs detection on an input image"""
-     input_image = tf.cast(input_image, dtype=tf.float32)
-     input_details = interpreter.get_input_details()
-     output_details = interpreter.get_output_details()
-     interpreter.set_tensor(input_details[0]['index'], input_image.numpy())
-     interpreter.invoke()
-     keypoints_with_scores = interpreter.get_tensor(output_details[0]['index'])
-     return keypoints_with_scores
-else:
-   if "movenet_lightning" in model_name:
-     #module = hub.load("https://tfhub.dev/google/movenet/singlepose/lightning/3")
-     module = hub.load("http://www.kaggle.com/models/google/movenet/TensorFlow2/singlepose-lightning/4")
-     input_size = 192
-   elif "movenet_thunder" in model_name:
-     module = hub.load("https://tfhub.dev/google/movenet/singlepose/thunder/3")
-     input_size = 256
-   else:
-     raise ValueError("Unsupported model name: %s" % model_name)
+    # Convert angle from radians to degrees
+    angle_degrees = np.degrees(angle)
 
-   def movenet(input_image):
-     """Runs detection on an input image"""
-     model = module.signatures['serving_default']
-     input_image = tf.cast(input_image, dtype=tf.int32)
-     outputs = model(input_image)
-     keypoint_with_scores = outputs['output_0'].numpy()
-     return keypoint_with_scores
-'''
-image_path = 'img3.JPG'
-image = tf.io.read_file(image_path)
-image = tf.image.decode_jpeg(image)
-input_image = tf.expand_dims(image, axis=0)
-input_image = tf.image.resize_with_pad(input_image, input_size, input_size)
-keypoint_with_scores = movenet(input_image)
-print(keypoint_with_scores[0][0][13])
-print(keypoint_with_scores[0][0][14])
-kneeR = {'x': keypoint_with_scores[0][0][13][0],"y": keypoint_with_scores[0][0][13][1],"score": keypoint_with_scores[0][0][13][2]}
-kneeL = {'x': keypoint_with_scores[0][0][14][0],"y": keypoint_with_scores[0][0][14][1],"score": keypoint_with_scores[0][0][14][2]}
-midPelvis = {'x': keypoint_with_scores[0][0][12][0] - keypoint_with_scores[0][0][11][0],"y":  keypoint_with_scores[0][0][12][1] - keypoint_with_scores[0][0][11][1],"score":  keypoint_with_scores[0][0][12][2] - keypoint_with_scores[0][0][11][2]}
+    return angle_degrees
 
-angle = (math.atan2(kneeL['y'] - midPelvis['y'], kneeL['x'] - midPelvis['x']) -
-         math.atan2(kneeR['y'] - midPelvis['y'], kneeR['x'] - midPelvis['x'])) * (180 / math.pi)
+def contact_flight_analysis(frames, fps, tot_frames):
 
-if angle < 0:
-    angle = angle + 360
-    #pass  # Uncomment the line above if you want to add 360 when angle is negative
+    imp_frames = frames
+    #tot_frames = dur*curr_fps(slow-mo)
+    #Total frames in the original video = Frame rate × Duration = 240 fps × 3 s = 720 frames
+    tot_frames = 3*720
+    #Frame rate of the GIF = Total frames of GIF / Duration = 93 frames / 3 s
+    fps = 93 / 3
+    #Time per frame in GIF = Duration / Total frames of GIF = 3 s / 93 frames
+    tbf = 1 / fps
+    gcontact_times = []
+    flight_times = []
+    counter = 0
+    for i in range(len(imp_frames)-1):
+        if imp_frames[i] + 1 == imp_frames[i+1]:
+            counter += 1
+            if i+1 == len(imp_frames)-1:
+                gcontact_times.append(counter*tbf)
+                flight_times.append(0)
+        else:
+            gcontact_times.append(counter*tbf)
+            counter = 0
+            flight_times.append(tbf*(imp_frames[i+1]-imp_frames[i]))
 
-#if leftWrist['score'] > 0.3 and leftElbow['score'] > 0.3 and leftShoulder['score'] > 0.3:
-    # print(angle)
-    elbowAngle = angle
-    print(elbowAngle)
-#else:
-    # print('Cannot see elbow')
-#    pass  # Uncomment the line above if you want to handle the case where the elbow is not visible
+    # Plotting the first set of bars
+    bars1 = plt.bar(range(len(gcontact_times)), gcontact_times, color='red', label='Ground')
 
-display_image = tf.expand_dims(image, axis=0)
-display_image = tf.cast(tf.image.resize_with_pad(display_image, 1280, 1280), dtype=tf.int32)
-output_overlay = draw_prediction_on_image(np.squeeze(display_image.numpy(), axis=0), keypoint_with_scores)
-plt.figure(figsize=(5, 5))
-plt.imshow(output_overlay)
-plt.axis('off')
-plt.show()'''
+    # Plotting the second set of bars on top of the first set
+    bars2 = plt.bar(range(len(flight_times)), flight_times, color='blue', label='Flight', alpha=0.5, bottom=gcontact_times)
 
-#######################################################################
-MIN_CROP_KEYPOINT_SCORE = 0.2
+    # Adding labels to the bars
+    for bar1, bar2 in zip(bars1, bars2):
+        height1 = bar1.get_height()
+        height2 = bar2.get_height()
+        plt.text(bar1.get_x() + bar1.get_width() / 2., height1 / 2, '{:.3f}'.format(height1), ha='center', va='center', color='white')
+        plt.text(bar2.get_x() + bar2.get_width() / 2., height1 + height2 / 2, '{:.3f}'.format(height2), ha='center', va='center', color='black')
 
-def init_crop_region(image_height, image_width):
-  """Defines the default crop region"""
-  if image_width > image_height:
-    box_height = image_width / image_height
-    box_width = 1.0
-    y_min = (image_height / 2 - image_width / 2) / image_height
-    x_min = 0.0
-  else:
-    box_height = 1.0
-    box_width = image_height / image_width
-    y_min = 0.0
-    x_min = (image_width / 2 - image_height / 2) / image_width
 
-  return {
-    'y_min': y_min,
-    'x_min': x_min,
-    'y_max': y_min + box_height,
-    'x_max': x_min + box_width,
-    'height': box_height,
-    'width': box_width
-  }
+    # Adding labels and title
+    plt.xlabel('Step')
+    plt.ylabel('Time')
+    plt.title('Stacked Bar Chart')
 
-def torso_visible(keypoints):
-  """Checks whether there are enough torso keypoints"""
-  return ((keypoints[0, 0, KEYPOINT_DICT['left_hip'], 2] >
-           MIN_CROP_KEYPOINT_SCORE or
-          keypoints[0, 0, KEYPOINT_DICT['right_hip'], 2] >
-           MIN_CROP_KEYPOINT_SCORE) and
-          (keypoints[0, 0, KEYPOINT_DICT['left_shoulder'], 2] >
-           MIN_CROP_KEYPOINT_SCORE or
-          keypoints[0, 0, KEYPOINT_DICT['right_shoulder'], 2] >
-           MIN_CROP_KEYPOINT_SCORE))
+    # Adding legend
+    plt.legend()
 
-def determine_torso_and_body_range(
-    keypoints, target_keypoints, center_y, center_x):
-  """Calculates the maximum distance from each keypoints to the center location"""
-  torso_joints = ['left_shoulder', 'right_shoulder', 'left_hip', 'right_hip']
-  max_torso_yrange = 0.0
-  max_torso_xrange = 0.0
-  for joint in torso_joints:
-    dist_y = abs(center_y - target_keypoints[joint][0])
-    dist_x = abs(center_x - target_keypoints[joint][1])
-    if dist_y > max_torso_yrange:
-      max_torso_yrange = dist_y
-    if dist_x > max_torso_xrange:
-      max_torso_xrange = dist_x
+    # Display the plot
+    #plt.show()
 
-  max_body_yrange = 0.0
-  max_body_xrange = 0.0
-  for joint in KEYPOINT_DICT.keys():
-    if keypoints[0, 0, KEYPOINT_DICT[joint], 2] < MIN_CROP_KEYPOINT_SCORE:
-      continue
-    dist_y = abs(center_y - target_keypoints[joint][0]);
-    dist_x = abs(center_x - target_keypoints[joint][1]);
-    if dist_y > max_body_yrange:
-      max_body_yrange = dist_y
+    plot_path = os.path.join('media/pics', 'contact_time.png')
+    plt.savefig(plot_path)
 
-    if dist_x > max_body_xrange:
-      max_body_xrange = dist_x
-
-  return [max_torso_yrange, max_torso_xrange, max_body_yrange, max_body_xrange]
-
-def determine_crop_region(
-      keypoints, image_height,
-      image_width):
-  """Determines the region to crop the image for the model to run inference on"""
-  target_keypoints = {}
-  for joint in KEYPOINT_DICT.keys():
-    target_keypoints[joint] = [
-      keypoints[0, 0, KEYPOINT_DICT[joint], 0] * image_height,
-      keypoints[0, 0, KEYPOINT_DICT[joint], 1] * image_width
-    ]
-
-  if torso_visible(keypoints):
-    center_y = (target_keypoints['left_hip'][0] +
-                target_keypoints['right_hip'][0]) / 2;
-    center_x = (target_keypoints['left_hip'][1] +
-                target_keypoints['right_hip'][1]) / 2;
-
-    (max_torso_yrange, max_torso_xrange,
-      max_body_yrange, max_body_xrange) = determine_torso_and_body_range(
-          keypoints, target_keypoints, center_y, center_x)
-
-    crop_length_half = np.amax(
-        [max_torso_xrange * 1.9, max_torso_yrange * 1.9,
-          max_body_yrange * 1.2, max_body_xrange * 1.2])
-
-    tmp = np.array(
-        [center_x, image_width - center_x, center_y, image_height - center_y])
-    crop_length_half = np.amin(
-        [crop_length_half, np.amax(tmp)]);
-
-    crop_corner = [center_y - crop_length_half, center_x - crop_length_half];
-
-    if crop_length_half > max(image_width, image_height) / 2:
-      return init_crop_region(image_height, image_width)
-    else:
-      crop_length = crop_length_half * 2;
-      return {
-        'y_min': crop_corner[0] / image_height,
-        'x_min': crop_corner[1] / image_width,
-        'y_max': (crop_corner[0] + crop_length) / image_height,
-        'x_max': (crop_corner[1] + crop_length) / image_width,
-        'height': (crop_corner[0] + crop_length) / image_height -
-            crop_corner[0] / image_height,
-        'width': (crop_corner[1] + crop_length) / image_width -
-            crop_corner[1] / image_width
-      }
-  else:
-    return init_crop_region(image_height, image_width)
-
-def crop_and_resize(image, crop_region, crop_size):
-  """Crops and resize the image to prepare for the model input."""
-  boxes=[[crop_region['y_min'], crop_region['x_min'],
-          crop_region['y_max'], crop_region['x_max']]]
-  output_image = tf.image.crop_and_resize(
-      image, box_indices=[0], boxes=boxes, crop_size=crop_size)
-  return output_image
-
-def run_inference(movenet, image, crop_region, crop_size):
-  """Runs model inferece on the cropped region"""
-  image_height, image_width, _ = image.shape
-  input_image = crop_and_resize(
-    tf.expand_dims(image, axis=0), crop_region, crop_size=crop_size)
-  # Run model inference.
-  keypoints_with_scores = movenet(input_image)
-  ankleR = (keypoints_with_scores[0][0][16][0], keypoints_with_scores[0][0][16][1])
-  ankle_positions.append(ankleR)
-  kneeR = {'x': keypoints_with_scores[0][0][13][0], "y": keypoints_with_scores[0][0][13][1],
-           "score": keypoints_with_scores[0][0][13][2]}
-  kneeL = {'x': keypoints_with_scores[0][0][14][0], "y": keypoints_with_scores[0][0][14][1],
-           "score": keypoints_with_scores[0][0][14][2]}
-  midPelvis = {'x': keypoints_with_scores[0][0][12][0] - keypoints_with_scores[0][0][11][0],
-               "y": keypoints_with_scores[0][0][12][1] - keypoints_with_scores[0][0][11][1],
-               "score": keypoints_with_scores[0][0][12][2] - keypoints_with_scores[0][0][11][2]}
-
-  angle = (math.atan2(kneeL['y'] - midPelvis['y'], kneeL['x'] - midPelvis['x']) -
-           math.atan2(kneeR['y'] - midPelvis['y'], kneeR['x'] - midPelvis['x'])) * (180 / math.pi)
-
-  if angle < 0:
-      #angle = angle + 360
-      pass  # Uncomment the line above if you want to add 360 when angle is negative
-
-      # if leftWrist['score'] > 0.3 and leftElbow['score'] > 0.3 and leftShoulder['score'] > 0.3:
-      # print(angle)
-  elbowAngle = angle
-  angles.append(angle)
-  print(elbowAngle)
-  # Update the coordinates.
-  for idx in range(17):
-    keypoints_with_scores[0, 0, idx, 0] = (
-        crop_region['y_min'] * image_height +
-        crop_region['height'] * image_height *
-        keypoints_with_scores[0, 0, idx, 0]) / image_height
-    keypoints_with_scores[0, 0, idx, 1] = (
-        crop_region['x_min'] * image_width +
-        crop_region['width'] * image_width *
-        keypoints_with_scores[0, 0, idx, 1]) / image_width
-  return keypoints_with_scores
-
+"""
+Main
+"""
 def get_gif(vid):
-    switch = 0
-    # from moviepy.editor import VideoFileClip
-    videoClip = VideoFileClip(vid)
-    videoClip.write_gif("test_giffy.gif")
-    image_path = r'C:\Users\hocke\Desktop\UofT\Third Year\CSC309\moveNet\src\backend\movenet\giffy2.gif'
-    # image_path = serializer.validated_data["vid"]
-    image = tf.io.read_file(image_path)
-    image = tf.image.decode_gif(image)
+    # STEP 1: Import the necessary modules.
+    import mediapipe as mp
+    from mediapipe.tasks import python
+    from mediapipe.tasks.python import vision
 
-    # Load the input image.
-    num_frames, image_height, image_width, _ = image.shape
-    crop_region = init_crop_region(image_height, image_width)
+    mp_drawing = mp.solutions.drawing_utils
+    mp_pose = mp.solutions.pose
 
-    output_images = []
-    bar = tqdm(total=num_frames - 1)
-    # bar = display(progress(0, num_frames-1), display_id=True)
-    for frame_idx in range(num_frames):
-        keypoints_with_scores = run_inference(
-            movenet, image[frame_idx, :, :, :], crop_region,
-            crop_size=[input_size, input_size])
+    #video_path = 'C:\Users\hocke\Desktop\UofT\Third Year\CSC309\moveNet\src\fly.mov'
+    video_path = vid
+    #output_path = '/pics/output_video.mp4'
+    output_path = os.path.join('media/pics', 'output_video.mov')
+    #output_path = os.path.join('/pics', 'output_video.mp4')
+    cap = cv2.VideoCapture(video_path)
 
-        kneeR = {'x': keypoints_with_scores[0][0][13][0], "y": keypoints_with_scores[0][0][13][1],
-                 "score": keypoints_with_scores[0][0][13][2]}
-        kneeL = {'x': keypoints_with_scores[0][0][14][0], "y": keypoints_with_scores[0][0][14][1],
-                 "score": keypoints_with_scores[0][0][14][2]}
-        if abs(kneeR['x'] - kneeL['x']) < 0.1 and keypoints_with_scores[0][0][10][1] > kneeR['y']:
-            switch += 1
+    # Get the frame rate and frame size of the video
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-        # print(keypoints_with_scores)
-        output_images.append(draw_prediction_on_image(
-            # image[frame_idx, :, :, :].numpy().astype(np.int32),
-            np.zeros((image_height, image_width, 3), dtype=np.int32),
-            keypoints_with_scores, crop_region=None,
-            close_figure=True, output_image_height=300))
-        crop_region = determine_crop_region(
-            keypoints_with_scores, image_height, image_width)
-        # bar.update(progress(frame_idx, num_frames-1))
-        bar.update(1)
+    # Define the codec and create VideoWriter object
+    fourcc = cv2.VideoWriter_fourcc(*'avc1')  # Codec for mp4 files
+    out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))
+
+    # variables for frame analysis
+    kinogram = [0,0,0,0,0]
+    max_knee_seperation = 0
+    output = []
+    max_y = 0
+    ground = 1000
+    height = 100
+    knee_hip_alignment_support = 100
+    knee_hip_alignment_strike = 100
+    knee_ank_alignment_support = 100
+
+    # variables for ground contacts
+    ground_points={}
+    ground_frames = []
+    ground_contacts = 0
+    #threshold = 5  # Threshold for considering significant movement (in pixels)
+    #prev_left_foot = None
+    #prev_right_foot = None
 
 
-    # Prepare gif visualization.
-    output = np.stack(output_images, axis=0)
-    to_gif(output, fps=10, loop=True)
+    with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tracking_confidence=0.3) as pose:
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if not ret:
+                break
+
+            # Get the current frame number
+            frame_idx = int(cap.get(cv2.CAP_PROP_POS_FRAMES)) - 1
+
+            # Convert the BGR image to RGB
+            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+            # Process the frame to get pose landmarks
+            results = pose.process(rgb_frame)
+
+            # Draw the pose annotation on the frame
+            if results.pose_landmarks:
+                mp_drawing.draw_landmarks(frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
+
+                #get_kinogram_frames(frame,results,kinogram,max_knee_seperation)
+                left_knee = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_KNEE]
+                right_knee = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_KNEE]
+
+                left_ankle = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_ANKLE]
+                left_foot = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_FOOT_INDEX]
+                left_heel = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_HEEL]
+                right_ankle = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_ANKLE]
+                right_foot = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_FOOT_INDEX]
+                right_heel = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_HEEL]
+
+                left_hip = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_HIP]
+                right_hip = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_HIP]
+
+                left_elbow = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_ELBOW]
+                right_elbow = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_ELBOW]
+
+                # Convert normalized coordinates to pixel values
+                kneeL = (int(left_knee.x * frame_width), int(left_knee.y * frame_height))
+                kneeR = (int(right_knee.x * frame_width), int(right_knee.y * frame_height))
+
+                ankL = (int(left_ankle.x * frame_width), int(left_ankle.y * frame_height))
+                ankR = (int(right_ankle.x * frame_width), int(right_ankle.y * frame_height))
+                footL = (int(left_foot.x * frame_width), int(left_foot.y * frame_height))
+                footR = (int(right_foot.x * frame_width), int(right_foot.y * frame_height))
+                heelL = (int(left_heel.x * frame_width), int(left_heel.y * frame_height))
+                heelR = (int(right_heel.x * frame_width), int(right_heel.y * frame_height))
+
+                hipL =  (int(left_hip.x * frame_width), int(left_hip.y * frame_height))
+                midPelvis = (int(((right_hip.x + left_hip.x)/2) * frame_width), int(((right_hip.y + left_hip.y)/2) * frame_height))
+
+                elbL = (int(left_elbow.x * frame_width), int(left_elbow.y * frame_height))
+                elbR = (int(right_elbow.x * frame_width), int(right_elbow.y * frame_height))
+
+                #toeoff
+                # max thigh seperation
+                # works for toe off, could also do max distance between ankle and opposite knee
+                # to get different feet/sides, just check which foot is in front of pelvis
+                point1 = ankL
+                point2 = kneeL
+                point3 = hipL
+                angle = compute_angle(point1, point2, point3)
+
+                if ((kneeR[0] - kneeL[0]) ** 2 + (kneeR[1] - kneeL[1]) ** 2) ** 0.5 > max_knee_seperation and footL[1]>ground:
+                    max_knee_seperation = ((kneeR[0] - kneeL[0]) ** 2 + (kneeR[1] - kneeL[1]) ** 2) ** 0.5
+                    # key_frames = frame_idx
+                    kinogram[0] = frame_idx
+
+                # max proj / vert
+                if abs(kneeL[0] - kneeR[0]) > 30 and abs(ankL[1] - ankR[1]) < height and abs(kneeL[1] - ankL[1]) < 50 and abs(kneeR[0] - ankR[0]) < 50:
+                    height = abs(ankL[1] - ankR[1])
+                    kinogram[1] = frame_idx
+
+                # full support left
+                # should also check foot is on ground
+                # possible check ankle score too
+                if abs(ankL[0] - midPelvis[0]) < knee_hip_alignment_support and ankR[1] < ankL[1]:
+                    knee_hip_alignment_support = abs(ankL[0] - midPelvis[0])
+                    knee_ank_alignment_support = abs(kneeL[0] - ankL[0])
+                    kinogram[4] = frame_idx
+
+
+                # strike R
+                if abs(kneeL[0] - hipL[0]) < knee_hip_alignment_strike and ankL[1] + 15 < ground:
+                    knee_hip_alignment_strike = abs(kneeL[0] - hipL[0])
+                    kinogram[2] = frame_idx
+
+                # touch down
+                if ((ankR[1] - ankL[1]) ** 2) ** 0.5 > max_y:
+                    max_y = ((ankR[1] - ankL[1]) ** 2) ** 0.5
+                    kinogram[3] = frame_idx
+                #if abs(kneeL[0] - kneeR[0]) < 10 or (abs(elbL[0] - elbR[0]) < 10 and abs(kneeL[0] - kneeR[0]) < 25):
+                if abs(kneeL[0] - kneeR[0]) < 25 and (abs(footL[1]-heelL[1])<10 or abs(footR[1]-heelR[1])<10):
+                    ground_contacts += 1
+                    ground = max(footL[1], footR[1])
+                    ground_frames.append(frame_idx) #take lowest point of the ground points in the group
+                    ground_points[frame_idx] = ground
+
+                """if prev_left_foot and prev_right_foot:
+                    # Calculate the distance moved
+                    left_foot_movement = ((prev_left_foot[0] - footL[0]) ** 2 + (prev_left_foot[1] - footL[1]) ** 2) ** 0.5
+                    right_foot_movement = ((prev_right_foot[0] - footR[0]) ** 2 + (prev_right_foot[1] - footR[1]) ** 2) ** 0.5
+    
+                    #print(f"Left Foot Movement: {left_foot_movement}, Right Foot Movement: {right_foot_movement}")
+    
+                    # Check if the foot positions have changed significantly
+                    if (left_foot_movement <= threshold or right_foot_movement <= threshold) and abs(kneeL[0] - kneeR[0]) < 10:
+                        ground_contacts += 1
+                        ground = max(footL[1], footR[1])
+                        print(f"Frame {int(cap.get(cv2.CAP_PROP_POS_FRAMES))}: Foot position changed")
+    
+                    # Update the previous foot coordinates
+                prev_left_foot = footL
+                prev_right_foot = footR"""
+
+            # Write the frame to the output video
+            out.write(frame)
+            output.append(frame)
+
+        # Release resources
+        #cap.release()
+        #out.release()
+        cv2.destroyAllWindows()
+
+    imp_frames = []
+    contact = False
+    threshold = 100000
+    """contact = True
+        ind = i
+        prev_ind = i
+        prev_dis = 0
+        print(imp_frames)
+        max_knee_seperation = 0
+        key = 0
+        threshold = 100000"""
+
+    cap = cv2.VideoCapture(video_path)
+    # Get the frame rate and frame size of the video
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    # Define the codec and create VideoWriter object
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Codec for mp4 files
+    out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))
+
+    with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tracking_confidence=0.3) as pose:
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if not ret:
+                break
+
+            # Get the current frame number
+            frame_idx = int(cap.get(cv2.CAP_PROP_POS_FRAMES)) - 1
+
+            if frame_idx in ground_frames:
+                contact = True
+                threshold = ground_points[frame_idx]
+
+            # Convert the BGR image to RGB
+            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+            # Process the frame to get pose landmarks
+            results = pose.process(rgb_frame)
+
+            # Draw the pose annotation on the frame
+            if results.pose_landmarks and contact == True:
+                mp_drawing.draw_landmarks(frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
+
+                #get_kinogram_frames(frame,results,kinogram,max_knee_seperation)
+                left_knee = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_KNEE]
+                right_knee = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_KNEE]
+
+                left_ankle = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_ANKLE]
+                left_foot = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_FOOT_INDEX]
+                left_heel = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_HEEL]
+                right_ankle = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_ANKLE]
+                right_foot = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_FOOT_INDEX]
+                right_heel = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_HEEL]
+
+                left_hip = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_HIP]
+                right_hip = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_HIP]
+
+                left_elbow = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_ELBOW]
+                right_elbow = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_ELBOW]
+
+                # Convert normalized coordinates to pixel values
+                kneeL = (int(left_knee.x * frame_width), int(left_knee.y * frame_height))
+                kneeR = (int(right_knee.x * frame_width), int(right_knee.y * frame_height))
+
+                ankL = (int(left_ankle.x * frame_width), int(left_ankle.y * frame_height))
+                ankR = (int(right_ankle.x * frame_width), int(right_ankle.y * frame_height))
+                footL = (int(left_foot.x * frame_width), int(left_foot.y * frame_height))
+                footR = (int(right_foot.x * frame_width), int(right_foot.y * frame_height))
+                heelL = (int(left_heel.x * frame_width), int(left_heel.y * frame_height))
+                heelR = (int(right_heel.x * frame_width), int(right_heel.y * frame_height))
+
+                hipL =  (int(left_hip.x * frame_width), int(left_hip.y * frame_height))
+                midPelvis = (int(((right_hip.x + left_hip.x)/2) * frame_width), int(((right_hip.y + left_hip.y)/2) * frame_height))
+
+                elbL = (int(left_elbow.x * frame_width), int(left_elbow.y * frame_height))
+                elbR = (int(right_elbow.x * frame_width), int(right_elbow.y * frame_height))
+
+                if frame_idx in imp_frames:
+                    contact = False
+                else:
+
+                    # ensure hand position is sufficiently far (this will ensure that no stoppages occur when knees are close
+                    # left foot is on the ground
+                    if (ankR[1] - ankL[1] <= 0):
+                            #checking if the distance between knees does not change enough then that means we are at toe off frame
+                        if abs(footL[1] - threshold)<10:
+                            imp_frames.append(frame_idx)
+                        else:
+                            contact = False
+                    else:
+                        if abs(footR[1] - threshold)<10:
+                            imp_frames.append(frame_idx)
+                        else:
+                            contact = False
+
+            # Write the frame to the output video
+            out.write(frame)
+            output.append(frame)
+
+        # Release resources
+        cap.release()
+        out.release()
+        cv2.destroyAllWindows()
+
+    for i in range(len(kinogram)):
+        # Convert the frame from BGR to RGB
+        rgb_frame = cv2.cvtColor(output[kinogram[i]], cv2.COLOR_BGR2RGB)
+
+        # Create a plot
+        plt.figure(figsize=(10, 6))
+        plt.imshow(rgb_frame)
+        """if i == 0:
+            plt.title(f"Toe Off")
+        elif i == 1:
+            plt.title(f"Max Vert Proj")
+        elif i == 2:
+            plt.title(f"Touch Down")
+        else:
+            plt.title(f"Full Support")"""
+        plt.axis('off')
+
+        # Save the plot
+        plot_path = os.path.join('media/pics', f'key_frame_{i + 1}.png')
+        plt.savefig(plot_path, bbox_inches='tight', pad_inches=0)
+        #plt.savefig(f'key_frame_{i + 1}.png')
+        plt.close()
+
+    #print(imp_frames)
+    #print(ground_frames)
+    #print(kinogram)
+    # fly issues from 47 ends too early at 53
+    # david a bit too late 3 - 16 (should be 14ish)
+    # adam ends early 16 - 18
+    #imp_frames = [53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69]
+    num_frames = len(imp_frames)
+    fig, axs = plt.subplots(1, num_frames, figsize=(num_frames * 5, 5))
+
+    for i in range(num_frames):
+        axs[i].imshow(output[imp_frames[i]])
+        axs[i].axis('off')
+        axs[i].set_title(f"Contact {i + 1}")
+
+    plt.tight_layout()
+    #plt.show()
+
+    contact_flight_analysis(imp_frames,1,1)
+
+    #return output_path
+    return [1, 2, 3, 5, 8, 10]
+
+    """plt.imshow(output[49])
+    plt.axis('off')
+    plt.show()"""

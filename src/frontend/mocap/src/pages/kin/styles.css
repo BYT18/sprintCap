@@ -2,7 +2,7 @@
 .kin-container {
   background: linear-gradient(to bottom, #000000, #72c6cf); /* Example gradient */
   min-height: 100vh; /* Make sure it covers the whole viewport height */
-  padding: 20px;
+  padding-bottom: 250vh;
 }
 
 
@@ -102,6 +102,17 @@ html {
   position: absolute;
 }
 
+.parallax-text {
+  margin-top: 90px;
+  color: white;
+  left: calc(55% + 100px);
+  font-size: 20px;
+  font-weight: 200;
+  line-height: 1.2;
+  position: absolute;
+}
+
+
 .sec {
   height: 80vh;
   display: flex;
@@ -113,8 +124,8 @@ html {
 }
 
 .secDiv {
-  width: 300px;
-  height: 400px;
+  width: 350px;
+  height: 450px;
   position: relative;
   max-height: 90vh;
   margin: 20px;

@@ -5,5 +5,10 @@ from .models import Pose
 class PoseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Pose
-        fields = ('pic','vid')
+
+        x_vals = serializers.ListField(
+            child=serializers.IntegerField(min_value=0, max_value=100)
+        )
+
+        fields = ('pic','vid','kin1','kin2','kin3','kin4','kin5','x_vals')
         #exclude = ('pic',)

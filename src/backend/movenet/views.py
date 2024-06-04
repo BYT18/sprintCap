@@ -1,6 +1,10 @@
 from rest_framework import generics,views
 from .serializers import PoseSerializer
 from rest_framework.response import Response
+from rest_framework.decorators import action
+from django.http import FileResponse
+import os
+
 from rest_framework.viewsets import ViewSet
 from rest_framework import status
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -9,6 +13,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework import permissions
 
 from .utils import get_gif
+from .models import Pose
 import tensorflow as tf
 import tensorflow_hub as hub
 from tensorflow_docs.vis import embed
@@ -27,8 +32,7 @@ class AnalysisView(generics.ListCreateAPIView):
 #class AnalysisView(views.APIView):
 #class AnalysisView(ViewSet):
     serializer_class = PoseSerializer
-
-
+    queryset = Pose.objects.all()
 
     def perform_create(self, serializer):
     #    serializer.save(vid=self.request.kwar)
@@ -41,41 +45,35 @@ class AnalysisView(generics.ListCreateAPIView):
         print(serializer.validated_data['vid'].temporary_file_path())
         g = get_gif(serializer.validated_data['vid'].temporary_file_path())
         #s = PoseSerializer
-        #save(vid=g)
+        #save(vid=g)#
+
+        #serializer.save(pic='./pics/output_video.mp4')
+        #serializer.save(pic='./pics/output_video.mov')
+        serializer.save(pic='./pics/output_video.mov',kin1='./pics/key_frame_1.png',kin2='./pics/key_frame_2.png',kin3='./pics/key_frame_3.png',kin4='./pics/key_frame_4.png',kin5='./pics/key_frame_5.png', x_vals = g)
+
+        # Construct the response
+        response_data = {
+            "output_video": './pics/output_video.mov',
+            "key_frames": [
+                './pics/key_frame_1.png',
+                './pics/key_frame_2.png',
+                './pics/key_frame_3.png',
+                './pics/key_frame_4.png',
+                './pics/key_frame_5.png'
+            ],
+            "other": g
+        }
+
+        return Response(response_data, status=status.HTTP_201_CREATED)
+#serializer.save(pic=g)
+        #return Response(r'C:\Users\hocke\Desktop\UofT\Third Year\CSC309\moveNet\src\backend\movenet\test.mp4')
+        #return Response(r'C:\Users\hocke\Desktop\UofT\Third Year\CSC309\moveNet\src\backend\media\pics\output_video.mp4')
 
 
-        serializer.save(pic='./pics/animation.gif')
-        return Response(r'C:\Users\hocke\Desktop\UofT\Third Year\CSC309\moveNet\src\backend\movenet\giffy2.gif')
-        '''
-        plt.plot(angles, marker='o', linestyle='-')
-        plt.title('Elbow Angle Over Frames')
-        plt.xlabel('Frame Index')
-        plt.ylabel('Elbow Angle (degrees)')
-        plt.grid(True)
-        plt.show()
-
-        # Detect position changes
-        position_changes = []
-        for i in range(1, len(ankle_positions)):
-            position_change = np.linalg.norm(np.array(ankle_positions[i]) - np.array(ankle_positions[i - 1]))
-            if position_change > threshold:
-                position_changes.append(i)
-        # Visualize the ankle positions and position changes
-        ankle_x, ankle_y = zip(*ankle_positions)
-        plt.plot(range(len(ankle_y)), ankle_y, marker='o', linestyle='-', label='Ankle Position')
-
-        # Check if there are position changes before trying to unpack
-        if position_changes:
-            change_x, change_y = zip(*[ankle_positions[i] for i in position_changes])
-            # plt.scatter(change_x, change_y, color='red', label='Position Change')
-            plt.scatter(range(len(change_y)), change_y, color='red', label='Position Change')
-
-        plt.title('Ankle Position Over Time')
-        plt.xlabel('X Position')
-        plt.ylabel('Y Position')
-        plt.legend()
-        plt.show()
-
-        print('switches: ' + str(switch))
-
-        return plt'''
+    @action(detail=True, methods=['get'])
+    def download(self, request, pk=None):
+        instance = self.get_object()
+        file_path = instance.pic
+        if not os.path.exists(file_path):
+            return Response({"message": "File not found"}, status=status.HTTP_404_NOT_FOUND)
+        return FileResponse(open(file_path, 'rb'), content_type='video/mov')

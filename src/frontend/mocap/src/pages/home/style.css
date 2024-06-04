@@ -125,10 +125,12 @@ body {
 .news-panel {
   background-color: #fff;
   padding: 20px;
+  border: 1px solid #e0e0e0;
   border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
-    overflow: hidden;
+  overflow: hidden;
   position: relative;
   height: 100%; /* Ensure it takes full height */
 }
@@ -136,6 +138,9 @@ body {
 .news-panel h3 {
   color: #66b2b2;
   transition: color 0.3s ease;
+   font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 20px;
 }
 
 .news-panel ul {
@@ -237,6 +242,71 @@ body {
   color: #0056b3;
 }
 
+.bike-fit-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  min-height: 80vh;
+}
+
+.bike-fit-images {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 80vh;
+}
+
+.bike-fit-image {
+  width: 100%;
+  max-width: 350px;
+  margin: 0 10px;
+  border-radius: 10px;
+  min-height: 60vh;
+}
+
+.bike-fit-info {
+  max-width: 500px;
+  margin-left: 20px;
+  text-align: left;
+}
+
+.bike-fit-info h2 {
+  color: #66b2b2;
+}
+
+.bike-fit-info h1 {
+  font-size: 2.5em;
+  margin: 10px 0;
+}
+
+.bike-fit-info p {
+  margin: 20px 0;
+}
+
+.bike-fit-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.get-started-button, .learn-more-button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.get-started-button {
+  background-color: #66b2b2;
+  color: white;
+}
+
+.learn-more-button {
+  background-color: transparent;
+  color: #ff6600;
+  border: 2px solid #ff6600;
+}
 
 /*.b-example-divider {
     height: 3rem;

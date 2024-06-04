@@ -4,6 +4,12 @@ import './style.css'
 import { Link } from 'react-router-dom';
 import { motion, inView, Variants } from 'framer-motion';
 
+import myImage1 from "../../assets/touchdown_R2.png";
+import myImage2 from "../../assets/max_ver3.png";
+import myImage3 from "../../assets/strike_R2.png";
+import myImage4 from "../../assets/toe_off_L2.png";
+import myImage5 from "../../assets/full_sup_L2.png";
+
 const Home = () => {
 
  const newsPanelRef = useRef(null);
@@ -26,7 +32,8 @@ const Home = () => {
 
    const cardVariants: Variants = {
   offscreen: {
-    y: 100
+    y: 100,
+    opacity:0
   },
   onscreen: {
     y: 0,
@@ -34,10 +41,56 @@ const Home = () => {
     transition: {
       type: "spring",
       bounce: 0.4,
-      duration: 0.6
-    }
-  }
+      duration: 0.8,
+    },
+          opacity:1
+  },
 };
+
+    const img1Variant: Variants = {
+          offscreen: {
+            x: -120
+          },
+          onscreen: {
+            x: 0,
+            //rotate: -100,
+            transition: {
+              type: "spring",
+              bounce: 0.4,
+              duration: 1
+            }
+          }
+    };
+
+    const img2Variant: Variants = {
+          offscreen: {
+            y: 120
+          },
+          onscreen: {
+            y: 0,
+            //rotate: -100,
+            transition: {
+              type: "spring",
+              bounce: 0.4,
+              duration: 1
+            }
+          }
+    };
+
+    const img3Variant: Variants = {
+          offscreen: {
+            x: 120
+          },
+          onscreen: {
+            x: 0,
+            //rotate: -100,
+            transition: {
+              type: "spring",
+              bounce: 0.4,
+              duration: 1
+            }
+          }
+    };
 
   const listVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -61,7 +114,8 @@ const Home = () => {
   <div class="b-example-divider"></div>
 
   {/* Cards Section */}
-      <motion.section className="row text-center" style={{ minHeight: "50vh"}}
+      <motion.section className="team-section py-5 text-center" style={{display: "flex",
+      alignItems: "center", minHeight:"50vh"}}
                   variants={cardVariants}
             initial="offscreen"
             whileInView="onscreen"
@@ -101,6 +155,49 @@ const Home = () => {
             </div>
           </motion.div>
         </div>
+      </motion.section>
+
+      <motion.section className="bike-fit-container"
+           variants={cardVariants}
+            initial="offscreen"
+            whileInView="onscreen"
+            viewport={{ once: true, amount: 0.5 }}
+      >
+      <div className="bike-fit-images">
+        <motion.img
+            variants={img1Variant}
+            initial="offscreen"
+            whileInView="onscreen"
+            viewport={{ once: true, amount: 0.5 }}
+        src={myImage4} alt="Biker 1" className="bike-fit-image" />
+
+        <motion.img
+        variants={img2Variant}
+            initial="offscreen"
+            whileInView="onscreen"
+            viewport={{ once: true, amount: 0.5 }}
+        src={myImage2} alt="Biker 2" className="bike-fit-image" />
+
+        <motion.img
+        variants={img3Variant}
+            initial="offscreen"
+            whileInView="onscreen"
+            viewport={{ once: true, amount: 0.5 }}
+        src={myImage5} alt="Biker 3" className="bike-fit-image" />
+      </div>
+      <motion.div
+                   initial={{ opacity: 0 }}
+      whileInView={{ opacity: 1 }}
+      className="bike-fit-info">
+        <h2>#SPRINTFREE</h2>
+        <h1>Get personalized coaching from anywhere, anytime</h1>
+        <p>
+Elevate your sprinting and running performance with our cutting-edge platform that combines industry-leading techniques with powerful A.I. Get personalized recommendations on your form and technique, consistent with top professional trainers. Optimize your running style anytime, anywhere, right from your phone. No appointments, no travel, just better performance.
+        </p>
+        <div className="bike-fit-buttons">
+          <button className="get-started-button">Get Started</button>
+        </div>
+      </motion.div>
       </motion.section>
 
       {/* News Section */}

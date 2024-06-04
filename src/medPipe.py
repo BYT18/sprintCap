@@ -103,6 +103,20 @@ def contact_flight_analysis(frames, fps, tot_frames):
     # Display the plot
     plt.show()
 
+def step_length(height, results, start_frame, end_frame, start_foot_coords, end_foot_coords):
+    #height_pixels = abs(results.pose_landmarks.landmark[mp_pose.PoseLandmark.NOSE].y -
+    #                    results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_ANKLE].y)  # height in pixels
+    #height_pixels = abs(475-280)
+    height_pixels = 207
+    meters_per_pixel = height / height_pixels
+    print(meters_per_pixel)
+    #pixel_distance = ((end_foot_coords[0] - start_foot_coords[0]) ** 2 + (
+    #            end_foot_coords[1] - start_foot_coords[1]) ** 2) ** 0.5
+    pixel_distance = (((723-581) - (538-671)) ** 2) ** 0.5
+    step_length_meters = pixel_distance * meters_per_pixel
+    return step_length_meters
+
+
 """
 Main
 """
@@ -147,6 +161,11 @@ ground_contacts = 0
 #prev_left_foot = None
 #prev_right_foot = None
 
+# Parameters for lucas kanade optical flow
+lk_params = dict(winSize=(15, 15), maxLevel=2,
+                 criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
+
+prev_landmarks = None
 
 with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tracking_confidence=0.3) as pose:
     while cap.isOpened():
@@ -184,6 +203,8 @@ with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tra
             left_elbow = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_ELBOW]
             right_elbow = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_ELBOW]
 
+            noseOrg = results.pose_landmarks.landmark[mp_pose.PoseLandmark.NOSE]
+
             # Convert normalized coordinates to pixel values
             kneeL = (int(left_knee.x * frame_width), int(left_knee.y * frame_height))
             kneeR = (int(right_knee.x * frame_width), int(right_knee.y * frame_height))
@@ -201,6 +222,30 @@ with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tra
             elbL = (int(left_elbow.x * frame_width), int(left_elbow.y * frame_height))
             elbR = (int(right_elbow.x * frame_width), int(right_elbow.y * frame_height))
 
+            nose = (int(noseOrg.x * frame_width), int(noseOrg.y * frame_height))
+
+            """# Update landmarks
+            current_landmarks = np.array([[left_ankle.x * frame.shape[1], left_ankle.y * frame.shape[0]],
+                                          [right_ankle.x * frame.shape[1], right_ankle.y * frame.shape[0]]],
+                                         dtype=np.float32)
+
+            if prev_landmarks is not None:
+                # Calculate optical flow (i.e., camera movement)
+                new_landmarks, status, error = cv2.calcOpticalFlowPyrLK(prev_frame, frame, prev_landmarks, None,
+                                                                        **lk_params)
+
+                # Displacement due to camera movement
+                displacement = new_landmarks - prev_landmarks
+
+                # Adjust foot positions by removing the effect of camera movement
+                adjusted_left_ankle = current_landmarks[0] - displacement[0]
+                adjusted_right_ankle = current_landmarks[1] - displacement[1]
+
+                # Use these adjusted positions for step length calculation
+                # ...
+
+            prev_landmarks = current_landmarks"""
+
             #toeoff
             # max thigh seperation
             # works for toe off, could also do max distance between ankle and opposite knee
@@ -215,14 +260,16 @@ with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tra
             print(footR)
             print(angle)
             print("")"""
-            if ((kneeR[0] - kneeL[0]) ** 2 + (kneeR[1] - kneeL[1]) ** 2) ** 0.5 > max_knee_seperation and footL[1]>ground:
+            #if ((kneeR[0] - kneeL[0]) ** 2 + (kneeR[1] - kneeL[1]) ** 2) ** 0.5 > max_knee_seperation and footL[1]>ground:
+            if ((kneeR[0] - kneeL[0]) ** 2 + (kneeR[1] - kneeL[1]) ** 2) ** 0.5 > max_knee_seperation and footL[1] + 5 >ground:
                 max_knee_seperation = ((kneeR[0] - kneeL[0]) ** 2 + (kneeR[1] - kneeL[1]) ** 2) ** 0.5
                 # key_frames = frame_idx
                 kinogram[0] = frame_idx
 
             # max proj / vert
-            if abs(kneeL[0] - kneeR[0]) > 30 and abs(ankL[1] - ankR[1]) < height and abs(kneeL[1] - ankL[1]) < 50 and abs(kneeR[0] - ankR[0]) < 50:
-                height = abs(ankL[1] - ankR[1])
+            #if abs(kneeL[0] - kneeR[0]) > 30 and abs(footL[1] - footR[1]) < height and abs(kneeL[1] - ankL[1]) < 50 and abs(kneeR[0] - ankR[0]) < 50:
+            if abs(kneeL[0] - kneeR[0]) > 30 and abs(footL[1] - footR[1]) < height:
+                height = abs(footL[1] - footR[1])
                 kinogram[1] = frame_idx
 
             # full support left
@@ -243,12 +290,19 @@ with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tra
             if ((ankR[1] - ankL[1]) ** 2) ** 0.5 > max_y:
                 max_y = ((ankR[1] - ankL[1]) ** 2) ** 0.5
                 kinogram[3] = frame_idx
-
-            print(frame_idx)
+            """ print(frame_idx)
+            print(ankL[1])
+            print(nose[1])
+            print(footL[0])
+            print(footL[1])
+            print(footR[0])
+            print(footR[1])
+            print("")"""
+            """print(frame_idx)
             print(kneeL[0] - kneeR[0])
             print(footL[1]-heelL[1])
             print(footR[1]-heelR[1])
-            print("")
+            print("")"""
             #if abs(kneeL[0] - kneeR[0]) < 10 or (abs(elbL[0] - elbR[0]) < 10 and abs(kneeL[0] - kneeR[0]) < 25):
             if abs(kneeL[0] - kneeR[0]) < 25 and (abs(footL[1]-heelL[1])<10 or abs(footR[1]-heelR[1])<10):
                 ground_contacts += 1
@@ -272,6 +326,8 @@ with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tra
                 # Update the previous foot coordinates
             prev_left_foot = footL
             prev_right_foot = footR"""
+
+        prev_frame = frame.copy()
 
         # Write the frame to the output video
         out.write(frame)
@@ -304,6 +360,12 @@ frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Codec for mp4 files
 out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))
 
+# Parameters for lucas kanade optical flow
+lk_params = dict(winSize=(15, 15), maxLevel=2,
+                 criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
+
+prev_landmarks = None
+
 with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tracking_confidence=0.3) as pose:
     while cap.isOpened():
         ret, frame = cap.read()
@@ -316,7 +378,7 @@ with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tra
         if frame_idx in ground_frames:
             contact = True
             threshold = ground_points[frame_idx]
-            print("thresh")
+            #print("thresh")
 
         # Convert the BGR image to RGB
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -326,7 +388,7 @@ with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tra
 
         # Draw the pose annotation on the frame
         if results.pose_landmarks and contact == True:
-            print(frame_idx)
+            #print(frame_idx)
             mp_drawing.draw_landmarks(frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
 
             #get_kinogram_frames(frame,results,kinogram,max_knee_seperation)
@@ -364,7 +426,7 @@ with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tra
             elbR = (int(right_elbow.x * frame_width), int(right_elbow.y * frame_height))
 
             if frame_idx in imp_frames:
-                print('false1')
+                #print('false1')
                 contact = False
             else:
 
@@ -375,19 +437,19 @@ with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tra
                     if abs(footL[1] - threshold)<10:
                         imp_frames.append(frame_idx)
                     else:
-                        print(frame_idx)
+                        """print(frame_idx)
                         print(footL[1] - threshold)
-                        print('false2')
+                        print('false2')"""
                         contact = False
                 else:
                     if abs(footR[1] - threshold)<10:
                         imp_frames.append(frame_idx)
                     else:
-                        print(frame_idx)
+                        """print(frame_idx)
                         print(footR[1] - threshold)
-                        print('false3')
+                        print('false3')"""
                         contact = False
-                print("")
+                #print("")
 
         # Write the frame to the output video
         out.write(frame)
@@ -398,13 +460,19 @@ with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tra
     out.release()
     cv2.destroyAllWindows()
 
+
+#david 30-56
+sLength = step_length(1.8, results, 0, 0, (581, 460),(678, 460))
+print('lenBelow')
+print(sLength)
+
 print(imp_frames)
 print(ground_frames)
 print(kinogram)
 # fly issues from 47 ends too early at 53
 # david a bit too late 3 - 16 (should be 14ish)
 # adam ends early 16 - 18
-#imp_frames = [53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69]
+imp_frames = [28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42,51,52,53, 54, 55, 56, 57]
 num_frames = len(imp_frames)
 fig, axs = plt.subplots(1, num_frames, figsize=(num_frames * 5, 5))
 
