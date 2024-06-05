@@ -5,16 +5,17 @@ from rest_framework.decorators import action
 from django.http import FileResponse
 import os
 
-from rest_framework.viewsets import ViewSet
+#from rest_framework.viewsets import ViewSet
 from rest_framework import status
-from rest_framework_simplejwt.views import TokenObtainPairView
+"""from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
-from rest_framework import permissions
+from rest_framework import permissions"""
 
 from .utils import get_gif
 from .models import Pose
-import tensorflow as tf
+
+"""import tensorflow as tf
 import tensorflow_hub as hub
 from tensorflow_docs.vis import embed
 import numpy as np
@@ -25,7 +26,7 @@ import matplotlib.pyplot as plt
 import imageio
 from IPython.display import HTML, display
 from tqdm import tqdm
-import math
+import math"""
 
 # view for registering users
 class AnalysisView(generics.ListCreateAPIView):
