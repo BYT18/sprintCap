@@ -150,9 +150,6 @@ def get_gif(vid):
     ground_points={}
     ground_frames = []
     ground_contacts = 0
-    #threshold = 5  # Threshold for considering significant movement (in pixels)
-    #prev_left_foot = None
-    #prev_right_foot = None
 
 
     with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tracking_confidence=0.3) as pose:
@@ -217,14 +214,17 @@ def get_gif(vid):
                 point3 = hipL
                 angle = compute_angle(point1, point2, point3)
 
-                if ((kneeR[0] - kneeL[0]) ** 2 + (kneeR[1] - kneeL[1]) ** 2) ** 0.5 > max_knee_seperation and footL[1]>ground:
+                # if ((kneeR[0] - kneeL[0]) ** 2 + (kneeR[1] - kneeL[1]) ** 2) ** 0.5 > max_knee_seperation and footL[1]>ground:
+                if ((kneeR[0] - kneeL[0]) ** 2 + (kneeR[1] - kneeL[1]) ** 2) ** 0.5 > max_knee_seperation and footL[
+                    1] + 5 > ground:
                     max_knee_seperation = ((kneeR[0] - kneeL[0]) ** 2 + (kneeR[1] - kneeL[1]) ** 2) ** 0.5
                     # key_frames = frame_idx
                     kinogram[0] = frame_idx
 
                 # max proj / vert
-                if abs(kneeL[0] - kneeR[0]) > 30 and abs(ankL[1] - ankR[1]) < height and abs(kneeL[1] - ankL[1]) < 50 and abs(kneeR[0] - ankR[0]) < 50:
-                    height = abs(ankL[1] - ankR[1])
+                # if abs(kneeL[0] - kneeR[0]) > 30 and abs(footL[1] - footR[1]) < height and abs(kneeL[1] - ankL[1]) < 50 and abs(kneeR[0] - ankR[0]) < 50:
+                if abs(kneeL[0] - kneeR[0]) > 30 and abs(footL[1] - footR[1]) < height:
+                    height = abs(footL[1] - footR[1])
                     kinogram[1] = frame_idx
 
                 # full support left
@@ -233,8 +233,10 @@ def get_gif(vid):
                 if abs(ankL[0] - midPelvis[0]) < knee_hip_alignment_support and ankR[1] < ankL[1]:
                     knee_hip_alignment_support = abs(ankL[0] - midPelvis[0])
                     knee_ank_alignment_support = abs(kneeL[0] - ankL[0])
+                    #pix = footL[1] - nose[1]
+                    #if pix > height_in_pixels:
+                    #    height_in_pixels = pix
                     kinogram[4] = frame_idx
-
 
                 # strike R
                 if abs(kneeL[0] - hipL[0]) < knee_hip_alignment_strike and ankL[1] + 15 < ground:
@@ -245,29 +247,13 @@ def get_gif(vid):
                 if ((ankR[1] - ankL[1]) ** 2) ** 0.5 > max_y:
                     max_y = ((ankR[1] - ankL[1]) ** 2) ** 0.5
                     kinogram[3] = frame_idx
+
                 #if abs(kneeL[0] - kneeR[0]) < 10 or (abs(elbL[0] - elbR[0]) < 10 and abs(kneeL[0] - kneeR[0]) < 25):
                 if abs(kneeL[0] - kneeR[0]) < 25 and (abs(footL[1]-heelL[1])<10 or abs(footR[1]-heelR[1])<10):
                     ground_contacts += 1
                     ground = max(footL[1], footR[1])
                     ground_frames.append(frame_idx) #take lowest point of the ground points in the group
                     ground_points[frame_idx] = ground
-
-                """if prev_left_foot and prev_right_foot:
-                    # Calculate the distance moved
-                    left_foot_movement = ((prev_left_foot[0] - footL[0]) ** 2 + (prev_left_foot[1] - footL[1]) ** 2) ** 0.5
-                    right_foot_movement = ((prev_right_foot[0] - footR[0]) ** 2 + (prev_right_foot[1] - footR[1]) ** 2) ** 0.5
-    
-                    #print(f"Left Foot Movement: {left_foot_movement}, Right Foot Movement: {right_foot_movement}")
-    
-                    # Check if the foot positions have changed significantly
-                    if (left_foot_movement <= threshold or right_foot_movement <= threshold) and abs(kneeL[0] - kneeR[0]) < 10:
-                        ground_contacts += 1
-                        ground = max(footL[1], footR[1])
-                        print(f"Frame {int(cap.get(cv2.CAP_PROP_POS_FRAMES))}: Foot position changed")
-    
-                    # Update the previous foot coordinates
-                prev_left_foot = footL
-                prev_right_foot = footR"""
 
             # Write the frame to the output video
             out.write(frame)
@@ -281,14 +267,6 @@ def get_gif(vid):
     imp_frames = []
     contact = False
     threshold = 100000
-    """contact = True
-        ind = i
-        prev_ind = i
-        prev_dis = 0
-        print(imp_frames)
-        max_knee_seperation = 0
-        key = 0
-        threshold = 100000"""
 
     cap = cv2.VideoCapture(video_path)
     # Get the frame rate and frame size of the video
@@ -390,14 +368,6 @@ def get_gif(vid):
         # Create a plot
         plt.figure(figsize=(10, 6))
         plt.imshow(rgb_frame)
-        """if i == 0:
-            plt.title(f"Toe Off")
-        elif i == 1:
-            plt.title(f"Max Vert Proj")
-        elif i == 2:
-            plt.title(f"Touch Down")
-        else:
-            plt.title(f"Full Support")"""
         plt.axis('off')
 
         # Save the plot
@@ -406,13 +376,6 @@ def get_gif(vid):
         #plt.savefig(f'key_frame_{i + 1}.png')
         plt.close()
 
-    #print(imp_frames)
-    #print(ground_frames)
-    #print(kinogram)
-    # fly issues from 47 ends too early at 53
-    # david a bit too late 3 - 16 (should be 14ish)
-    # adam ends early 16 - 18
-    #imp_frames = [53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69]
     num_frames = len(imp_frames)
     fig, axs = plt.subplots(1, num_frames, figsize=(num_frames * 5, 5))
 
@@ -428,7 +391,3 @@ def get_gif(vid):
 
     #return output_path
     return [1, 2, 3, 5, 8, 10]
-
-    """plt.imshow(output[49])
-    plt.axis('off')
-    plt.show()"""

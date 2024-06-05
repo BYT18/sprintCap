@@ -103,11 +103,11 @@ def contact_flight_analysis(frames, fps, tot_frames):
     # Display the plot
     plt.show()
 
-def step_length(height, results, start_frame, end_frame, start_foot_coords, end_foot_coords):
+def step_length(height, height_pixels, results, start_frame, end_frame, start_foot_coords, end_foot_coords):
     #height_pixels = abs(results.pose_landmarks.landmark[mp_pose.PoseLandmark.NOSE].y -
     #                    results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_ANKLE].y)  # height in pixels
     #height_pixels = abs(475-280)
-    height_pixels = 207
+    #height_pixels = 207
     meters_per_pixel = height / height_pixels
     print(meters_per_pixel)
     #pixel_distance = ((end_foot_coords[0] - start_foot_coords[0]) ** 2 + (
@@ -115,6 +115,14 @@ def step_length(height, results, start_frame, end_frame, start_foot_coords, end_
     pixel_distance = (((723-581) - (538-671)) ** 2) ** 0.5
     step_length_meters = pixel_distance * meters_per_pixel
     return step_length_meters
+
+# Function to calculate velocity
+def calculate_velocity(positions, fps):
+    velocities = []
+    for i in range(1, len(positions)):
+        velocity = (np.array(positions[i]) - np.array(positions[i - 1])) * fps
+        velocities.append(velocity)
+    return velocities
 
 
 """
@@ -129,7 +137,7 @@ from mediapipe.tasks.python import vision
 mp_drawing = mp.solutions.drawing_utils
 mp_pose = mp.solutions.pose
 
-video_path = 'david.mov'
+video_path = 'adam.mov'
 output_path = 'output_video.mp4'
 cap = cv2.VideoCapture(video_path)
 
@@ -160,6 +168,13 @@ ground_contacts = 0
 #threshold = 5  # Threshold for considering significant movement (in pixels)
 #prev_left_foot = None
 #prev_right_foot = None
+
+#vars for step len
+height_in_pixels = 0
+
+#smoothness
+kneeL_pos = []
+kneeL_velocities=[]
 
 # Parameters for lucas kanade optical flow
 lk_params = dict(winSize=(15, 15), maxLevel=2,
@@ -245,7 +260,7 @@ with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tra
                 # ...
 
             prev_landmarks = current_landmarks"""
-
+            kneeL_pos.append(kneeL)
             #toeoff
             # max thigh seperation
             # works for toe off, could also do max distance between ankle and opposite knee
@@ -278,6 +293,9 @@ with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tra
             if abs(ankL[0] - midPelvis[0]) < knee_hip_alignment_support and ankR[1] < ankL[1]:
                 knee_hip_alignment_support = abs(ankL[0] - midPelvis[0])
                 knee_ank_alignment_support = abs(kneeL[0] - ankL[0])
+                pix = footL[1]-nose[1]
+                if pix > height_in_pixels:
+                    height_in_pixels = pix
                 kinogram[4] = frame_idx
 
 
@@ -461,8 +479,25 @@ with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tra
     cv2.destroyAllWindows()
 
 
+velocities = calculate_velocity(kneeL_pos, fps)
+print(velocities)
+
+#since velocities are in x and y direction, need to reduce to scalar that does not have direction
+velocity_magnitude = np.linalg.norm(velocities, axis=1)
+
+# Plot velocities and accelerations
+time_velocity = np.arange(len(velocity_magnitude)) / fps
+
+plt.subplot(1, 2, 1)
+plt.plot(time_velocity, velocity_magnitude, label='Velocity')
+plt.xlabel('Time (s)')
+plt.ylabel('Velocity (units/s)')
+plt.title('Velocity of the Left Wrist')
+plt.legend()
+
 #david 30-56
-sLength = step_length(1.8, results, 0, 0, (581, 460),(678, 460))
+print(height_in_pixels)
+sLength = step_length(1.77,height_in_pixels, results, 0, 0, (581, 460),(678, 460))
 print('lenBelow')
 print(sLength)
 
@@ -472,7 +507,8 @@ print(kinogram)
 # fly issues from 47 ends too early at 53
 # david a bit too late 3 - 16 (should be 14ish)
 # adam ends early 16 - 18
-imp_frames = [28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42,51,52,53, 54, 55, 56, 57]
+#imp_frames = [28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42,51,52,53, 54, 55, 56, 57]
+imp_frames = kinogram
 num_frames = len(imp_frames)
 fig, axs = plt.subplots(1, num_frames, figsize=(num_frames * 5, 5))
 
