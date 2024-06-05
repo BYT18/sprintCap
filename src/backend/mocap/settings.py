@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-a$v2+d(ha4sdl$js_p0*j(nlq*0n+d-*@g0c#b^hw38f2(x3wu
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["http://3.143.232.151"]
 
 MEDIA_URL = '/media/'
 #MEDIA_ROOT = BASE_DIR / "media"
@@ -132,9 +132,12 @@ STATIC_URL = 'static/'
 CORS_ALLOWED_ORIGINS = [
 "http://localhost:3000",
 "http://127.0.0.1:8000",
+"http://3.143.232.151"
 ]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+STATIC_ROOT = '/var/www/mysite/assets/'
