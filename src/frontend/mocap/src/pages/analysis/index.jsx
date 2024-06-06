@@ -87,7 +87,7 @@ const VideoUploader = () => {
         try {
             // Create the POST request using the fetch API
             //const response = await fetch('http://127.0.0.1:8000/test/', {
-            const response = await fetch('http://18.216.114.197:800/test/', {
+            const response = await fetch('http://18.216.114.197:8000/test/', {
                 method: 'POST',
                 headers: {
 
