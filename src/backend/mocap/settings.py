@@ -134,7 +134,8 @@ CORS_ALLOWED_ORIGINS = [
 "http://localhost:3000",
 "http://127.0.0.1:8000",
 "http://3.143.232.151",
-"http://18.216.114.197"
+"http://18.216.114.197",
+"http://18.216.114.197:8000"
 ]
 
 # Default primary key field type
