@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-a$v2+d(ha4sdl$js_p0*j(nlq*0n+d-*@g0c#b^hw38f2(x3wu
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['18.216.114.197', 'localhost', '127.0.0.1','18.216.114.197:3000','3.19.221.161:3000','3.19.221.161']
+ALLOWED_HOSTS = ['18.216.114.197', 'localhost', '127.0.0.1','18.216.114.197:3000','3.19.221.161:3000','3.143.116.75']
 
 
 MEDIA_URL = '/media/'
@@ -143,9 +143,9 @@ CORS_ALLOWED_ORIGINS = [
 "http://18.216.114.197",
 "http://18.216.114.197:8000",
 "http://18.216.114.197:3000",
-"http://3.19.221.161",
-"http://3.19.221.161:3000",
-"http://3.19.221.161:8000"
+"http://3.143.116.75",
+"http://3.143.116.75:3000",
+"http://3.143.116.75:8000"
 ]
 
 # Default primary key field type
