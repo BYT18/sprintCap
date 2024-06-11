@@ -187,9 +187,11 @@ const VideoUploader = () => {
   <section class="bannerCards text-sm-start text-center p-4">
       <div className="video-uploader">
       <h2>Fitted</h2>
+         <div className="video-container">
             <video controls src={resultVid}>
               Your browser does not support HTML5 video.
             </video>
+            </div>
       </div>
   </section>
 

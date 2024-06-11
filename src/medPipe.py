@@ -103,11 +103,34 @@ def contact_flight_analysis(frames, fps, tot_frames):
     # Display the plot
     plt.show()
 
-def step_length(height, height_pixels, results, start_frame, end_frame, start_foot_coords, end_foot_coords):
+def step_len_anal(ank_pos, frames, output_frames):
+    imp_frames = frames
+    s_lens = []
+
+    initial = 0
+    for i in range(len(imp_frames) - 1):
+        if imp_frames[i] + 1 == imp_frames[i + 1] and initial == 0:
+            #initial = left or right ankle position
+            marker_pos = obj_detect(output_frames[imp_frames[i]],0)
+            initial = abs(ank_pos[i][0] - marker_pos)
+            #initial = ank_pos[i][0]
+
+        elif imp_frames[i] + 1 == imp_frames[i + 1] and initial != 0:
+            continue
+        else:
+            marker_pos = obj_detect(output_frames[imp_frames[i]], 0)
+            s_lens.append(abs(abs(ank_pos[i+1][0]-marker_pos) - initial))
+            #s_lens.append(ank_pos[i + 1][0] - initial)
+            initial = 0
+
+    return s_lens
+
+def step_length(height, height_pixels, distances, results, start_frame, end_frame, start_foot_coords, end_foot_coords):
     #height_pixels = abs(results.pose_landmarks.landmark[mp_pose.PoseLandmark.NOSE].y -
     #                    results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_ANKLE].y)  # height in pixels
     #height_pixels = abs(475-280)
     #height_pixels = 207
+    """
     meters_per_pixel = height / height_pixels
     print(meters_per_pixel)
     #pixel_distance = ((end_foot_coords[0] - start_foot_coords[0]) ** 2 + (
@@ -115,6 +138,89 @@ def step_length(height, height_pixels, results, start_frame, end_frame, start_fo
     pixel_distance = (((723-581) - (538-671)) ** 2) ** 0.5
     step_length_meters = pixel_distance * meters_per_pixel
     return step_length_meters
+    """
+    lens = []
+    for i in range(len(distances)):
+        meters_per_pixel = height / height_pixels
+        pixel_distance = ((distances[i]) ** 2) ** 0.5
+        step_length_meters = pixel_distance * meters_per_pixel
+        lens.append(step_length_meters)
+
+    return lens
+
+"""
+might not work if the pole is not always in frame? eg: since we are calling this whenever interested in initial position, 
+there is no guarantee a pole is in frame.
+"""
+def obj_detect(img, temp):
+    #img = cv2.imread('temptest2.png', cv2.IMREAD_GRAYSCALE)
+    # Resize the image to make it bigger
+    """scale_factor = 3  # Change this factor to scale the image (e.g., 2 for doubling the size)
+    width = int(img.shape[1] * scale_factor)
+    height = int(img.shape[0] * scale_factor)
+    dim = (width, height)
+
+    # Resize image
+    img = cv2.resize(img, dim, interpolation=cv2.INTER_LINEAR)"""
+
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    assert img is not None, "file could not be read, check with os.path.exists()"
+    img2 = img.copy()
+    template = cv2.imread('pole.png', cv2.IMREAD_GRAYSCALE)
+    assert template is not None, "file could not be read, check with os.path.exists()"
+    w, h = template.shape[::-1]
+
+    # All the 6 methods for comparison in a list
+    #methods = ['cv2.TM_CCOEFF', 'cv2.TM_CCOEFF_NORMED', 'cv2.TM_CCORR', 'cv2.TM_CCORR_NORMED', 'cv2.TM_SQDIFF', 'cv2.TM_SQDIFF_NORMED']
+    methods = ['cv2.TM_CCORR_NORMED']
+
+    for meth in methods:
+        img = img2.copy()
+        method = eval(meth)
+
+        # Apply template Matching
+        res = cv2.matchTemplate(img, template, method)
+        min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
+
+        # If the method is TM_SQDIFF or TM_SQDIFF_NORMED, take minimum
+        if method in [cv2.TM_SQDIFF, cv2.TM_SQDIFF_NORMED]:
+            top_left = min_loc
+        else:
+            top_left = max_loc
+        bottom_right = (top_left[0] + w, top_left[1] + h)
+
+        cv2.rectangle(img, top_left, bottom_right, 255, 2)
+        mid = top_left[0]+ (bottom_right[0]-top_left[0])/2
+        print(mid)
+        print(min_val)
+
+        """plt.subplot(121), plt.imshow(res, cmap='gray')
+        plt.title('Matching Result'), plt.xticks([]), plt.yticks([])
+        plt.subplot(122), plt.imshow(img, cmap='gray')
+        plt.title('Detected Point'), plt.xticks([]), plt.yticks([])
+        plt.suptitle(meth)
+
+        plt.show()"""
+        return mid
+    #img_rgb = cv2.imread('mario.png')
+    """img_rgb = img
+    assert img_rgb is not None, "file could not be read, check with os.path.exists()"
+    img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
+    template = cv2.imread('pole.png', cv2.IMREAD_GRAYSCALE)
+    assert template is not None, "file could not be read, check with os.path.exists()"
+    w, h = template.shape[::-1]
+
+    res = cv2.matchTemplate(img_gray, template, cv2.TM_CCOEFF_NORMED)
+    threshold = 0.8
+    loc = np.where(res >= threshold)
+    mid = 0
+    for pt in zip(*loc[::-1]):
+        cv2.rectangle(img_rgb, pt, (pt[0] + w, pt[1] + h), (0, 0, 255), 2)
+        mid = pt[0] + w / 2
+
+    cv2.imwrite('res.png', img_rgb)
+    return mid
+"""
 
 # Function to calculate velocity
 def calculate_velocity(positions, fps):
@@ -122,6 +228,8 @@ def calculate_velocity(positions, fps):
     for i in range(1, len(positions)):
         velocity = (np.array(positions[i]) - np.array(positions[i - 1])) * fps
         velocities.append(velocity)
+        # Example implementation, adjust based on your actual function
+        # velocities = np.diff(positions, axis=0) * fps
     return velocities
 
 
@@ -137,7 +245,8 @@ from mediapipe.tasks.python import vision
 mp_drawing = mp.solutions.drawing_utils
 mp_pose = mp.solutions.pose
 
-video_path = 'adam.mov'
+# Upload Video
+video_path = 'david.mov'
 output_path = 'output_video.mp4'
 cap = cv2.VideoCapture(video_path)
 
@@ -171,17 +280,19 @@ ground_contacts = 0
 
 #vars for step len
 height_in_pixels = 0
+ank_pos = []
 
 #smoothness
 kneeL_pos = []
 kneeL_velocities=[]
+kneeR_pos = []
+kneeR_velocities=[]
+
 
 # Parameters for lucas kanade optical flow
-lk_params = dict(winSize=(15, 15), maxLevel=2,
-                 criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
+# lk_params = dict(winSize=(15, 15), maxLevel=2,criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
 
 prev_landmarks = None
-
 with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tracking_confidence=0.3) as pose:
     while cap.isOpened():
         ret, frame = cap.read()
@@ -261,6 +372,8 @@ with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tra
 
             prev_landmarks = current_landmarks"""
             kneeL_pos.append(kneeL)
+            kneeR_pos.append(kneeR)
+
             #toeoff
             # max thigh seperation
             # works for toe off, could also do max distance between ankle and opposite knee
@@ -308,19 +421,7 @@ with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tra
             if ((ankR[1] - ankL[1]) ** 2) ** 0.5 > max_y:
                 max_y = ((ankR[1] - ankL[1]) ** 2) ** 0.5
                 kinogram[3] = frame_idx
-            """ print(frame_idx)
-            print(ankL[1])
-            print(nose[1])
-            print(footL[0])
-            print(footL[1])
-            print(footR[0])
-            print(footR[1])
-            print("")"""
-            """print(frame_idx)
-            print(kneeL[0] - kneeR[0])
-            print(footL[1]-heelL[1])
-            print(footR[1]-heelR[1])
-            print("")"""
+
             #if abs(kneeL[0] - kneeR[0]) < 10 or (abs(elbL[0] - elbR[0]) < 10 and abs(kneeL[0] - kneeR[0]) < 25):
             if abs(kneeL[0] - kneeR[0]) < 25 and (abs(footL[1]-heelL[1])<10 or abs(footR[1]-heelR[1])<10):
                 ground_contacts += 1
@@ -379,11 +480,12 @@ fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Codec for mp4 files
 out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))
 
 # Parameters for lucas kanade optical flow
-lk_params = dict(winSize=(15, 15), maxLevel=2,
-                 criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
+# lk_params = dict(winSize=(15, 15), maxLevel=2,criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
 
+"""
+Determine Ground Contacts
+"""
 prev_landmarks = None
-
 with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tracking_confidence=0.3) as pose:
     while cap.isOpened():
         ret, frame = cap.read()
@@ -454,20 +556,15 @@ with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tra
                         #checking if the distance between knees does not change enough then that means we are at toe off frame
                     if abs(footL[1] - threshold)<10:
                         imp_frames.append(frame_idx)
+                        ank_pos.append(ankL)
                     else:
-                        """print(frame_idx)
-                        print(footL[1] - threshold)
-                        print('false2')"""
                         contact = False
                 else:
                     if abs(footR[1] - threshold)<10:
                         imp_frames.append(frame_idx)
+                        ank_pos.append(ankR)
                     else:
-                        """print(frame_idx)
-                        print(footR[1] - threshold)
-                        print('false3')"""
                         contact = False
-                #print("")
 
         # Write the frame to the output video
         out.write(frame)
@@ -479,36 +576,56 @@ with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tra
     cv2.destroyAllWindows()
 
 
-velocities = calculate_velocity(kneeL_pos, fps)
-print(velocities)
+"""
+Velocity and Smoothness Analysis 
+"""
+# Calculate velocities
+velocitiesL = calculate_velocity(kneeL_pos, fps)
+velocitiesR = calculate_velocity(kneeR_pos, fps)
+print(velocitiesL)
 
-#since velocities are in x and y direction, need to reduce to scalar that does not have direction
-velocity_magnitude = np.linalg.norm(velocities, axis=1)
+# Compute velocity magnitudes
+# since velocities are in x and y direction, need to reduce to scalar that does not have direction
+velocity_magnitudeL = np.linalg.norm(velocitiesL, axis=1)
+velocity_magnitudeR = np.linalg.norm(velocitiesR, axis=1)
 
-# Plot velocities and accelerations
-time_velocity = np.arange(len(velocity_magnitude)) / fps
+# Create time axis
+time_velocity = np.arange(len(velocity_magnitudeL)) / fps
 
-plt.subplot(1, 2, 1)
-plt.plot(time_velocity, velocity_magnitude, label='Velocity')
+# Plot velocities on the same axis
+plt.figure(figsize=(10, 6))
+plt.plot(time_velocity, velocity_magnitudeL, label='Left Knee Velocity')
+plt.plot(time_velocity, velocity_magnitudeR, label='Right Knee Velocity', color='orange')
 plt.xlabel('Time (s)')
 plt.ylabel('Velocity (units/s)')
-plt.title('Velocity of the Left Wrist')
+plt.title('Velocity Comparison of Left and Right Knees')
 plt.legend()
+plt.show()
 
+"""
+Step Length Analysis 
+"""
 #david 30-56
+pix_distances = step_len_anal(ank_pos, imp_frames, output)
+print(pix_distances)
+
 print(height_in_pixels)
-sLength = step_length(1.77,height_in_pixels, results, 0, 0, (581, 460),(678, 460))
+sLength = step_length(1.77,height_in_pixels, pix_distances, results, 0, 0, (581, 460),(678, 460))
 print('lenBelow')
 print(sLength)
 
 print(imp_frames)
 print(ground_frames)
 print(kinogram)
+
+"""
+Show important frames
+"""
 # fly issues from 47 ends too early at 53
 # david a bit too late 3 - 16 (should be 14ish)
 # adam ends early 16 - 18
 #imp_frames = [28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42,51,52,53, 54, 55, 56, 57]
-imp_frames = kinogram
+#imp_frames = kinogram
 num_frames = len(imp_frames)
 fig, axs = plt.subplots(1, num_frames, figsize=(num_frames * 5, 5))
 
@@ -520,8 +637,7 @@ for i in range(num_frames):
 plt.tight_layout()
 plt.show()
 
+"""
+Flight and ground contact time analysis 
+"""
 contact_flight_analysis(imp_frames,1,1)
-
-"""plt.imshow(output[49])
-plt.axis('off')
-plt.show()"""

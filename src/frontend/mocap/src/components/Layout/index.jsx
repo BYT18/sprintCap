@@ -4,6 +4,8 @@ import { Outlet, Link, useLocation, NavLink } from "react-router-dom";
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 import "bootstrap-icons/font/bootstrap-icons.css";
+import 'bootstrap/dist/js/bootstrap.bundle.min';
+
 import * as Icon from 'react-bootstrap-icons';
 import '../../App.css'; // Import the CSS file
 import logo from '../../logo.png';
@@ -53,15 +55,15 @@ const location = useLocation();
               <span className="navbar-toggler-icon bg-light"></span>
             </button>
             <div className="collapse navbar-collapse" id="navbarSupportedContent">
-              <ul className="navbar-nav me-auto mb-2 mb-lg-0"></ul>
+              <ul className="navbar-nav me-auto mb-2 mb-lg-0 "></ul>
               <li className="nav-item mx-2">
-          <NavLink
-            to="/"
-            className={({ isActive }) => (isActive ? "nav-link active-link" : "nav-link")}
-            >
-            Home
-           </NavLink>
-        </li>
+                  <NavLink
+                    to="/"
+                    className={({ isActive }) => (isActive ? "nav-link active-link" : "nav-link")}
+                    >
+                    Home
+                   </NavLink>
+              </li>
         {/*<li className="nav-item mx-2">
           <NavLink
             to="/comp/"
