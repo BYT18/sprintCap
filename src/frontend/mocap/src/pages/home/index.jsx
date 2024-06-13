@@ -49,7 +49,7 @@ const Home = () => {
 
     const img1Variant: Variants = {
           offscreen: {
-            x: -120
+            x: -150
           },
           onscreen: {
             x: 0,
@@ -57,14 +57,14 @@ const Home = () => {
             transition: {
               type: "spring",
               bounce: 0.4,
-              duration: 1
+              duration: 1.2
             }
           }
     };
 
     const img2Variant: Variants = {
           offscreen: {
-            y: 120
+            y: 150
           },
           onscreen: {
             y: 0,
@@ -72,14 +72,14 @@ const Home = () => {
             transition: {
               type: "spring",
               bounce: 0.4,
-              duration: 1
+              duration: 1.2
             }
           }
     };
 
     const img3Variant: Variants = {
           offscreen: {
-            x: 120
+            x: 150
           },
           onscreen: {
             x: 0,
@@ -87,7 +87,7 @@ const Home = () => {
             transition: {
               type: "spring",
               bounce: 0.4,
-              duration: 1
+              duration: 1.2
             }
           }
     };

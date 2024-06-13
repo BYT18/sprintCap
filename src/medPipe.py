@@ -28,6 +28,130 @@ def draw_landmarks_on_image(rgb_image, detection_result):
       solutions.drawing_styles.get_default_pose_landmarks_style())
   return annotated_image
 
+#can do all the feedbakc checks in the seocnd interation fo the video using the key frames found already in the kinogram
+def toe_off_feedback(plantAnk, plantKnee, plantHip, swingAnk, swingKnee, swingHip, swingToe, swingHeel, ):
+    feedback = []
+
+    # check knee bend
+    if plantKnee[0] > plantAnk[0] and plantKnee[0] > plantHip[0]:
+        feedback.append("Noticeable knee bend in stance leg (excessive pushing = stunted swing leg recovery / exacerbating rear side mechanics)")
+
+    #check 90 degree angle between thighs?
+    #thigh_angle = compute_angle(plantKnee, (plantHip+swingHip)/2 , plantKnee)
+    thigh_angle = compute_angle(plantKnee, plantHip, plantKnee)
+    if thigh_angle > 100 or thigh_angle < 80:
+        feedback.append("90-degree angle between thighs")
+
+    #check toe of swing leg is vertical to knee cap
+    if swingKnee[0] - swingToe[0] < 5:
+        feedback.append("Toe of swing leg directly vertical to kneecap")
+
+    # front shin parallel to rear thigh
+    # compute slope between ankle and knee
+
+    # dorsiflexion of swing foot
+    # compute angle between knee, ankle, toe
+
+    #forearms perpindicular to each other
+
+    # no arching back
+
+    return feedback
+
+def max_vert_feedback(frontAnk, frontKnee, frontHip, backAnk, backKnee, backHip):
+    # check knee bend
+    feedback = []
+    #check 90 degree angle between thighs?
+    thigh_angle = compute_angle(frontKnee, frontHip, backKnee)
+    if thigh_angle > 100 or thigh_angle < 80:
+        feedback.append("90-degree angle between thighs")
+
+    #knee angle front leg
+    knee_angle = compute_angle(frontHip,frontKnee,frontAnk)
+    if knee_angle > 100:
+        feedback.append("Knees")
+
+    #dorsiflexion of front foot
+
+    #peace?? fluidity
+
+    #neutral head
+
+    #straight line between rear leg knee and shoulder
+
+    #slight cross body arm swing - neutral rotation of spine
+
+    return feedback
+
+
+def strike_feedback(frontAnk, frontKnee, frontHip, frontToe, backAnk, backKnee, backHip):
+    feedback = []
+
+    # rear femur perpendicular to ground
+    if abs(backKnee[0] - backHip[0]) < 5:
+        feedback.append("Femur perpendicular to ground")
+
+    # check 20-40 degree angle between thighs
+    thigh_angle = compute_angle(frontKnee, frontHip , backKnee)
+    if 10 < thigh_angle < 50:
+        feedback.append("20-40-degree gap between thighs")
+
+    # front foot beginning to supinate
+    footAng = compute_angle(frontKnee,frontAnk,frontToe)
+    if footAng > 90:
+        feedback.append("Front foot beginning to supinate ")
+
+    # knee extension comes from reflexive action???
+
+    # greater contraction in hammys???
+
+    return feedback
+
+def touch_down_feedback(plantAnk, plantKnee, plantHip, plantHeel, plantToe, swingAnk, swingKnee, swingHip, swingToe, swingHeel):
+    feedback = []
+
+    # knee closeness
+    knees = swingKnee[0] - plantKnee[0]
+    if knees >= 0:
+        feedback.append("Knees together - Faster atheletes may have swing leg slightly in front of stance leg")
+
+    if knees < 0:
+        feedback.append("If knee is behind - indication of slower rotational velocities = over pushing = exacerbation of rear side mechanics")
+
+    #perpendicular stance shin, heel underneath knee
+    if (plantKnee[0] - plantAnk[0])<5 and (plantKnee[0] - plantHeel[0])<5:
+        feedback.append("Shank of stance shin perpendicular to ground, heel directly underneath knee")
+
+    #hands parallel to each other and ...
+
+    #inital contact with outside of ball of foot / plantar flex
+    if (plantToe[1] - plantHeel[1])<5:
+        feedback.append("Plantar flex prior to touchdown")
+
+    #allow elbow joints to open as hands pass hips
+
+    return feedback
+
+
+def full_supp_feedback(plantAnk, plantKnee, plantHip, swingAnk, swingKnee, swingHip, swingToe, swingHeel):
+    feedback = []
+
+    # swing foot tucked under glutes
+    # check y value of heel and how close it is to hips
+
+    # swing leg in front of hips (thigh 45 degrees from perpindicular)
+    thigh_angle = compute_angle(swingAnk, swingKnee, swingHip)
+    if thigh_angle < 50:
+        feedback.append("Swing leg in front of hips (thigh 45 degrees from perpendicular)")
+
+    # stance amortiation ? excess amortization
+    if plantKnee[0] - plantAnk[0] > 15:
+        feedback.append("Collapse at knee")
+
+    # plantar flex prior to touchdown
+
+    return feedback
+
 
 def compute_angle(point1, point2, point3):
     # Convert points to numpy arrays for easier calculations
@@ -246,7 +370,7 @@ mp_drawing = mp.solutions.drawing_utils
 mp_pose = mp.solutions.pose
 
 # Upload Video
-video_path = 'david.mov'
+video_path = 'adam.mov'
 output_path = 'output_video.mp4'
 cap = cv2.VideoCapture(video_path)
 
@@ -270,6 +394,7 @@ knee_hip_alignment_support = 100
 knee_hip_alignment_strike = 100
 knee_ank_alignment_support = 100
 
+
 # variables for ground contacts
 ground_points={}
 ground_frames = []
@@ -282,7 +407,9 @@ ground_contacts = 0
 height_in_pixels = 0
 ank_pos = []
 
-#smoothness
+#smoothness and rom
+hipL_pos = []
+hipR_pos = []
 kneeL_pos = []
 kneeL_velocities=[]
 kneeR_pos = []
@@ -343,6 +470,7 @@ with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tra
             heelR = (int(right_heel.x * frame_width), int(right_heel.y * frame_height))
 
             hipL =  (int(left_hip.x * frame_width), int(left_hip.y * frame_height))
+            hipR =  (int(right_hip.x * frame_width), int(right_hip.y * frame_height))
             midPelvis = (int(((right_hip.x + left_hip.x)/2) * frame_width), int(((right_hip.y + left_hip.y)/2) * frame_height))
 
             elbL = (int(left_elbow.x * frame_width), int(left_elbow.y * frame_height))
@@ -373,6 +501,8 @@ with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tra
             prev_landmarks = current_landmarks"""
             kneeL_pos.append(kneeL)
             kneeR_pos.append(kneeR)
+            hipL_pos.append(hipL)
+            hipR_pos.append(hipR)
 
             #toeoff
             # max thigh seperation
@@ -457,6 +587,10 @@ with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tra
     out.release()
     cv2.destroyAllWindows()
 
+# variables for kinogram feedback
+feedback = []
+
+# variables for ground point contact frames
 imp_frames = []
 contact = False
 threshold = 100000
@@ -477,7 +611,7 @@ frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 # Define the codec and create VideoWriter object
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Codec for mp4 files
-out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))
+#out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))
 
 # Parameters for lucas kanade optical flow
 # lk_params = dict(winSize=(15, 15), maxLevel=2,criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
@@ -505,6 +639,81 @@ with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tra
 
         # Process the frame to get pose landmarks
         results = pose.process(rgb_frame)
+
+        if results.pose_landmarks:
+            mp_drawing.draw_landmarks(frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
+
+            left_knee = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_KNEE]
+            right_knee = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_KNEE]
+
+            left_ankle = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_ANKLE]
+            left_foot = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_FOOT_INDEX]
+            left_heel = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_HEEL]
+            right_ankle = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_ANKLE]
+            right_foot = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_FOOT_INDEX]
+            right_heel = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_HEEL]
+
+            left_hip = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_HIP]
+            right_hip = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_HIP]
+
+            left_elbow = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_ELBOW]
+            right_elbow = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_ELBOW]
+
+            # Convert normalized coordinates to pixel values
+            kneeL = (int(left_knee.x * frame_width), int(left_knee.y * frame_height))
+            kneeR = (int(right_knee.x * frame_width), int(right_knee.y * frame_height))
+
+            ankL = (int(left_ankle.x * frame_width), int(left_ankle.y * frame_height))
+            ankR = (int(right_ankle.x * frame_width), int(right_ankle.y * frame_height))
+            footL = (int(left_foot.x * frame_width), int(left_foot.y * frame_height))
+            footR = (int(right_foot.x * frame_width), int(right_foot.y * frame_height))
+            heelL = (int(left_heel.x * frame_width), int(left_heel.y * frame_height))
+            heelR = (int(right_heel.x * frame_width), int(right_heel.y * frame_height))
+
+            hipL = (int(left_hip.x * frame_width), int(left_hip.y * frame_height))
+            midPelvis = (
+            int(((right_hip.x + left_hip.x) / 2) * frame_width), int(((right_hip.y + left_hip.y) / 2) * frame_height))
+
+            elbL = (int(left_elbow.x * frame_width), int(left_elbow.y * frame_height))
+            elbR = (int(right_elbow.x * frame_width), int(right_elbow.y * frame_height))
+
+            if frame_idx in kinogram:
+                ind = kinogram.index(frame_idx)
+                if ind == 0:
+                    if ankL[1] > ankR[1]:
+                        f = toe_off_feedback(ankL, kneeL, hipL, ankR, kneeR, hipR, footR, heelR)
+                    else:
+                        f = toe_off_feedback(ankR, kneeR, hipR, ankL, kneeL, hipL, footL, heelL)
+                    print("Toe off")
+                    print(f)
+                elif ind == 1:
+                    if ankL[0] > ankR[0]:
+                        f = max_vert_feedback(ankL, kneeL, hipL, ankR, kneeR, hipR)
+                    else:
+                        f = max_vert_feedback(ankR, kneeR, hipR, ankL, kneeL, hipL)
+                    print("MV")
+                    print(f)
+                elif ind == 2:
+                    if ankL[0] > ankR[0]:
+                        f = strike_feedback(ankL, kneeL, hipL, footL, ankR, kneeR, hipR)
+                    else:
+                        f = strike_feedback(ankR, kneeR, hipR, footR, ankL, kneeL, hipL)
+                    print("Strike")
+                    print(f)
+                elif ind == 3:
+                    if ankL[0] > ankR[0]:
+                        f = touch_down_feedback(ankL, kneeL, hipL, heelL, footL, ankR, kneeR, hipR, footR, heelR)
+                    else:
+                        f = touch_down_feedback(ankR, kneeR, hipR, heelR, footR, ankL, kneeL, hipL, footL, heelL)
+                    print("TD")
+                    print(f)
+                else:
+                    if ankL[0] > ankR[0]:
+                        f = full_supp_feedback(ankL, kneeL, hipL, ankR, kneeR, hipR, footR, heelR)
+                    else:
+                        f = full_supp_feedback(ankR, kneeR, hipR, ankL, kneeL, hipL, footL, heelL)
+                    print("FS")
+                    print(f)
 
         # Draw the pose annotation on the frame
         if results.pose_landmarks and contact == True:
@@ -567,12 +776,12 @@ with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tra
                         contact = False
 
         # Write the frame to the output video
-        out.write(frame)
-        output.append(frame)
+        #out.write(frame)
+        #output.append(frame)
 
     # Release resources
     cap.release()
-    out.release()
+    #out.release()
     cv2.destroyAllWindows()
 
 
@@ -603,6 +812,38 @@ plt.legend()
 plt.show()
 
 """
+knee lift analysis
+"""
+hipL_coords = np.array(hipL_pos)
+kneeL_coords = np.array(kneeL_pos)
+hipR_coords = np.array(hipR_pos)
+kneeR_coords = np.array(kneeR_pos)
+
+# Extract x and y coordinates
+hipL_x = hipL_coords[:, 0]
+hipL_y = hipL_coords[:, 1]
+hipR_x = hipR_coords[:, 0]
+hipR_y = hipR_coords[:, 1]
+kneeL_x = kneeL_coords[:, 0]
+kneeL_y = kneeL_coords[:, 1]
+kneeR_x = kneeR_coords[:, 0]
+kneeR_y = kneeR_coords[:, 1]
+
+
+# Plot hip and knee positions
+plt.figure(figsize=(10, 6))
+plt.scatter(hipL_x, hipL_y, color='pink', label='Hip Left Position', s=50, alpha=0.7)
+plt.scatter(hipR_x, hipR_y, color='red', label='Hip Right Position', s=50, alpha=0.7)
+plt.scatter(kneeL_x, kneeL_y, color='blue', label='Knee Left Position', s=50, alpha=0.7)
+plt.scatter(kneeR_x, kneeR_y, color='orange', label='Knee Right Position', s=50, alpha=0.7)
+plt.xlabel('X Coordinate')
+plt.ylabel('Y Coordinate')
+plt.title('Hip and Knee Positions')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+"""
 Step Length Analysis 
 """
 #david 30-56
@@ -625,7 +866,7 @@ Show important frames
 # david a bit too late 3 - 16 (should be 14ish)
 # adam ends early 16 - 18
 #imp_frames = [28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42,51,52,53, 54, 55, 56, 57]
-#imp_frames = kinogram
+imp_frames = kinogram
 num_frames = len(imp_frames)
 fig, axs = plt.subplots(1, num_frames, figsize=(num_frames * 5, 5))
 
