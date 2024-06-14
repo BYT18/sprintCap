@@ -28,6 +28,46 @@ def draw_landmarks_on_image(rgb_image, detection_result):
       solutions.drawing_styles.get_default_pose_landmarks_style())
   return annotated_image
 
+
+def compute_slope(point1, point2):
+    """
+    Compute the slope of a line given two points.
+
+    Parameters:
+    point1 (tuple): The first point (x1, y1).
+    point2 (tuple): The second point (x2, y2).
+
+    Returns:
+    float: The slope of the line.
+    """
+    x1, y1 = point1
+    x2, y2 = point2
+    if x2 - x1 == 0:
+        return float('inf')  # Infinite slope (vertical line)
+    return (y2 - y1) / (x2 - x1)
+
+
+def are_parallel(line1, line2, tolerance):
+    """
+    Check if two lines are parallel within a given tolerance.
+
+    Parameters:
+    line1 (tuple): The first line defined by two points ((x1, y1), (x2, y2)).
+    line2 (tuple): The second line defined by two points ((x3, y3), (x4, y4)).
+    tolerance (float): The tolerance within which the slopes should be considered equal.
+
+    Returns:
+    bool: True if the lines are parallel within the given tolerance, False otherwise.
+    """
+    slope1 = compute_slope(line1[0], line1[1])
+    slope2 = compute_slope(line2[0], line2[1])
+
+    # Handle case where both slopes are infinity (vertical lines)
+    if slope1 == float('inf') and slope2 == float('inf'):
+        return True
+
+    return abs(slope1 - slope2) < tolerance
+
 #can do all the feedbakc checks in the seocnd interation fo the video using the key frames found already in the kinogram
 def toe_off_feedback(plantAnk, plantKnee, plantHip, swingAnk, swingKnee, swingHip, swingToe, swingHeel, ):
     feedback = []
@@ -48,17 +88,24 @@ def toe_off_feedback(plantAnk, plantKnee, plantHip, swingAnk, swingKnee, swingHi
 
     # front shin parallel to rear thigh
     # compute slope between ankle and knee
+    par = are_parallel((plantHip,plantKnee), (swingKnee, swingAnk), 2)
+    if par:
+        feedback.append("Front shin parallel to rear thigh")
 
     # dorsiflexion of swing foot
     # compute angle between knee, ankle, toe
+    footAng = compute_angle(swingToe,swingAnk,swingKnee)
+    if 75<footAng<105:
+        feedback.append("Dorsiflexion of swing foot")
 
     #forearms perpindicular to each other
 
     # no arching back
+    # check how much head x is in front of hips or shoulders?
 
     return feedback
 
-def max_vert_feedback(frontAnk, frontKnee, frontHip, backAnk, backKnee, backHip):
+def max_vert_feedback(frontAnk, frontKnee, frontHip, frontToe, backAnk, backKnee, backHip):
     # check knee bend
     feedback = []
     #check 90 degree angle between thighs?
@@ -72,6 +119,10 @@ def max_vert_feedback(frontAnk, frontKnee, frontHip, backAnk, backKnee, backHip)
         feedback.append("Knees")
 
     #dorsiflexion of front foot
+    # cant use heel vs toe y value since foot can be at an angle?
+    footAng = compute_angle(frontToe,frontAnk,frontKnee)
+    if 75<footAng<105:
+        feedback.append("Dorsiflexion of swing foot")
 
     #peace?? fluidity
 
@@ -133,15 +184,17 @@ def touch_down_feedback(plantAnk, plantKnee, plantHip, plantHeel, plantToe, swin
     return feedback
 
 
-def full_supp_feedback(plantAnk, plantKnee, plantHip, swingAnk, swingKnee, swingHip, swingToe, swingHeel):
+def full_supp_feedback(plantAnk, plantKnee, plantHip, plantToe, plantHeel, swingAnk, swingKnee, swingHip, swingToe, swingHeel):
     feedback = []
 
     # swing foot tucked under glutes
     # check y value of heel and how close it is to hips
+    if swingHeel[1] - swingHip[1] < 30:
+        feedback.append("Swing foot tucked under glutes")
 
     # swing leg in front of hips (thigh 45 degrees from perpindicular)
     thigh_angle = compute_angle(swingAnk, swingKnee, swingHip)
-    if thigh_angle < 50:
+    if thigh_angle < 55:
         feedback.append("Swing leg in front of hips (thigh 45 degrees from perpendicular)")
 
     # stance amortiation ? excess amortization
@@ -149,6 +202,8 @@ def full_supp_feedback(plantAnk, plantKnee, plantHip, swingAnk, swingKnee, swing
         feedback.append("Collapse at knee")
 
     # plantar flex prior to touchdown
+    if abs(plantHeel[1] - plantToe[1]) < 5:
+        feedback.append("Plantar flex prior to touchdown")
 
     return feedback
 
@@ -226,6 +281,7 @@ def contact_flight_analysis(frames, fps, tot_frames):
 
     # Display the plot
     plt.show()
+    return [flight_times,gcontact_times]
 
 def step_len_anal(ank_pos, frames, output_frames):
     imp_frames = frames
@@ -414,6 +470,7 @@ kneeL_pos = []
 kneeL_velocities=[]
 kneeR_pos = []
 kneeR_velocities=[]
+thigh_angles = []
 
 
 # Parameters for lucas kanade optical flow
@@ -503,6 +560,9 @@ with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tra
             kneeR_pos.append(kneeR)
             hipL_pos.append(hipL)
             hipR_pos.append(hipR)
+
+            tAng = compute_angle(kneeL,midPelvis,kneeR)
+            thigh_angles.append(tAng)
 
             #toeoff
             # max thigh seperation
@@ -688,9 +748,9 @@ with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tra
                     print(f)
                 elif ind == 1:
                     if ankL[0] > ankR[0]:
-                        f = max_vert_feedback(ankL, kneeL, hipL, ankR, kneeR, hipR)
+                        f = max_vert_feedback(ankL, kneeL, hipL, footL, ankR, kneeR, hipR)
                     else:
-                        f = max_vert_feedback(ankR, kneeR, hipR, ankL, kneeL, hipL)
+                        f = max_vert_feedback(ankR, kneeR, hipR, footR, ankL, kneeL, hipL)
                     print("MV")
                     print(f)
                 elif ind == 2:
@@ -709,9 +769,9 @@ with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tra
                     print(f)
                 else:
                     if ankL[0] > ankR[0]:
-                        f = full_supp_feedback(ankL, kneeL, hipL, ankR, kneeR, hipR, footR, heelR)
+                        f = full_supp_feedback(ankL, kneeL, hipL, footL, heelL, ankR, kneeR, hipR, footR, heelR)
                     else:
-                        f = full_supp_feedback(ankR, kneeR, hipR, ankL, kneeL, hipL, footL, heelL)
+                        f = full_supp_feedback(ankR, kneeR, hipR, ankL, footR, heelR, kneeL, hipL, footL, heelL)
                     print("FS")
                     print(f)
 
@@ -843,6 +903,19 @@ plt.legend()
 plt.grid(True)
 plt.show()
 
+# Plot thigh angles
+# Generate x-values as indices
+frames_x = range(len(thigh_angles))
+# Create a scatter plot
+plt.scatter(frames_x, thigh_angles, color='blue', label='Data points')
+# Add labels and title
+plt.xlabel('Index')
+plt.ylabel('Y-axis')
+plt.title('Scatter Plot with Indices as X-values')
+# Add a legend
+plt.legend()
+plt.show()
+
 """
 Step Length Analysis 
 """
@@ -866,7 +939,7 @@ Show important frames
 # david a bit too late 3 - 16 (should be 14ish)
 # adam ends early 16 - 18
 #imp_frames = [28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42,51,52,53, 54, 55, 56, 57]
-imp_frames = kinogram
+#imp_frames = kinogram
 num_frames = len(imp_frames)
 fig, axs = plt.subplots(1, num_frames, figsize=(num_frames * 5, 5))
 
@@ -881,4 +954,15 @@ plt.show()
 """
 Flight and ground contact time analysis 
 """
-contact_flight_analysis(imp_frames,1,1)
+f_g_times = contact_flight_analysis(imp_frames,1,1)
+
+ground_times = f_g_times[1]
+flight_times = f_g_times[0]
+
+
+# watch out for last flight time is always 0
+max_step_len = max(sLength)
+avg_ground_time = sum(ground_times)/len(ground_times)
+avg_flight_time = sum(flight_times)/(len(flight_times)-1)
+time_btw_steps = 0
+print(avg_ground_time)
