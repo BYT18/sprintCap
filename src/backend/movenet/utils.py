@@ -284,6 +284,79 @@ def contact_flight_analysis(frames, fps, tot_frames):
 
     plot_path = os.path.join('media/pics', 'contact_time.png')
     plt.savefig(plot_path)
+    return [flight_times,gcontact_times]
+
+
+def step_len_anal(ank_pos, frames, output_frames):
+    imp_frames = frames
+    s_lens = []
+
+    initial = 0
+    for i in range(len(imp_frames) - 1):
+        if imp_frames[i] + 1 == imp_frames[i + 1] and initial == 0:
+            #initial = left or right ankle position
+            marker_pos = obj_detect(output_frames[imp_frames[i]],0)
+            initial = abs(ank_pos[i][0] - marker_pos)
+            #initial = ank_pos[i][0]
+
+        elif imp_frames[i] + 1 == imp_frames[i + 1] and initial != 0:
+            continue
+        else:
+            marker_pos = obj_detect(output_frames[imp_frames[i]], 0)
+            s_lens.append(abs(abs(ank_pos[i+1][0]-marker_pos) - initial))
+            #s_lens.append(ank_pos[i + 1][0] - initial)
+            initial = 0
+
+    return s_lens
+
+def step_length(height, height_pixels, distances, results, start_frame, end_frame, start_foot_coords, end_foot_coords):
+    lens = []
+    for i in range(len(distances)):
+        meters_per_pixel = height / height_pixels
+        pixel_distance = ((distances[i]) ** 2) ** 0.5
+        step_length_meters = pixel_distance * meters_per_pixel
+        lens.append(step_length_meters)
+
+    return lens
+
+"""
+might not work if the pole is not always in frame? eg: since we are calling this whenever interested in initial position, 
+there is no guarantee a pole is in frame.
+"""
+def obj_detect(img, temp):
+
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    assert img is not None, "file could not be read, check with os.path.exists()"
+    img2 = img.copy()
+    template = cv2.imread('pole.png', cv2.IMREAD_GRAYSCALE)
+    assert template is not None, "file could not be read, check with os.path.exists()"
+    w, h = template.shape[::-1]
+
+    # All the 6 methods for comparison in a list
+    #methods = ['cv2.TM_CCOEFF', 'cv2.TM_CCOEFF_NORMED', 'cv2.TM_CCORR', 'cv2.TM_CCORR_NORMED', 'cv2.TM_SQDIFF', 'cv2.TM_SQDIFF_NORMED']
+    methods = ['cv2.TM_CCORR_NORMED']
+
+    for meth in methods:
+        img = img2.copy()
+        method = eval(meth)
+
+        # Apply template Matching
+        res = cv2.matchTemplate(img, template, method)
+        min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
+
+        # If the method is TM_SQDIFF or TM_SQDIFF_NORMED, take minimum
+        if method in [cv2.TM_SQDIFF, cv2.TM_SQDIFF_NORMED]:
+            top_left = min_loc
+        else:
+            top_left = max_loc
+        bottom_right = (top_left[0] + w, top_left[1] + h)
+
+        cv2.rectangle(img, top_left, bottom_right, 255, 2)
+        mid = top_left[0]+ (bottom_right[0]-top_left[0])/2
+        print(mid)
+        print(min_val)
+
+        return mid
 
 """
 Main
@@ -324,6 +397,19 @@ def get_gif(vid):
     knee_hip_alignment_strike = 100
     knee_ank_alignment_support = 100
 
+    # vars for step len
+    height_in_pixels = 0
+    ank_pos = []
+
+    # smoothness and rom
+    hipL_pos = []
+    hipR_pos = []
+    kneeL_pos = []
+    kneeL_velocities = []
+    kneeR_pos = []
+    kneeR_velocities = []
+    thigh_angles = []
+
     # variables for ground contacts
     ground_points={}
     ground_frames = []
@@ -350,6 +436,7 @@ def get_gif(vid):
                 mp_drawing.draw_landmarks(frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
 
                 #get_kinogram_frames(frame,results,kinogram,max_knee_seperation)
+                noseOrg = results.pose_landmarks.landmark[mp_pose.PoseLandmark.NOSE]
                 left_knee = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_KNEE]
                 right_knee = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_KNEE]
 
@@ -378,10 +465,21 @@ def get_gif(vid):
                 heelR = (int(right_heel.x * frame_width), int(right_heel.y * frame_height))
 
                 hipL =  (int(left_hip.x * frame_width), int(left_hip.y * frame_height))
+                hipR = (int(right_hip.x * frame_width), int(right_hip.y * frame_height))
                 midPelvis = (int(((right_hip.x + left_hip.x)/2) * frame_width), int(((right_hip.y + left_hip.y)/2) * frame_height))
 
                 elbL = (int(left_elbow.x * frame_width), int(left_elbow.y * frame_height))
                 elbR = (int(right_elbow.x * frame_width), int(right_elbow.y * frame_height))
+
+                nose = (int(noseOrg.x * frame_width), int(noseOrg.y * frame_height))
+
+                kneeL_pos.append(kneeL)
+                kneeR_pos.append(kneeR)
+                hipL_pos.append(hipL)
+                hipR_pos.append(hipR)
+
+                tAng = compute_angle(kneeL, midPelvis, kneeR)
+                thigh_angles.append(tAng)
 
                 #toeoff
                 # max thigh seperation
@@ -411,9 +509,9 @@ def get_gif(vid):
                 if abs(ankL[0] - midPelvis[0]) < knee_hip_alignment_support and ankR[1] < ankL[1]:
                     knee_hip_alignment_support = abs(ankL[0] - midPelvis[0])
                     knee_ank_alignment_support = abs(kneeL[0] - ankL[0])
-                    #pix = footL[1] - nose[1]
-                    #if pix > height_in_pixels:
-                    #    height_in_pixels = pix
+                    pix = footL[1] - nose[1]
+                    if pix > height_in_pixels:
+                        height_in_pixels = pix
                     kinogram[4] = frame_idx
 
                 # strike R
@@ -441,6 +539,9 @@ def get_gif(vid):
         #cap.release()
         #out.release()
         cv2.destroyAllWindows()
+
+    # variables for kinogram feedback
+    feedback = {}
 
     imp_frames = []
     contact = False
@@ -473,6 +574,88 @@ def get_gif(vid):
 
             # Process the frame to get pose landmarks
             results = pose.process(rgb_frame)
+
+            if results.pose_landmarks:
+                mp_drawing.draw_landmarks(frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
+
+                left_knee = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_KNEE]
+                right_knee = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_KNEE]
+
+                left_ankle = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_ANKLE]
+                left_foot = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_FOOT_INDEX]
+                left_heel = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_HEEL]
+                right_ankle = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_ANKLE]
+                right_foot = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_FOOT_INDEX]
+                right_heel = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_HEEL]
+
+                left_hip = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_HIP]
+                right_hip = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_HIP]
+
+                left_elbow = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_ELBOW]
+                right_elbow = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_ELBOW]
+
+                # Convert normalized coordinates to pixel values
+                kneeL = (int(left_knee.x * frame_width), int(left_knee.y * frame_height))
+                kneeR = (int(right_knee.x * frame_width), int(right_knee.y * frame_height))
+
+                ankL = (int(left_ankle.x * frame_width), int(left_ankle.y * frame_height))
+                ankR = (int(right_ankle.x * frame_width), int(right_ankle.y * frame_height))
+                footL = (int(left_foot.x * frame_width), int(left_foot.y * frame_height))
+                footR = (int(right_foot.x * frame_width), int(right_foot.y * frame_height))
+                heelL = (int(left_heel.x * frame_width), int(left_heel.y * frame_height))
+                heelR = (int(right_heel.x * frame_width), int(right_heel.y * frame_height))
+
+                hipL = (int(left_hip.x * frame_width), int(left_hip.y * frame_height))
+                hipR = (int(right_hip.x * frame_width), int(right_hip.y * frame_height))
+                midPelvis = (
+                    int(((right_hip.x + left_hip.x) / 2) * frame_width),
+                    int(((right_hip.y + left_hip.y) / 2) * frame_height))
+
+                elbL = (int(left_elbow.x * frame_width), int(left_elbow.y * frame_height))
+                elbR = (int(right_elbow.x * frame_width), int(right_elbow.y * frame_height))
+
+                if frame_idx in kinogram:
+                    ind = kinogram.index(frame_idx)
+                    if ind == 0:
+                        if ankL[1] > ankR[1]:
+                            f = toe_off_feedback(ankL, kneeL, hipL, ankR, kneeR, hipR, footR, heelR)
+                        else:
+                            f = toe_off_feedback(ankR, kneeR, hipR, ankL, kneeL, hipL, footL, heelL)
+                        print("Toe off")
+                        print(f)
+                        feedback["TO"]=f
+                    elif ind == 1:
+                        if ankL[0] > ankR[0]:
+                            f = max_vert_feedback(ankL, kneeL, hipL, footL, ankR, kneeR, hipR)
+                        else:
+                            f = max_vert_feedback(ankR, kneeR, hipR, footR, ankL, kneeL, hipL)
+                        print("MV")
+                        print(f)
+                        feedback["MV"] = f
+                    elif ind == 2:
+                        if ankL[0] > ankR[0]:
+                            f = strike_feedback(ankL, kneeL, hipL, footL, ankR, kneeR, hipR)
+                        else:
+                            f = strike_feedback(ankR, kneeR, hipR, footR, ankL, kneeL, hipL)
+                        print("Strike")
+                        print(f)
+                        feedback["S"]=f
+                    elif ind == 3:
+                        if ankL[0] > ankR[0]:
+                            f = touch_down_feedback(ankL, kneeL, hipL, heelL, footL, ankR, kneeR, hipR, footR, heelR)
+                        else:
+                            f = touch_down_feedback(ankR, kneeR, hipR, heelR, footR, ankL, kneeL, hipL, footL, heelL)
+                        print("TD")
+                        print(f)
+                        feedback["TD"]=f
+                    else:
+                        if ankL[0] > ankR[0]:
+                            f = full_supp_feedback(ankL, kneeL, hipL, footL, heelL, ankR, kneeR, hipR, footR, heelR)
+                        else:
+                            f = full_supp_feedback(ankR, kneeR, hipR, ankL, footR, heelR, kneeL, hipL, footL, heelL)
+                        print("FS")
+                        print(f)
+                        feedback["FS"]=f
 
             # Draw the pose annotation on the frame
             if results.pose_landmarks and contact == True:
@@ -552,7 +735,7 @@ def get_gif(vid):
         plot_path = os.path.join('media/pics', f'key_frame_{i + 1}.png')
         plt.savefig(plot_path, bbox_inches='tight', pad_inches=0)
         #plt.savefig(f'key_frame_{i + 1}.png')
-        plt.close()
+        #plt.close()
 
     num_frames = len(imp_frames)
     fig, axs = plt.subplots(1, num_frames, figsize=(num_frames * 5, 5))
@@ -565,7 +748,30 @@ def get_gif(vid):
     plt.tight_layout()
     #plt.show()
 
-    contact_flight_analysis(imp_frames,1,1)
+    """
+    Step Length Analysis 
+    """
+    # david 30-56
+    #pix_distances = step_len_anal(ank_pos, imp_frames, output)
+    #sLength = step_length(1.77, height_in_pixels, pix_distances, results, 0, 0, (581, 460), (678, 460))
+
+    """
+    Flight and ground contact time analysis 
+    """
+    f_g_times = contact_flight_analysis(imp_frames, 1, 1)
+
+    ground_times = f_g_times[1]
+    flight_times = f_g_times[0]
+
+    # watch out for last flight time is always 0
+    #max_step_len = max(sLength)
+    avg_ground_time = sum(ground_times) / len(ground_times)
+    avg_flight_time = sum(flight_times) / (len(flight_times) - 1)
+    time_btw_steps = 0
+    print(avg_ground_time)
 
     #return output_path
-    return [1, 2, 3, 5, 8, 10]
+    #return [1, 2, 3, 5, 8, 10]
+    # could return dictionary whcih would be easier to read
+    return {"ground":ground_times,"flight":flight_times,"kneePos":kneeL_pos,"feedback":feedback, "avg_f":avg_flight_time, "avg_g":avg_ground_time}
+    #return [ground_times,flight_times]

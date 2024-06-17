@@ -54,9 +54,9 @@ const location = useLocation();
             >
               <span className="navbar-toggler-icon bg-light"></span>
             </button>
-            <div className="collapse navbar-collapse" id="navbarSupportedContent">
+            <div className="collapse navbar-collapse justify-content-center" id="navbarSupportedContent">
               <ul className="navbar-nav me-auto mb-2 mb-lg-0 "></ul>
-              <li className="nav-item mx-2">
+              <li className="nav-item mx-2 ">
                   <NavLink
                     to="/"
                     className={({ isActive }) => (isActive ? "nav-link active-link" : "nav-link")}

@@ -450,7 +450,6 @@ knee_hip_alignment_support = 100
 knee_hip_alignment_strike = 100
 knee_ank_alignment_support = 100
 
-
 # variables for ground contacts
 ground_points={}
 ground_frames = []
@@ -731,6 +730,7 @@ with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tra
             heelR = (int(right_heel.x * frame_width), int(right_heel.y * frame_height))
 
             hipL = (int(left_hip.x * frame_width), int(left_hip.y * frame_height))
+            hipR =  (int(right_hip.x * frame_width), int(right_hip.y * frame_height))
             midPelvis = (
             int(((right_hip.x + left_hip.x) / 2) * frame_width), int(((right_hip.y + left_hip.y) / 2) * frame_height))
 

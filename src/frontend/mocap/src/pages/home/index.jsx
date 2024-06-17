@@ -114,13 +114,15 @@ const Home = () => {
   <div class="b-example-divider"></div>
 
   {/* Cards Section */}
-      <motion.section className="team-section py-5 text-center" style={{display: "flex",
+      <motion.section className="team-section py-5 text-center" style={{display: "flex",flexDirection: "column",
       alignItems: "center", minHeight:"50vh"}}
                   variants={cardVariants}
             initial="offscreen"
             whileInView="onscreen"
             viewport={{ once: true, amount: 0.5 }}
       >
+      <div className="container">
+    <div className="row">
         <div className="col-md-4 mb-4 mx-auto d-flex">
           <motion.div
             className="card homecards h-100 shadow-sm"
@@ -155,8 +157,11 @@ const Home = () => {
             </div>
           </motion.div>
         </div>
+            </div>
+  </div>
       </motion.section>
 
+{/* Animation Section */}
       <motion.section className="bike-fit-container"
            variants={cardVariants}
             initial="offscreen"
@@ -289,10 +294,12 @@ Elevate your sprinting and running performance with our cutting-edge platform th
               <motion.div
                 className="team-member p-3 border rounded shadow-sm"
                 whileHover={{ scale: 1.05, boxShadow: "0 8px 20px rgba(0, 0, 0, 0.15)" }}
-                style={{ minHeight: "50vh",alignItems: "center"}}
+                style={{ minHeight: "50vh",alignItems: "center", display: "flex", flexDirection: "column"}}
               >
                 <h3>John Doe</h3>
-                 <img class="img-fluid team-image" src="https://t4.ftcdn.net/jpg/02/19/63/31/360_F_219633151_BW6TD8D1EA9OqZu4JgdmeJGg4JBaiAHj.jpg"/>
+                 <img class="img-fluid team-image" src="https://t4.ftcdn.net/jpg/02/19/63/31/360_F_219633151_BW6TD8D1EA9OqZu4JgdmeJGg4JBaiAHj.jpg"
+                 style={{ maxHeight: "200px", objectFit: "cover", marginBottom: "1rem" }}
+                 />
                 <p>Lead Developer</p>
                 <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
               </motion.div>
@@ -301,11 +308,13 @@ Elevate your sprinting and running performance with our cutting-edge platform th
               <motion.div
                 className="team-member p-3 border rounded shadow-sm"
                 whileHover={{ scale: 1.05, boxShadow: "0 8px 20px rgba(0, 0, 0, 0.15)" }}
-                style={{ minHeight: "50vh",alignItems: "center"}}
+                style={{display: "flex", flexDirection: "column", minHeight: "50vh",alignItems: "center"}}
               >
                 <h3>Jane Smith</h3>
                  <img class="img-fluid team-image" src=" https://media.istockphoto.com/id/1317784594/photo/headshot-of-mature-50-years-old-asian-business-woman-on-grey-background.jpg?s=612x612&w=0&k=20&c=eOmdf5BbEG75m9MBSTvhjA5uMDmUj0zDtXd3lv0nm8U=
-                "/>
+                "
+                style={{ maxHeight: "200px", objectFit: "cover", marginBottom: "1rem" }}
+                />
                 <p>Project Manager</p>
                 <p>Vivamus luctus urna sed urna ultricies ac tempor dui sagittis.</p>
               </motion.div>
@@ -314,11 +323,13 @@ Elevate your sprinting and running performance with our cutting-edge platform th
               <motion.div
                 className="team-member p-3 border rounded shadow-sm"
                 whileHover={{ scale: 1.05, boxShadow: "0 8px 20px rgba(0, 0, 0, 0.15)" }}
-                style={{ minHeight: "50vh",alignItems: "center"}}
+                style={{ display: "flex", flexDirection: "column", minHeight: "50vh",alignItems: "center"}}
               >
                 <h3>Bob Johnson</h3>
                  <img class="img-fluid team-image" src="https://media.istockphoto.com/id/1207856385/photo/joyful-happy-african-american-young-man-in-eyeglasses-portrait.jpg?s=612x612&w=0&k=20&c=M5sUFPE5xlF1fMxvNYgAqdpSZYKxSor3-SlF-o6IiJ0=
-              "/>
+              "
+              style={{ maxHeight: "200px", objectFit: "cover", marginBottom: "1rem" }}
+              />
                   <p>UI/UX Designer</p>
                 <p>Praesent dapibus, neque id cursus faucibus, tortor neque egestas auguae.</p>
               </motion.div>

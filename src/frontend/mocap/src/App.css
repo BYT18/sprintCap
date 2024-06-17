@@ -100,10 +100,12 @@
 
     .navbar-default {
       background-image: linear-gradient(to right, #000000, #72c6cf);
+      text-align: center;
     }
 
     .navbar-kin {
       background-image: linear-gradient(to right, #000000, #000000);
+      text-align: center;
         /*background-color: rgba(0, 0, 0, 0.5); /* Fully transparent */
     }
 

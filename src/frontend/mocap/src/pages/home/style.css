@@ -66,14 +66,14 @@ body {
 .card {
   border: none;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
-  min-height: 350px; /* Adjust the value as needed */
+  /*min-height: 350px;  Adjust the value as needed */
   display: flex;
   flex-direction: column;
   justify-content: center;
   overflow: hidden;
   position: relative;
-   height: 25vh; /* Responsive height */
-  width: 25vw; /* Responsive width */
+  min-height: 30vh; /* Responsive height */
+  /* width: 25vw; /* Responsive width */
 }
 
 .card:hover {
@@ -118,10 +118,15 @@ body {
 }
 
 .homecards {
-  margin: auto; /* Center the card within the column */
+  /*margin: auto; Center the card within the column */
 }
 
 /* News Panel */
+.news-section {
+  display: flex;
+  align-items: center;
+  min-height: 80vh;
+}
 .news-panel {
   background-color: #fff;
   padding: 20px;
@@ -187,6 +192,22 @@ body {
 .news-panel:hover::before {
   opacity: 1;
 }
+
+@media (max-width: 768px) {
+  .carousel-caption h5 {
+    font-size: 1.25rem;
+  }
+
+  .carousel-caption p {
+    font-size: 0.875rem;
+  }
+
+  .carousel-caption {
+    height: 50%;
+  }
+
+}
+
 /* Team Section */
 .team-member {
   background-color: #fff;
@@ -248,22 +269,30 @@ body {
   justify-content: center;
   align-items: center;
   padding: 20px;
-  min-height: 80vh;
+  min-height: 70vh;
 }
 
 .bike-fit-images {
-  display: flex;
+  /*display: flex;
   justify-content: center;
   align-items: center;
   min-height: 80vh;
+  flex-wrap: wrap;*/
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
 }
 
 .bike-fit-image {
-  width: 100%;
-  max-width: 350px;
+  /*width: 100%;
   margin: 0 10px;
   border-radius: 10px;
-  min-height: 60vh;
+  min-height: 30vh;*/
+  max-width: 100%;
+  height: auto;
+  min-height: 25vw;
+  margin: 10px;
 }
 
 .bike-fit-info {
@@ -288,6 +317,37 @@ body {
 .bike-fit-buttons {
   display: flex;
   gap: 10px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .bike-fit-container {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .bike-fit-images {
+    flex-direction: column;
+  }
+
+  .bike-fit-info {
+    text-align: center;
+  }
+}
+
+@media (max-width: 576px) {
+  .bike-fit-info h1 {
+    font-size: 1.5rem;
+  }
+
+  .bike-fit-info p {
+    font-size: 1rem;
+  }
+
+  .get-started-button {
+    width: 100%;
+    padding: 15px;
+  }
 }
 
 .get-started-button, .learn-more-button {
