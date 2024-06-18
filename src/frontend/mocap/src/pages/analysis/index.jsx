@@ -71,11 +71,16 @@ const VideoUploader = () => {
   const [velDataL, setVelDataL] = useState([]);
   const [velDataR, setVelDataR] = useState([]);
 
-  const [toeFeed, setToeFeed] = useState(null);
-  const [vertFeed, setVertFeed] = useState(null);
-  const [strikeFeed, setStrikeFeed] = useState(null);
-  const [touchFeed, setTouchFeed] = useState(null);
-  const [suppFeed, setSuppFeed] = useState(null);
+  const [itemsToe, setItemsToe] = useState([]);
+  const [textAreaToe, setTextAreaToe] = useState("");
+  const [itemsV, setItemsV] = useState([]);
+  const [textAreaV, setTextAreaV] = useState("");
+  const [itemsS, setItemsS] = useState([]);
+  const [textAreaS, setTextAreaS] = useState("");
+  const [itemsT, setItemsT] = useState([]);
+  const [textAreaT, setTextAreaT] = useState("");
+  const [itemsFS, setItemsFS] = useState([]);
+  const [textAreaFS, setTextAreaFS] = useState("");
 
   const [analData, setAnalData] = useState([]);
   const [avgG, setAvgG] = useState(null);
@@ -110,9 +115,9 @@ const VideoUploader = () => {
   const ctx = canvas.getContext('2d');
 
   // Calculate canvas dimensions based on images and text
-  const imageWidth = 400; // Example width per image
+  const imageWidth = 500; // Example width per image
   const imageHeight = 600; // Example height per image
-  const canvasWidth = imageUrls.length * imageWidth + 50; // Add space between images
+  const canvasWidth = imageUrls.length * imageWidth + 150; // Add space between images
   const canvasHeight = imageHeight + 400; // Adjust height as needed
 
   canvas.width = canvasWidth;
@@ -139,9 +144,9 @@ const VideoUploader = () => {
 
     for (const line of lines) {
       // Draw bullet point (circle)
-      ctx.beginPath();
-      ctx.arc(xOffset + 10, yOffset - 10, 5, 0, Math.PI * 2);
-      ctx.fill();
+      //ctx.beginPath();
+      //ctx.arc(xOffset + 10, yOffset - 10, 5, 0, Math.PI * 2);
+      //ctx.fill();
 
       // Draw wrapped text line with indentation
       ctx.fillText(line.trim(), xOffset + 20, yOffset);
@@ -162,25 +167,18 @@ const VideoUploader = () => {
   });
 };
 
-const wrapText = (ctx, textLines, maxWidth) => {
-  if (!Array.isArray(textLines)) {
-    console.error('Expected textLines to be an array of strings');
+const wrapText = (ctx, text, maxWidth) => {
+  if (typeof text !== 'string') {
+    console.error('Expected text to be a string');
     return [];
   }
 
+  // Split the text by newline characters
+  const paragraphs = text.split('\n');
   let lines = [];
-  const lineHeight = 25; // Example line height
-  ctx.font = '20px Arial';
-  ctx.fillStyle = 'white'; // Set text color
-  ctx.textAlign = 'left';
 
-  for (const text of textLines) {
-    if (typeof text !== 'string') {
-      console.error('Expected each element in textLines to be a string');
-      continue;
-    }
-
-    let words = text.split(' ');
+  paragraphs.forEach(paragraph => {
+    const words = paragraph.split(' ');
     let currentLine = words[0];
 
     for (let i = 1; i < words.length; i++) {
@@ -193,14 +191,12 @@ const wrapText = (ctx, textLines, maxWidth) => {
         currentLine = word;
       }
     }
-    lines.push(currentLine);
-
-    // Adjust y-offset for next line
-    lines.push(''); // Empty line to create space between text blocks
-  }
+    lines.push(currentLine); // Add the last line of the paragraph
+  });
 
   return lines;
 };
+
 
 
 
@@ -224,8 +220,8 @@ const loadImage = (src) => {
         console.log(e)
         try {
             // Create the POST request using the fetch API
-            const response = await fetch('http://127.0.0.1:8000/test/', {
-            //const response = await fetch('http://3.143.116.75:8000/test/', {
+            //const response = await fetch('http://127.0.0.1:8000/test/', {
+            const response = await fetch('http://3.143.116.75:8000/test/', {
                 method: 'POST',
                 headers: {
 
@@ -280,12 +276,17 @@ const loadImage = (src) => {
                 setXLineVals(xValues);
                 setYLineVals(yValues);
 
-
-                setToeFeed(data.x_vals["feedback"]["TO"])
-                setVertFeed(data.x_vals["feedback"]["MV"])
-                setStrikeFeed(data.x_vals["feedback"]["S"])
-                setTouchFeed(data.x_vals["feedback"]["TD"])
-                setSuppFeed(data.x_vals["feedback"]["FS"])
+                setItemsToe(data.x_vals["feedback"]["TO"])
+                formatItemsForTextarea(data.x_vals["feedback"]["TO"],setTextAreaToe);
+                setItemsV(data.x_vals["feedback"]["MV"])
+                formatItemsForTextarea(data.x_vals["feedback"]["MV"],setTextAreaV);
+                setItemsS(data.x_vals["feedback"]["S"])
+                formatItemsForTextarea(data.x_vals["feedback"]["S"],setTextAreaS);
+                setItemsT(data.x_vals["feedback"]["TD"])
+                formatItemsForTextarea(data.x_vals["feedback"]["TD"],setTextAreaT);
+                setItemsFS(data.x_vals["feedback"]["FS"])
+                formatItemsForTextarea(data.x_vals["feedback"]["FS"],setTextAreaFS);
+                //setToeFeed(data.x_vals["feedback"]["TO"])
 
                 //setAvgG(data.x_vals["feedback"]["avg_g"])
                 //setAvgF(data.x_vals["feedback"]["avg_F"])
@@ -315,6 +316,44 @@ const loadImage = (src) => {
         }
     };
 
+      // Format the items for display in the textarea
+  const formatItemsForTextarea = (items,func) => {
+    const formattedItems = items.map(item => `- ${item}`).join('\n');
+    func(formattedItems);
+  };
+
+  // Handler to update state based on textarea changes
+  const handleTextChangeT = (event) => {
+    const updatedContent = event.target.value;
+    setTextAreaToe(updatedContent);
+    const updatedItems = updatedContent.split('\n').map(line => line.replace(/^•\s*/, ''));
+    setItemsToe(updatedItems);
+  };
+  const handleTextChangeV = (event) => {
+    const updatedContent = event.target.value;
+    setTextAreaV(updatedContent);
+    const updatedItems = updatedContent.split('\n').map(line => line.replace(/^•\s*/, ''));
+    setItemsV(updatedItems);
+  };
+  const handleTextChangeS = (event) => {
+    const updatedContent = event.target.value;
+    setTextAreaS(updatedContent);
+    const updatedItems = updatedContent.split('\n').map(line => line.replace(/^•\s*/, ''));
+    setItemsS(updatedItems);
+  };
+  const handleTextChangeTD = (event) => {
+    const updatedContent = event.target.value;
+    setTextAreaT(updatedContent);
+    const updatedItems = updatedContent.split('\n').map(line => line.replace(/^•\s*/, ''));
+    setItemsT(updatedItems);
+  };
+  const handleTextChangeFS = (event) => {
+    const updatedContent = event.target.value;
+    setTextAreaFS(updatedContent);
+    const updatedItems = updatedContent.split('\n').map(line => line.replace(/^•\s*/, ''));
+    setItemsFS(updatedItems);
+  };
+
   const cardVariants: Variants = {
   offscreen: {
     opacity: 0,
@@ -337,7 +376,8 @@ const loadImage = (src) => {
   }, [videoFile]);
 
   const downloadImage = async () => {
-        const feedbacks = [toeFeed,vertFeed,strikeFeed,touchFeed,suppFeed]
+        const feedbacks = [textAreaToe,textAreaV,textAreaS,textAreaT,textAreaFS]
+        console.log(feedbacks)
         const combinedImage = await createCombinedImage(images, feedbacks);
         saveAs(combinedImage, 'womp.jpg')
        // saveAs(images[0], 'womp.jpg') // Put your image URL here.
@@ -419,15 +459,12 @@ const loadImage = (src) => {
           <img src={images[0]} className="img-fluid" alt="Image" />
           <div class="text-container">
               <h3 >Toe Off</h3>
-              <div class="scrollable-list" contenteditable="true">
-              <ul>
-                {/*<li>90 dorsiflexion in swing foot</li>
-                <li>Front shin parallel to rear thigh</li>*/}
-                {toeFeed.map((item, index) => (
-                    <li key={index}>{item}</li>
-                  ))}
-              </ul>
-              </div>
+              <textarea
+                value={textAreaToe}
+                onChange={handleTextChangeT}
+                rows="5"
+                cols="50"
+              />
           </div>
         </motion.li>
          <motion.li class="anli"
@@ -436,15 +473,21 @@ const loadImage = (src) => {
             <img src={images[1]}/>
             <div class="text-container">
               <h3 >Max Vertical Projection</h3>
-              <div class="scrollable-list" contenteditable="true">
+              {/*<div class="scrollable-list" contenteditable="true">
               <ul>
-                {/*<li>Neutral head</li>
-                <li>>110 degrees knee angle in front leg</li>*/}
+                <li>Neutral head</li>
+                <li>>110 degrees knee angle in front leg</li>
                 {vertFeed.map((item, index) => (
                     <li key={index}>{item}</li>
                   ))}
               </ul>
-            </div>
+            </div>*/}
+            <textarea
+                value={textAreaV}
+                onChange={handleTextChangeV}
+                rows="5"
+                cols="50"
+              />
               </div>
         </motion.li>
          <motion.li class="anli"
@@ -453,12 +496,12 @@ const loadImage = (src) => {
             <img src={images[2]}/>
             <div class="text-container">
               <h3 >Strike</h3>
-              <div class="scrollable-list" contenteditable="true">
-              <ul>
-                <li>20-40 degree gap between thighs</li>
-                <li>Front foot beginning to supinate</li>
-              </ul>
-             </div>
+              <textarea
+                value={textAreaS}
+                onChange={handleTextChangeS}
+                rows="5"
+                cols="50"
+              />
           </div>
         </motion.li>
          <motion.li class="anli"
@@ -467,13 +510,12 @@ const loadImage = (src) => {
             <img src={images[3]}/>
             <div class="text-container">
               <h3 >Touch Down</h3>
-              <div class="scrollable-list" contenteditable="true">
-              <ul>
-                <li>Knees together</li>
-                <li>Initial contact with outside of ball of foot</li>
-                <li>Initial contact with outside of ball of foot</li>
-              </ul>
-          </div>
+              <textarea
+                value={textAreaT}
+                onChange={handleTextChangeTD}
+                rows="5"
+                cols="50"
+              />
             </div>
         </motion.li>
          <motion.li class="anli"
@@ -482,12 +524,12 @@ const loadImage = (src) => {
             <img src={images[4]}/>
             <div class="text-container">
               <h3 >Full Support</h3>
-              <div class="scrollable-list" contenteditable="true">
-              <ul>
-                <li>Swing foot tucked under glutes</li>
-                <li>Stance amortization occurs more at ankles than hips or knee</li>
-              </ul>
-          </div>
+              <textarea
+                value={textAreaFS}
+                onChange={handleTextChangeFS}
+                rows="5"
+                cols="50"
+              />
             </div>
         </motion.li>
       </ul>
@@ -561,9 +603,9 @@ const loadImage = (src) => {
             {
               //data: [1, 4, 2, 5, 8, 6],
               //data: yLineVals
-              data: datas["vL"], curve: "linear"
+              data: datas["vL"], curve: "linear",label: 'Velocity Left Knee',
             },
-            { data: datas["vR"], curve: "linear"}
+            { data: datas["vR"], curve: "linear",label: 'Velocity Right Knee',}
           ]}
       />
       </div>
