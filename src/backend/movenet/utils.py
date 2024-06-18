@@ -319,6 +319,17 @@ def step_length(height, height_pixels, distances, results, start_frame, end_fram
 
     return lens
 
+# Function to calculate velocity
+def calculate_velocity(positions, fps):
+    velocities = []
+    for i in range(1, len(positions)):
+        velocity = (np.array(positions[i]) - np.array(positions[i - 1])) * fps
+        velocities.append(velocity)
+        # Example implementation, adjust based on your actual function
+        # velocities = np.diff(positions, axis=0) * fps
+    return velocities
+
+
 """
 might not work if the pole is not always in frame? eg: since we are calling this whenever interested in initial position, 
 there is no guarantee a pole is in frame.
@@ -737,6 +748,27 @@ def get_gif(vid):
         #plt.savefig(f'key_frame_{i + 1}.png')
         #plt.close()
 
+    """
+    Velocity and Smoothness Analysis 
+    """
+    # Calculate velocities
+    velocitiesL = calculate_velocity(kneeL_pos, fps)
+    velocitiesR = calculate_velocity(kneeR_pos, fps)
+    print(velocitiesL)
+
+    # Compute velocity magnitudes
+    # since velocities are in x and y direction, need to reduce to scalar that does not have direction
+    velocity_magnitudeL = np.linalg.norm(velocitiesL, axis=1)
+    velocity_magnitudeR = np.linalg.norm(velocitiesR, axis=1)
+
+    # Create time axis
+    time_velocity = np.arange(len(velocity_magnitudeL)) / fps
+
+    # Convert numpy arrays to lists for serialization
+    velocity_magnitudeL_list = velocity_magnitudeL.tolist()
+    velocity_magnitudeR_list = velocity_magnitudeR.tolist()
+    time_velocity_list = time_velocity.tolist()
+
     num_frames = len(imp_frames)
     fig, axs = plt.subplots(1, num_frames, figsize=(num_frames * 5, 5))
 
@@ -768,10 +800,13 @@ def get_gif(vid):
     avg_ground_time = sum(ground_times) / len(ground_times)
     avg_flight_time = sum(flight_times) / (len(flight_times) - 1)
     time_btw_steps = 0
-    print(avg_ground_time)
+    #print(avg_ground_time)
 
     #return output_path
     #return [1, 2, 3, 5, 8, 10]
     # could return dictionary whcih would be easier to read
-    return {"ground":ground_times,"flight":flight_times,"kneePos":kneeL_pos,"feedback":feedback, "avg_f":avg_flight_time, "avg_g":avg_ground_time}
+    #"vL": velocity_magnitudeL, "vR": velocity_magnitudeR, "vT": time_velocity
+    return {"ground":ground_times,"flight":flight_times,"kneePos":kneeL_pos,"feedback":feedback,
+            "avg_f":avg_flight_time, "avg_g":avg_ground_time, "ang":thigh_angles,
+            "vL": velocity_magnitudeL_list, "vR": velocity_magnitudeR_list, "vT": time_velocity_list}
     #return [ground_times,flight_times]

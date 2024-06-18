@@ -68,6 +68,8 @@ const VideoUploader = () => {
 
   const [xLineVals, setXLineVals] = useState([]);
   const [yLineVals, setYLineVals] = useState([]);
+  const [velDataL, setVelDataL] = useState([]);
+  const [velDataR, setVelDataR] = useState([]);
 
   const [toeFeed, setToeFeed] = useState(null);
   const [vertFeed, setVertFeed] = useState(null);
@@ -78,6 +80,8 @@ const VideoUploader = () => {
   const [analData, setAnalData] = useState([]);
   const [avgG, setAvgG] = useState(null);
   const [avgF, setAvgF] = useState(null);
+  const [contactLabels, setContactLabels] = useState(null);
+  const [angLabels, setAngLabels] = useState(null);
 
 
   const addImage = (newImage) => {
@@ -101,6 +105,118 @@ const VideoUploader = () => {
     setImages([...images, ...newImages]);
   };
 
+ const createCombinedImage = async (imageUrls, texts) => {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+
+  // Calculate canvas dimensions based on images and text
+  const imageWidth = 400; // Example width per image
+  const imageHeight = 600; // Example height per image
+  const canvasWidth = imageUrls.length * imageWidth + 50; // Add space between images
+  const canvasHeight = imageHeight + 400; // Adjust height as needed
+
+  canvas.width = canvasWidth;
+  canvas.height = canvasHeight;
+
+  let xOffset = 10;
+
+  for (let i = 0; i < imageUrls.length; i++) {
+    const imageUrl = imageUrls[i];
+    const img = await loadImage(imageUrl);
+
+    // Draw image
+    ctx.drawImage(img, xOffset, 50, imageWidth, imageHeight);
+
+     // Format and wrap text as bullet points below the image
+    const lines = wrapText(ctx, texts[i], 400); // Example max width for wrapped text
+
+    const lineHeight = 25; // Example line height
+    ctx.font = '20px Arial';
+    ctx.fillStyle = 'white'; // Set text color
+    ctx.textAlign = 'left';
+
+    let yOffset = 50 + imageHeight + 30; // Initial y-offset for text below image
+
+    for (const line of lines) {
+      // Draw bullet point (circle)
+      ctx.beginPath();
+      ctx.arc(xOffset + 10, yOffset - 10, 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Draw wrapped text line with indentation
+      ctx.fillText(line.trim(), xOffset + 20, yOffset);
+      yOffset += lineHeight; // Increment y-offset for next line
+    }
+
+    xOffset += imageWidth + 20; // Adjust spacing between images
+  }
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) {
+        resolve(blob);
+      } else {
+        reject(new Error('Canvas toBlob failed'));
+      }
+    }, 'image/jpeg', 0.9); // Adjust quality if needed
+  });
+};
+
+const wrapText = (ctx, textLines, maxWidth) => {
+  if (!Array.isArray(textLines)) {
+    console.error('Expected textLines to be an array of strings');
+    return [];
+  }
+
+  let lines = [];
+  const lineHeight = 25; // Example line height
+  ctx.font = '20px Arial';
+  ctx.fillStyle = 'white'; // Set text color
+  ctx.textAlign = 'left';
+
+  for (const text of textLines) {
+    if (typeof text !== 'string') {
+      console.error('Expected each element in textLines to be a string');
+      continue;
+    }
+
+    let words = text.split(' ');
+    let currentLine = words[0];
+
+    for (let i = 1; i < words.length; i++) {
+      const word = words[i];
+      const width = ctx.measureText(currentLine + ' ' + word).width;
+      if (width < maxWidth) {
+        currentLine += ' ' + word;
+      } else {
+        lines.push(currentLine);
+        currentLine = word;
+      }
+    }
+    lines.push(currentLine);
+
+    // Adjust y-offset for next line
+    lines.push(''); // Empty line to create space between text blocks
+  }
+
+  return lines;
+};
+
+
+
+
+const loadImage = (src) => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'Anonymous'; // Handle cross-origin issues if necessary
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+};
+
+
+
    const analyze = async (e) => {
         setLoading(true);
         const formData = new FormData();
@@ -122,6 +238,14 @@ const VideoUploader = () => {
                 console.log(data)
                 console.log(data.pic);
                 setDatas(data.x_vals);
+
+                // Generate xAxis labels
+                const xAxisLabels = data.x_vals["ground"].map((_, index) => `C${index + 1}`);
+                setContactLabels(xAxisLabels)
+
+                const xAxisData = Array.from({ length: data.x_vals["ang"].length }, (_, i) => i + 1);
+                setAngLabels(xAxisData)
+
                 /*const xValues = data.map(point => point.x_value);
                 const yValues = data.map(point => point.y_value);*/
                 /*const xValues = data.x_vals;
@@ -165,10 +289,13 @@ const VideoUploader = () => {
 
                 //setAvgG(data.x_vals["feedback"]["avg_g"])
                 //setAvgF(data.x_vals["feedback"]["avg_F"])
+                setVelDataL([data.x_vals["ang"],data.x_vals["ang"]])
+                //setVelDataL([data.x_vals["vL"],data.x_vals["vR"][1]])
+                console.log(velDataL)
 
                 const augmentedData = [
-                  { title: 'Time between steps', value: '0.24', unit: 'SECONDS'},
-                  { title: 'Max step length', value: '1.08', unit: 'METS'},
+                  { title: 'Time between steps', value: '???', unit: 'SECONDS'},
+                  { title: 'Max step length', value: '???', unit: 'METS'},
                   { title: 'Mean Ground Time', value: Number(data.x_vals["avg_g"]).toFixed(3), unit: 'SECONDS'},
                   { title: 'Mean Flight Time', value: Number(data.x_vals["avg_f"]).toFixed(3), unit: 'SECONDS'}
                   // Add more mappings as needed
@@ -209,8 +336,11 @@ const VideoUploader = () => {
     console.log('upload successful')
   }, [videoFile]);
 
-  const downloadImage = () => {
-        saveAs(images[0], 'womp.jpg') // Put your image URL here.
+  const downloadImage = async () => {
+        const feedbacks = [toeFeed,vertFeed,strikeFeed,touchFeed,suppFeed]
+        const combinedImage = await createCombinedImage(images, feedbacks);
+        saveAs(combinedImage, 'womp.jpg')
+       // saveAs(images[0], 'womp.jpg') // Put your image URL here.
   }
 
   return (
@@ -376,19 +506,19 @@ const VideoUploader = () => {
   <div class="col-auto text-center">
       <p>Flight vs Ground Contact Times</p>
           <div className="carder chart-container">
-          <BarChart
-          series={[
-            //{ data: [0.3,0.4,0.25], label:'Ground'},
-            //{ data: [0.8,0.9,0.76], label:'Flight' },
-            { data: datas["ground"], label:'Ground'},
-            { data: datas["flight"], label:'Flight'},
-          ]}
-          height={300}
-          width={500}
-          xAxis={[{ data: ['C1', 'C2', 'C3'], scaleType: 'band', label:'Contacts' }]}
-          yAxis={[{ label: 'Time (sec)' }]}
-          margin={{ top: 30, bottom: 40, left: 40, right: 10 }}
-        />
+              <BarChart
+              series={[
+                //{ data: [0.3,0.4,0.25], label:'Ground'},
+                //{ data: [0.8,0.9,0.76], label:'Flight' },
+                { data: datas["ground"], label:'Ground'},
+                { data: datas["flight"], label:'Flight'},
+              ]}
+              //height={300}
+              //width={500}
+              xAxis={[{ data: contactLabels, scaleType: 'band', label:'Contacts' }]}
+              yAxis={[{ label: 'Time (sec)' }]}
+              margin={{ top: 30, bottom: 40, left: 40, right: 10 }}
+            />
           </div>
   </div>
   <div class="col-auto text-center">
@@ -398,8 +528,6 @@ const VideoUploader = () => {
           series={[
             { data: [1.2,0.9,1.1], label:'Ground'},
           ]}
-          height={300}
-             width={500}
           xAxis={[{ data: ['C1', 'C2', 'C3'], scaleType: 'band', label:'Contacts' }]}
           //yAxis={[{ label: 'Time (sec)' }]}
           margin={{ top: 30, bottom: 40, left: 40, right: 10 }}
@@ -412,10 +540,8 @@ const VideoUploader = () => {
       <p>Angles over Frames</p>
      <div className="carder chart-container" >
       <LineChart
-  width={500}
-  height={300}
-  series={[{ data: uData, label: 'uv', area: true, showMark: false }]}
-  xAxis={[{ scaleType: 'point', data: xLabels }]}
+  series={[{ data: datas["ang"], label: 'Hip Angle', area: true, showMark: false }]}
+  xAxis={[{ scaleType: 'point', data: angLabels }]}
   sx={{
     [`& .${lineElementClasses.root}`]: {
       display: 'none',
@@ -429,15 +555,16 @@ const VideoUploader = () => {
      <div className="carder chart-container">
       <LineChart
           //xAxis={[{ data: [1, 2, 3, 5, 8, 10] }]}
-          xAxis={[{ data: xLineVals}]}
+          //xAxis={[{ data: xLineVals}]}
+          xAxis={[{ data: datas["vT"]}]}
           series={[
             {
               //data: [1, 4, 2, 5, 8, 6],
-              data: yLineVals
+              //data: yLineVals
+              data: datas["vL"], curve: "linear"
             },
+            { data: datas["vR"], curve: "linear"}
           ]}
-          width={500}
-          height={300}
       />
       </div>
   </div>
