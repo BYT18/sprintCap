@@ -19,11 +19,16 @@ import myImage4 from "../../assets/toe_off_L2.png";
 import myImage5 from "../../assets/full_sup_L2.png";
 
 import Loader from '../../components/Loader/index.jsx';
+import Dropdown from '../../components/Dropdown/index.jsx';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 import "bootstrap-icons/font/bootstrap-icons.css";
 import 'bootstrap/dist/js/bootstrap.bundle.min';
+import "bootstrap/dist/css/bootstrap.min.css";
+import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import * as Icon from 'react-bootstrap-icons';
+
+
 
 /*const data = [
   { x: 100, y: 200, id: 1 },
@@ -113,10 +118,39 @@ const VideoUploader = () => {
  const createCombinedImage = async (imageUrls, texts) => {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
+ // Function to load images and calculate dimensions
+  // Function to load images and calculate dimensions
+    // Function to load images and calculate dimensions
+  const loadImage = async (url) => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'Anonymous'; // Set crossOrigin attribute
+      img.onload = () => {
+        resolve(img);
+      };
+      img.onerror = reject;
+      img.src = url;
+    });
+  };
+
+  // Load all images
+  const images = await Promise.all(imageUrls.map(url => loadImage(url)));
+
+  // Ensure all images are loaded before continuing
+  await Promise.all(images.map(img => {
+    return new Promise((resolve, reject) => {
+      if (img.complete) {
+        resolve(img);
+      } else {
+        img.onload = resolve;
+        img.onerror = reject;
+      }
+    });
+  }));
 
   // Calculate canvas dimensions based on images and text
-  const imageWidth = 500; // Example width per image
-  const imageHeight = 600; // Example height per image
+  const imageWidth = images[0].width*1.5; // Assuming all images have the same width
+  const imageHeight = images[0].height*1.5; // Assuming all images have the same height
   const canvasWidth = imageUrls.length * imageWidth + 150; // Add space between images
   const canvasHeight = imageHeight + 400; // Adjust height as needed
 
@@ -133,14 +167,14 @@ const VideoUploader = () => {
     ctx.drawImage(img, xOffset, 50, imageWidth, imageHeight);
 
      // Format and wrap text as bullet points below the image
-    const lines = wrapText(ctx, texts[i], 400); // Example max width for wrapped text
+    const lines = wrapText(ctx, texts[i], imageWidth - 10); // Example max width for wrapped text
 
     const lineHeight = 25; // Example line height
     ctx.font = '20px Arial';
     ctx.fillStyle = 'white'; // Set text color
     ctx.textAlign = 'left';
 
-    let yOffset = 50 + imageHeight + 30; // Initial y-offset for text below image
+    let yOffset = 50 + imageHeight + 50; // Initial y-offset for text below image
 
     for (const line of lines) {
       // Draw bullet point (circle)
@@ -149,7 +183,7 @@ const VideoUploader = () => {
       //ctx.fill();
 
       // Draw wrapped text line with indentation
-      ctx.fillText(line.trim(), xOffset + 20, yOffset);
+      ctx.fillText(line.trim(), xOffset + 5, yOffset);
       yOffset += lineHeight; // Increment y-offset for next line
     }
 
@@ -197,10 +231,6 @@ const wrapText = (ctx, text, maxWidth) => {
   return lines;
 };
 
-
-
-
-
 const loadImage = (src) => {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -210,8 +240,6 @@ const loadImage = (src) => {
     img.src = src;
   });
 };
-
-
 
    const analyze = async (e) => {
         setLoading(true);
@@ -404,6 +432,13 @@ const loadImage = (src) => {
               </video>
             </div>
           )}
+        <div className="container mt-3">
+          <select class="form-select" aria-label="Default select example">
+              <option selected>Top End Analysis</option>
+              <option value="1">Acceleration Analysis</option>
+              <option value="2">Tempo Stride Analysis</option>
+          </select>
+        </div>
       </div>
     </motion.div>
   </section>
@@ -464,6 +499,7 @@ const loadImage = (src) => {
                 onChange={handleTextChangeT}
                 rows="5"
                 cols="50"
+                className="textarea-styled"
               />
           </div>
         </motion.li>
@@ -487,6 +523,7 @@ const loadImage = (src) => {
                 onChange={handleTextChangeV}
                 rows="5"
                 cols="50"
+                 className="textarea-styled"
               />
               </div>
         </motion.li>
@@ -501,6 +538,7 @@ const loadImage = (src) => {
                 onChange={handleTextChangeS}
                 rows="5"
                 cols="50"
+                 className="textarea-styled"
               />
           </div>
         </motion.li>
@@ -515,6 +553,7 @@ const loadImage = (src) => {
                 onChange={handleTextChangeTD}
                 rows="5"
                 cols="50"
+                 className="textarea-styled"
               />
             </div>
         </motion.li>
@@ -529,6 +568,7 @@ const loadImage = (src) => {
                 onChange={handleTextChangeFS}
                 rows="5"
                 cols="50"
+                 className="textarea-styled"
               />
             </div>
         </motion.li>
