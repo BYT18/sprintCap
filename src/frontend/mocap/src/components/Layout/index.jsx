@@ -8,7 +8,7 @@ import 'bootstrap/dist/js/bootstrap.bundle.min';
 
 import * as Icon from 'react-bootstrap-icons';
 import '../../App.css'; // Import the CSS file
-import logo from '../../logo.png';
+import logo from '../../logo_transparent.png';
 
 function Layout(props){
 const location = useLocation();

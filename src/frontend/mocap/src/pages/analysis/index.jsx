@@ -1,5 +1,6 @@
 // VideoUploader.js
 import React, { useState, useRef, useEffect} from 'react';
+import { Tooltip } from 'react-tooltip'
 import './VideoUploader.css';
 import { BarChart } from '@mui/x-charts/BarChart';
 import { LineChart, lineElementClasses } from '@mui/x-charts/LineChart';
@@ -19,7 +20,7 @@ import myImage4 from "../../assets/toe_off_L2.png";
 import myImage5 from "../../assets/full_sup_L2.png";
 
 import Loader from '../../components/Loader/index.jsx';
-import Dropdown from '../../components/Dropdown/index.jsx';
+import PasteImage from '../../components/Dropdown/index.jsx';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 import "bootstrap-icons/font/bootstrap-icons.css";
@@ -248,8 +249,8 @@ const loadImage = (src) => {
         console.log(e)
         try {
             // Create the POST request using the fetch API
-            //const response = await fetch('http://127.0.0.1:8000/test/', {
-            const response = await fetch('http://3.143.116.75:8000/test/', {
+            const response = await fetch('http://127.0.0.1:8000/test/', {
+            //const response = await fetch('http://3.143.116.75:8000/test/', {
                 method: 'POST',
                 headers: {
 
@@ -432,12 +433,21 @@ const loadImage = (src) => {
               </video>
             </div>
           )}
-        <div className="container mt-3">
+        <div className="container mt-2" data-tooltip-id="my-tooltip" data-tooltip-content="Change analysis depending on sprinting phase being recorded">
           <select class="form-select" aria-label="Default select example">
               <option selected>Top End Analysis</option>
               <option value="1">Acceleration Analysis</option>
               <option value="2">Tempo Stride Analysis</option>
           </select>
+          <Tooltip id="my-tooltip" />
+        </div>
+        <div className="container mt-4">
+          <PasteImage />
+        </div>
+        <div className="container mt-4">
+          <button type="button" class="btn btn-secondary">
+            Analyze
+          </button>
         </div>
       </div>
     </motion.div>

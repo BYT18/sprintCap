@@ -10,6 +10,8 @@ import myImage3 from "../../assets/strike_R2.png";
 import myImage4 from "../../assets/toe_off_L2.png";
 import myImage5 from "../../assets/full_sup_L2.png";
 
+import Reviews from "../../components/Reviews/index.jsx";
+
 const Home = () => {
 
  const newsPanelRef = useRef(null);
@@ -276,6 +278,17 @@ Elevate your sprinting and running performance with our cutting-edge platform th
               </div>
             </motion.div>
           </div>
+        </div>
+      </motion.section>
+
+      <motion.section className="news-section py-5" style={{ minHeight: "80vh",display: "flex",alignItems: "center"}}
+           variants={cardVariants}
+            initial="offscreen"
+            whileInView="onscreen"
+            viewport={{ once: true, amount: 0.5 }}
+      >
+        <div className="container">
+            <Reviews />
         </div>
       </motion.section>
 
