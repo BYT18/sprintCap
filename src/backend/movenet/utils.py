@@ -2,6 +2,7 @@
 #!wget -O pose_landmarker.task -q https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_heavy/float16/1/pose_landmarker_heavy.task
 
 from mediapipe import solutions
+import subprocess
 from mediapipe.framework.formats import landmark_pb2
 import numpy as np
 import cv2
@@ -375,8 +376,7 @@ Main
 def get_gif(vid):
     # STEP 1: Import the necessary modules.
     import mediapipe as mp
-    from mediapipe.tasks import python
-    from mediapipe.tasks.python import vision
+    import tempfile
 
     mp_drawing = mp.solutions.drawing_utils
     mp_pose = mp.solutions.pose
@@ -386,6 +386,13 @@ def get_gif(vid):
     #output_path = '/pics/output_video.mp4'
     output_path = os.path.join('media/pics', 'output_video.mov')
     #output_path = os.path.join('/pics', 'output_video.mp4')
+    # Save the uploaded file to a temporary file
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.mov') as temp_file:
+        for chunk in vid.chunks():
+            temp_file.write(chunk)
+        temp_file_path = temp_file.name
+
+    video_path = temp_file_path
     cap = cv2.VideoCapture(video_path)
 
     # Get the frame rate and frame size of the video
@@ -732,6 +739,15 @@ def get_gif(vid):
         cap.release()
         out.release()
         cv2.destroyAllWindows()
+
+        # Now, convert the output video to MP4 using ffmpeg
+    try:
+            v_path = os.path.join('media/pics', 'output_video.mp4')
+            subprocess.run(['ffmpeg', '-y', '-i', output_path, '-vcodec', 'h264', '-acodec', 'aac', v_path], check=True)
+
+            print("Conversion to MP4 successful.")
+    except subprocess.CalledProcessError as e:
+            print(f"Conversion to MP4 failed: {e}")
 
     for i in range(len(kinogram)):
         # Convert the frame from BGR to RGB

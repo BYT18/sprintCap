@@ -43,18 +43,18 @@ class AnalysisView(generics.ListCreateAPIView):
 
         #return PetSeeker.objects.create(**serializer.validated_data, user=self.request.user)
         print(serializer.validated_data['vid'].file)
-        print(serializer.validated_data['vid'].temporary_file_path())
-        g = get_gif(serializer.validated_data['vid'].temporary_file_path())
+        print(serializer.validated_data['vid'])
+        g = get_gif(serializer.validated_data['vid'])
         #s = PoseSerializer
         #save(vid=g)#
 
         #serializer.save(pic='./pics/output_video.mp4')
         #serializer.save(pic='./pics/output_video.mov')
-        serializer.save(pic='./pics/output_video.mov',kin1='./pics/key_frame_1.png',kin2='./pics/key_frame_2.png',kin3='./pics/key_frame_3.png',kin4='./pics/key_frame_4.png',kin5='./pics/key_frame_5.png', x_vals = g)
+        serializer.save(pic='./pics/output_video.mp4',kin1='./pics/key_frame_1.png',kin2='./pics/key_frame_2.png',kin3='./pics/key_frame_3.png',kin4='./pics/key_frame_4.png',kin5='./pics/key_frame_5.png', x_vals = g)
 
         # Construct the response
         response_data = {
-            "output_video": './pics/output_video.mov',
+            "output_video": './pics/output_video.mp4',
             "key_frames": [
                 './pics/key_frame_1.png',
                 './pics/key_frame_2.png',
