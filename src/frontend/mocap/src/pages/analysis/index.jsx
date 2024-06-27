@@ -68,6 +68,7 @@ const VideoUploader = () => {
   const [testImg, setTestImg] = useState(null);
   const [resultVid, setResultVid] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [pasteImage, setPasteImage] = useState(null);
 
   const [datas, setDatas] = useState([]);
   const [chartData, setChartData] = useState({});
@@ -106,8 +107,12 @@ const VideoUploader = () => {
       const url = URL.createObjectURL(file);
       setVideoFile(file);
       setVideoURL(url);
-      analyze(file);
+      //analyze(file);
     }
+  };
+
+  const handleAnalyze = () => {
+    analyze(videoFile,pasteImage)
   };
 
   const handleImageUpload = (event) => {
@@ -120,8 +125,6 @@ const VideoUploader = () => {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
  // Function to load images and calculate dimensions
-  // Function to load images and calculate dimensions
-    // Function to load images and calculate dimensions
   const loadImage = async (url) => {
     return new Promise((resolve, reject) => {
       const img = new Image();
@@ -242,15 +245,20 @@ const loadImage = (src) => {
   });
 };
 
-   const analyze = async (e) => {
+   const analyze = async (e,p) => {
         setLoading(true);
         const formData = new FormData();
         formData.append("vid", e);
+
+        const blob = await fetch(p).then(res => res.blob()); // Convert base64 to Blob
+        formData.append('pic', blob, 'image.png'); // Add blob to formData with filename
+        //formData.append("pic", p);
         console.log(e)
+        //console.log(p)
         try {
             // Create the POST request using the fetch API
-            //const response = await fetch('http://127.0.0.1:8000/test/', {
-            const response = await fetch('http://3.143.116.75:8000/test/', {
+            const response = await fetch('http://127.0.0.1:8000/test/', {
+            //const response = await fetch('http://3.143.116.75:8000/test/', {
                 method: 'POST',
                 headers: {
 
@@ -325,7 +333,7 @@ const loadImage = (src) => {
 
                 const augmentedData = [
                   { title: 'Time between steps', value: '???', unit: 'SECONDS'},
-                  { title: 'Max step length', value: '???', unit: 'METS'},
+                  { title: 'Max step length', value: Number(data.x_vals["maxSL"]).toFixed(3), unit: 'METERS'},
                   { title: 'Mean Ground Time', value: Number(data.x_vals["avg_g"]).toFixed(3), unit: 'SECONDS'},
                   { title: 'Mean Flight Time', value: Number(data.x_vals["avg_f"]).toFixed(3), unit: 'SECONDS'}
                   // Add more mappings as needed
@@ -412,6 +420,20 @@ const loadImage = (src) => {
        // saveAs(images[0], 'womp.jpg') // Put your image URL here.
   }
 
+  const handlePaste = (event) => {
+    const items = event.clipboardData.items;
+    for (let item of items) {
+      if (item.type.startsWith('image/')) {
+        const file = item.getAsFile();
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setPasteImage(e.target.result);
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+  };
+
   return (
   <body>
    <section class="bannerCards text-sm-start text-center p-4">
@@ -442,10 +464,19 @@ const loadImage = (src) => {
           <Tooltip id="my-tooltip" />
         </div>
         <div className="container mt-4">
-          <PasteImage />
+          <div
+              className="paste-area"
+              onPaste={handlePaste}
+              style={{ border: '2px dashed #ccc', padding: '20px', textAlign: 'center', cursor: 'pointer' }}
+              data-tooltip-id="my-tooltip" data-tooltip-content="This is used to compute step length and velocity"
+            >
+              <p style={{color:"black"}}>Click here and press Ctrl+V to paste image of measuring device</p>
+                         <Tooltip id="my-tooltip" />
+              {pasteImage && <img src={pasteImage} alt="Pasted" style={{ maxWidth: '100%', maxHeight: '400px', marginTop: '20px' }} />}
+            </div>
         </div>
         <div className="container mt-4">
-          <button type="button" class="btn btn-secondary">
+          <button type="button" class="btn btn-secondary" onClick={handleAnalyze}>
             Analyze
           </button>
         </div>

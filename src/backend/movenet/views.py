@@ -44,7 +44,7 @@ class AnalysisView(generics.ListCreateAPIView):
         #return PetSeeker.objects.create(**serializer.validated_data, user=self.request.user)
         print(serializer.validated_data['vid'].file)
         print(serializer.validated_data['vid'])
-        g = get_gif(serializer.validated_data['vid'])
+        g = get_gif(serializer.validated_data['vid'],serializer.validated_data['pic'])
         #s = PoseSerializer
         #save(vid=g)#
 

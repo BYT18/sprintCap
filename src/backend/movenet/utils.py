@@ -288,7 +288,7 @@ def contact_flight_analysis(frames, fps, tot_frames):
     return [flight_times,gcontact_times]
 
 
-def step_len_anal(ank_pos, frames, output_frames):
+def step_len_anal(ank_pos, frames, output_frames, pic):
     imp_frames = frames
     s_lens = []
 
@@ -296,14 +296,14 @@ def step_len_anal(ank_pos, frames, output_frames):
     for i in range(len(imp_frames) - 1):
         if imp_frames[i] + 1 == imp_frames[i + 1] and initial == 0:
             #initial = left or right ankle position
-            marker_pos = obj_detect(output_frames[imp_frames[i]],0)
+            marker_pos = obj_detect(output_frames[imp_frames[i]],pic)
             initial = abs(ank_pos[i][0] - marker_pos)
             #initial = ank_pos[i][0]
 
         elif imp_frames[i] + 1 == imp_frames[i + 1] and initial != 0:
             continue
         else:
-            marker_pos = obj_detect(output_frames[imp_frames[i]], 0)
+            marker_pos = obj_detect(output_frames[imp_frames[i]], pic)
             s_lens.append(abs(abs(ank_pos[i+1][0]-marker_pos) - initial))
             #s_lens.append(ank_pos[i + 1][0] - initial)
             initial = 0
@@ -340,7 +340,14 @@ def obj_detect(img, temp):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     assert img is not None, "file could not be read, check with os.path.exists()"
     img2 = img.copy()
-    template = cv2.imread('pole.png', cv2.IMREAD_GRAYSCALE)
+    #template = cv2.imread('pole.png', cv2.IMREAD_GRAYSCALE)
+    #template = cv2.imread(temp, cv2.IMREAD_GRAYSCALE)
+    temp_file_path = 'media/pics/image.png'
+    with open(temp_file_path, 'wb') as f:
+        for chunk in temp.chunks():
+            f.write(chunk)
+    template = cv2.imread(temp_file_path, cv2.IMREAD_GRAYSCALE)
+    #template = cv2.cvtColor(temp, cv2.COLOR_BGR2GRAY)
     assert template is not None, "file could not be read, check with os.path.exists()"
     w, h = template.shape[::-1]
 
@@ -373,7 +380,7 @@ def obj_detect(img, temp):
 """
 Main
 """
-def get_gif(vid):
+def get_gif(vid, pic):
     # STEP 1: Import the necessary modules.
     import mediapipe as mp
     import tempfile
@@ -723,11 +730,13 @@ def get_gif(vid):
                             #checking if the distance between knees does not change enough then that means we are at toe off frame
                         if abs(footL[1] - threshold)<10:
                             imp_frames.append(frame_idx)
+                            ank_pos.append(ankL)
                         else:
                             contact = False
                     else:
                         if abs(footR[1] - threshold)<10:
                             imp_frames.append(frame_idx)
+                            ank_pos.append(ankR)
                         else:
                             contact = False
 
@@ -800,8 +809,8 @@ def get_gif(vid):
     Step Length Analysis 
     """
     # david 30-56
-    #pix_distances = step_len_anal(ank_pos, imp_frames, output)
-    #sLength = step_length(1.77, height_in_pixels, pix_distances, results, 0, 0, (581, 460), (678, 460))
+    pix_distances = step_len_anal(ank_pos, imp_frames, output, pic)
+    sLength = step_length(1.77, height_in_pixels, pix_distances, results, 0, 0, (581, 460), (678, 460))
 
     """
     Flight and ground contact time analysis 
@@ -812,17 +821,17 @@ def get_gif(vid):
     flight_times = f_g_times[0]
 
     # watch out for last flight time is always 0
-    #max_step_len = max(sLength)
+    max_step_len = max(sLength)
     avg_ground_time = sum(ground_times) / len(ground_times)
     avg_flight_time = sum(flight_times) / (len(flight_times) - 1)
     time_btw_steps = 0
-    #print(avg_ground_time)
+    print(avg_ground_time)
 
     #return output_path
     #return [1, 2, 3, 5, 8, 10]
     # could return dictionary whcih would be easier to read
     #"vL": velocity_magnitudeL, "vR": velocity_magnitudeR, "vT": time_velocity
     return {"ground":ground_times,"flight":flight_times,"kneePos":kneeL_pos,"feedback":feedback,
-            "avg_f":avg_flight_time, "avg_g":avg_ground_time, "ang":thigh_angles,
+            "avg_f":avg_flight_time, "avg_g":avg_ground_time, "maxSL":max_step_len, "ang":thigh_angles,
             "vL": velocity_magnitudeL_list, "vR": velocity_magnitudeR_list, "vT": time_velocity_list}
     #return [ground_times,flight_times]

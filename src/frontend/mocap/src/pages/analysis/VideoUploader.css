@@ -313,3 +313,18 @@ circle {
   border-color: #007BFF;
 }
 
+
+.paste-area {
+  border: 2px dashed #ccc;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.paste-area img {
+  max-width: 100%;
+  max-height: 400px;
+  margin-top: 20px;
+}
+
+

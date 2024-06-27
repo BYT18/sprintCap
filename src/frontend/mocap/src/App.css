@@ -37,7 +37,7 @@
 
 /* Styles for the active navigation link */
 .nav .active-link {
-  color:  black!important; /* Color for the active link */
+  color:  #36454F!important; /* Color for the active link */
   font-weight: bold; /* Optional: make the active link bold */
  }
 
