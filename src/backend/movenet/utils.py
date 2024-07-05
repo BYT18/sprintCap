@@ -312,6 +312,7 @@ def step_len_anal(ank_pos, frames, output_frames, pic):
 
 def step_length(height, height_pixels, distances, results, start_frame, end_frame, start_foot_coords, end_foot_coords):
     lens = []
+
     for i in range(len(distances)):
         meters_per_pixel = height / height_pixels
         pixel_distance = ((distances[i]) ** 2) ** 0.5
@@ -380,7 +381,7 @@ def obj_detect(img, temp):
 """
 Main
 """
-def get_gif(vid, pic):
+def get_gif(vid, pic, ath_height):
     # STEP 1: Import the necessary modules.
     import mediapipe as mp
     import tempfile
@@ -810,7 +811,8 @@ def get_gif(vid, pic):
     """
     # david 30-56
     pix_distances = step_len_anal(ank_pos, imp_frames, output, pic)
-    sLength = step_length(1.77, height_in_pixels, pix_distances, results, 0, 0, (581, 460), (678, 460))
+    #sLength = step_length(1.77, height_in_pixels, pix_distances, results, 0, 0, (581, 460), (678, 460))
+    sLength = step_length(ath_height, height_in_pixels, pix_distances, 0, 0, 0, 0,0)
 
     """
     Flight and ground contact time analysis 
@@ -832,6 +834,6 @@ def get_gif(vid, pic):
     # could return dictionary whcih would be easier to read
     #"vL": velocity_magnitudeL, "vR": velocity_magnitudeR, "vT": time_velocity
     return {"ground":ground_times,"flight":flight_times,"kneePos":kneeL_pos,"feedback":feedback,
-            "avg_f":avg_flight_time, "avg_g":avg_ground_time, "maxSL":max_step_len, "ang":thigh_angles,
+            "avg_f":avg_flight_time, "avg_g":avg_ground_time, "maxSL":max_step_len, "sLen" : sLength, "ang":thigh_angles,
             "vL": velocity_magnitudeL_list, "vR": velocity_magnitudeR_list, "vT": time_velocity_list}
     #return [ground_times,flight_times]

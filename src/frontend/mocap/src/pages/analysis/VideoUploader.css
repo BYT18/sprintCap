@@ -327,4 +327,21 @@ circle {
   margin-top: 20px;
 }
 
+.slider-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 20px;
+}
+
+label {
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+
+.slider {
+  width: 80%;
+  max-width: 400px;
+}
+
 

@@ -11,6 +11,7 @@ class Pose(models.Model):
     kin5 = models.ImageField(upload_to='pics/', blank=True, null=True)
 
     x_vals = models.JSONField(null=True, blank=True)  # Requires Django 3.1+
+    height = models.FloatField(null = True, blank=True)
 
 
     def __str__(self):

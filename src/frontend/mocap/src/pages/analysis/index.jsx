@@ -21,6 +21,7 @@ import myImage5 from "../../assets/full_sup_L2.png";
 
 import Loader from '../../components/Loader/index.jsx';
 import PasteImage from '../../components/Dropdown/index.jsx';
+import Slider from '../../components/Slider/index.jsx';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 import "bootstrap-icons/font/bootstrap-icons.css";
@@ -252,9 +253,11 @@ const loadImage = (src) => {
 
         const blob = await fetch(p).then(res => res.blob()); // Convert base64 to Blob
         formData.append('pic', blob, 'image.png'); // Add blob to formData with filename
+
+        formData.append('height', height);
+
         //formData.append("pic", p);
-        console.log(e)
-        //console.log(p)
+        //console.log(e)
         try {
             // Create the POST request using the fetch API
             const response = await fetch('http://127.0.0.1:8000/test/', {
@@ -434,6 +437,13 @@ const loadImage = (src) => {
     }
   };
 
+  const [height, setHeight] = useState(170); // Default height value (in cm)
+
+  const handleSliderChange = (event) => {
+    setHeight(event.target.value);
+  };
+
+
   return (
   <body>
    <section class="bannerCards text-sm-start text-center p-4">
@@ -475,7 +485,21 @@ const loadImage = (src) => {
               {pasteImage && <img src={pasteImage} alt="Pasted" style={{ maxWidth: '100%', maxHeight: '400px', marginTop: '20px' }} />}
             </div>
         </div>
-        <div className="container mt-4">
+        <div className="container mt-2">
+              <div className="slider-container">
+              <label style={{color:"black"}} htmlFor="height-slider">Select Height: {height} cm</label>
+              <input
+                type="range"
+                id="height-slider"
+                min="50"
+                max="250"
+                value={height}
+                onChange={handleSliderChange}
+                className="slider"
+              />
+            </div>
+        </div>
+        <div className="container mt-2">
           <button type="button" class="btn btn-secondary" onClick={handleAnalyze}>
             Analyze
           </button>
@@ -664,7 +688,8 @@ const loadImage = (src) => {
      <div className="carder chart-container" >
       <LineChart
   series={[{ data: datas["ang"], label: 'Hip Angle', area: true, showMark: false }]}
-  xAxis={[{ scaleType: 'point', data: angLabels }]}
+  xAxis={[{ scaleType: 'point', data: angLabels, label:'Frames' }]}
+  yAxis={[{ label:'Degrees' }]}
   sx={{
     [`& .${lineElementClasses.root}`]: {
       display: 'none',
@@ -679,7 +704,8 @@ const loadImage = (src) => {
       <LineChart
           //xAxis={[{ data: [1, 2, 3, 5, 8, 10] }]}
           //xAxis={[{ data: xLineVals}]}
-          xAxis={[{ data: datas["vT"]}]}
+          xAxis={[{ data: datas["vT"], label:"Time"}]}
+          yAxis={[{ label:'M/s' }]}
           series={[
             {
               //data: [1, 4, 2, 5, 8, 6],
