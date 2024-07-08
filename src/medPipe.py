@@ -28,6 +28,9 @@ def draw_landmarks_on_image(rgb_image, detection_result):
       solutions.drawing_styles.get_default_pose_landmarks_style())
   return annotated_image
 
+# Function to calculate Euclidean distance
+def euclidean_distance(point1, point2):
+    return np.sqrt((point1[0] - point2[0])**2 + (point1[1] - point2[1])**2)
 
 def compute_slope(point1, point2):
     """
@@ -280,29 +283,68 @@ def contact_flight_analysis(frames, fps, tot_frames):
     plt.legend()
 
     # Display the plot
-    plt.show()
+    #plt.show()
     return [flight_times,gcontact_times]
 
-def step_len_anal(ank_pos, frames, output_frames):
+# use leg length to calibrate distance to pole, then use new leg length to calibrate distance from pole in next step, this shoudl give more accurate measurments
+def step_len_anal(ank_pos, frames, output_frames, leg_length_px, leg_length):
     imp_frames = frames
+    cap_frames = []
     s_lens = []
-
     initial = 0
     for i in range(len(imp_frames) - 1):
+        #if frames are consequtive then they are looking at the same ground contact
         if imp_frames[i] + 1 == imp_frames[i + 1] and initial == 0:
             #initial = left or right ankle position
             marker_pos = obj_detect(output_frames[imp_frames[i]],0)
             initial = abs(ank_pos[i][0] - marker_pos)
-            #initial = ank_pos[i][0]
+            cap_frames.append(imp_frames[i])
+            """ initial = ank_pos[i]
+            init = i
+            print("a")
+            print(i)
+            print(initial1)
+            print(initial)
+            print("a")"""
 
         elif imp_frames[i] + 1 == imp_frames[i + 1] and initial != 0:
             continue
         else:
             marker_pos = obj_detect(output_frames[imp_frames[i]], 0)
+            #left_step_length_px1 = abs(abs(ank_pos[i+1][0]-marker_pos) - initial1)
             s_lens.append(abs(abs(ank_pos[i+1][0]-marker_pos) - initial))
+            cap_frames.append(imp_frames[i])
             #s_lens.append(ank_pos[i + 1][0] - initial)
+
+            """ left_step_length_px = euclidean_distance(ank_pos[i+1],initial)
+            left_step_length_px = abs(ank_pos[i+1][0] - initial[0])
+            fin = i
+            print("b")
+            print(i)
+            print(left_step_length_px1)
+            print(left_step_length_px)
+            print("b")"""
+
+           # pixel_to_meter_ratio = leg_length / leg_length_px
+            #left_step_length = (left_step_length_px / leg_length_px) * leg_length
+            #left_step_length = left_step_length_px * pixel_to_meter_ratio
+            #s_lens.append(left_step_length)
+
             initial = 0
 
+    """initial = ank_pos[1]
+    print("verif")
+    print(imp_frames)
+    print(ank_pos)
+    print(initial)
+    print(ank_pos[13])
+    left_step_length_px = euclidean_distance(ank_pos[13],initial)
+    print(left_step_length_px)
+    pixel_to_meter_ratio = leg_length / 90
+    # left_step_length = (left_step_length_px / leg_length_px) * leg_length
+    left_step_length = left_step_length_px * pixel_to_meter_ratio
+    s_lens.append(left_step_length)"""
+    print(cap_frames)
     return s_lens
 
 def step_length(height, height_pixels, distances, results, start_frame, end_frame, start_foot_coords, end_foot_coords):
@@ -413,6 +455,39 @@ def calculate_velocity(positions, fps):
     return velocities
 
 
+# Function to calculate relative velocity
+def compute_relative_velocity(previous_frame, current_frame, pixel_to_meter_ratio, fps):
+    prev_keypoints = previous_frame
+    curr_keypoints = current_frame
+
+    # Calculate horizontal displacement in pixels
+    displacement_pixels = abs(curr_keypoints['ankle'][0] - prev_keypoints['ankle'][0])
+
+    # Convert displacement to meters
+    displacement_meters = displacement_pixels * pixel_to_meter_ratio
+
+    # Compute velocity (meters per second)
+    velocity = displacement_meters * fps
+
+    return velocity
+
+# Detect thigh scissoring
+def detect_scissor(values, threshold):
+    """zero_crossings = []
+    for i in range(1, len(y_values)):
+        if y_values[i-1] >= threshold > y_values[i] or y_values[i-1] < threshold <= y_values[i]:
+            zero_crossings.append(i)
+    return zero_crossings"""
+    local_maxima = []
+    for i in range(1, len(values) - 1):
+        if values[i - 1] < values[i] > values[i + 1]:
+            local_maxima.append(i)
+    return local_maxima
+
+def moving_average(values, window_size):
+    cumsum = np.cumsum(np.insert(values, 0, 0))
+    return (cumsum[window_size:] - cumsum[:-window_size]) / float(window_size)
+
 """
 Main
 """
@@ -463,6 +538,8 @@ height_in_pixels = 0
 ank_pos = []
 
 #smoothness and rom
+ankL_pos = []
+ankR_pos = []
 hipL_pos = []
 hipR_pos = []
 kneeL_pos = []
@@ -470,7 +547,12 @@ kneeL_velocities=[]
 kneeR_pos = []
 kneeR_velocities=[]
 thigh_angles = []
+mid_pelvis_pos = []
 
+prev_ankle_pos = None
+prev_time = None
+leg_length = 0.9  # in meters
+leg_length_px = 1
 
 # Parameters for lucas kanade optical flow
 # lk_params = dict(winSize=(15, 15), maxLevel=2,criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
@@ -557,8 +639,33 @@ with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tra
             prev_landmarks = current_landmarks"""
             kneeL_pos.append(kneeL)
             kneeR_pos.append(kneeR)
+            mid_pelvis_pos.append(midPelvis)
             hipL_pos.append(hipL)
             hipR_pos.append(hipR)
+            ankL_pos.append(ankL)
+            ankR_pos.append(ankR)
+            # Calculate leg length in pixels
+            #if abs(hipL[0] - ankL[0])<10 and abs(hipL[0] - kneeL[0])<10:
+            leg_length_px = euclidean_distance(hipL, ankL)
+            print(leg_length_px)
+            #print(results.pose_world_landmarks.landmark)
+
+            """# Calculate speed
+            if prev_ankle_pos is not None and prev_time is not None:
+                current_time = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0  # Get current time in seconds
+                time_diff = current_time - prev_time
+
+                # Horizontal velocity in pixels/frame
+                horizontal_velocity_px = (ankL[0] - prev_ankle_pos[0]) / time_diff
+
+                # Convert to real-world speed (m/s)
+                speed = (horizontal_velocity_px / leg_length_px) * leg_length
+                #print(f'ank: {ankL[0]:.2f}')
+                #print(nose[0])
+                print(f'Speed: {speed:.2f} m/s')
+            """
+            prev_ankle_pos = ankL
+            prev_time = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
 
             tAng = compute_angle(kneeL,midPelvis,kneeR)
             thigh_angles.append(tAng)
@@ -646,6 +753,10 @@ with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tra
     out.release()
     cv2.destroyAllWindows()
 
+# looking at all knee positions, extract only the ones that are about to cross
+left_knee_crossings = [i for i in range(1, len(kneeL_pos)) if (kneeL_pos[i-1] < mid_pelvis_pos[i] and kneeL_pos[i] >  mid_pelvis_pos[i] ) or (kneeL_pos[i-1] > mid_pelvis_pos[i]  and kneeL_pos[i] <  mid_pelvis_pos[i] )]
+right_knee_crossings = [i for i in range(1, len(kneeR_pos)) if (kneeR_pos[i-1] < mid_pelvis_pos[i] and kneeR_pos[i] >  mid_pelvis_pos[i] ) or (kneeR_pos[i-1] > mid_pelvis_pos[i]  and kneeR_pos[i] <  mid_pelvis_pos[i] )]
+
 # variables for kinogram feedback
 feedback = []
 
@@ -666,6 +777,7 @@ print(ground_points)
 cap = cv2.VideoCapture(video_path)
 # Get the frame rate and frame size of the video
 fps = cap.get(cv2.CAP_PROP_FPS)
+print("fps " + str(fps))
 frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 # Define the codec and create VideoWriter object
@@ -844,6 +956,47 @@ with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tra
     #out.release()
     cv2.destroyAllWindows()
 
+"""
+Cooperation Analysis
+"""
+first_elements = [t[0] for t in kneeL_pos]
+first_elements2 = [t[0] for t in kneeR_pos]
+frames = range(len(thigh_angles))
+"""plt.figure(figsize=(12, 6))
+plt.plot(frames, first_elements, label='Left Knee')
+plt.plot(frames, first_elements2, label='Right Knee')"""
+#plt.axhline(y=1, color='k', linestyle='--', label='Midline')
+
+# Mark crossings
+"""for crossing in left_knee_crossings:
+    plt.axvline(x=frames[crossing], color='b', linestyle='--', alpha=0.5)
+for crossing in right_knee_crossings:
+    plt.axvline(x=frames[crossing], color='r', linestyle='--', alpha=0.5)
+
+plt.xlabel('Frame')
+plt.ylabel('Horizontal Position (pixels)')
+plt.title('Knee Positions and Midline Crossings')
+plt.legend()
+plt.show()"""
+
+left_to_right_intervals = []
+right_to_left_intervals = []
+
+# Assuming frames are in chronological order
+for crossing in left_knee_crossings:
+    subsequent_right_crossings = [frames[i] for i in right_knee_crossings if frames[i] > frames[crossing]]
+    if subsequent_right_crossings:
+        left_to_right_intervals.append(subsequent_right_crossings[0] - frames[crossing])
+
+for crossing in right_knee_crossings:
+    subsequent_left_crossings = [frames[i] for i in left_knee_crossings if frames[i] > frames[crossing]]
+    if subsequent_left_crossings:
+        right_to_left_intervals.append(subsequent_left_crossings[0] - frames[crossing])
+
+print('Left to Right Knee Intervals (frames):', left_to_right_intervals)
+print('Right to Left Knee Intervals (frames):', right_to_left_intervals)
+
+
 
 """
 Velocity and Smoothness Analysis 
@@ -862,48 +1015,58 @@ velocity_magnitudeR = np.linalg.norm(velocitiesR, axis=1)
 time_velocity = np.arange(len(velocity_magnitudeL)) / fps
 
 # Plot velocities on the same axis
-plt.figure(figsize=(10, 6))
+"""plt.figure(figsize=(10, 6))
 plt.plot(time_velocity, velocity_magnitudeL, label='Left Knee Velocity')
 plt.plot(time_velocity, velocity_magnitudeR, label='Right Knee Velocity', color='orange')
 plt.xlabel('Time (s)')
 plt.ylabel('Velocity (units/s)')
 plt.title('Velocity Comparison of Left and Right Knees')
-plt.legend()
-plt.show()
+plt.legend()"""
+#plt.show()
 
 """
 knee lift analysis
 """
-hipL_coords = np.array(hipL_pos)
+"""hipL_coords = np.array(hipL_pos)
 kneeL_coords = np.array(kneeL_pos)
+ankL_coords = np.array(ankL_pos)
+
 hipR_coords = np.array(hipR_pos)
 kneeR_coords = np.array(kneeR_pos)
+ankR_coords = np.array(ankR_pos)
 
 # Extract x and y coordinates
 hipL_x = hipL_coords[:, 0]
 hipL_y = hipL_coords[:, 1]
 hipR_x = hipR_coords[:, 0]
 hipR_y = hipR_coords[:, 1]
+
 kneeL_x = kneeL_coords[:, 0]
 kneeL_y = kneeL_coords[:, 1]
 kneeR_x = kneeR_coords[:, 0]
 kneeR_y = kneeR_coords[:, 1]
 
+ankL_x = ankL_coords[:, 0]
+ankL_y = ankL_coords[:, 1]
+ankR_x = ankR_coords[:, 0]
+ankR_y = ankR_coords[:, 1]
 
 # Plot hip and knee positions
 plt.figure(figsize=(10, 6))
-plt.scatter(hipL_x, hipL_y, color='pink', label='Hip Left Position', s=50, alpha=0.7)
-plt.scatter(hipR_x, hipR_y, color='red', label='Hip Right Position', s=50, alpha=0.7)
-plt.scatter(kneeL_x, kneeL_y, color='blue', label='Knee Left Position', s=50, alpha=0.7)
-plt.scatter(kneeR_x, kneeR_y, color='orange', label='Knee Right Position', s=50, alpha=0.7)
+plt.plot(hipL_x, hipL_y, color='pink', label='Hip Left Position', marker='o', linestyle='-', alpha=0.7)
+#plt.plot(hipR_x, hipR_y, color='red', label='Hip Right Position', marker='o', linestyle='-', alpha=0.7)
+plt.plot(kneeL_x, kneeL_y, color='blue', label='Knee Left Position', marker='o', linestyle='-', alpha=0.7)
+#plt.plot(kneeR_x, kneeR_y, color='orange', label='Knee Right Position', marker='o', linestyle='-', alpha=0.7)
+plt.plot(ankL_x, ankL_y, color='green', label='Ank Left Position',marker='o', linestyle='-', alpha=0.7)
+#plt.plot(ankR_x, ankR_y, color='purple', label='Ank Right Position', marker='o', linestyle='-', alpha=0.7)
 plt.xlabel('X Coordinate')
 plt.ylabel('Y Coordinate')
 plt.title('Hip and Knee Positions')
 plt.legend()
 plt.grid(True)
-plt.show()
+plt.show()"""
 
-# Plot thigh angles
+"""# Plot thigh angles
 # Generate x-values as indices
 frames_x = range(len(thigh_angles))
 # Create a scatter plot
@@ -914,13 +1077,44 @@ plt.ylabel('Y-axis')
 plt.title('Scatter Plot with Indices as X-values')
 # Add a legend
 plt.legend()
-plt.show()
+plt.show()"""
 
+# Apply moving average with a window size of 3
+window_size = 3
+smoothed_values = moving_average(thigh_angles, window_size)
+zero_crossings = detect_scissor(smoothed_values,10)
+
+# Calculate time between zero crossings
+time_between_crossings = [(frames[zero_crossings[i]] - frames[zero_crossings[i-1]])*(1/fps) for i in range(1, len(zero_crossings))]
+print("cross")
+print(time_between_crossings)
+# Plotting
+plt.figure(figsize=(14, 6))
+
+# Scatter plot with zero crossings marked
+plt.subplot(2, 1, 1)
+plt.scatter(frames, thigh_angles, color='blue', label='Data points')
+for zc in zero_crossings:
+    plt.axvline(zc, color='r', linestyle='--', label='Crossing' if zc == zero_crossings[0] else "")
+plt.xlabel('Index')
+plt.ylabel('Y-values')
+plt.title('Scatter Plot with Crossings')
+plt.legend()
+
+# Plot time between zero crossings
+plt.subplot(2, 1, 2)
+plt.plot(range(1, len(time_between_crossings) + 1), time_between_crossings, marker='o', linestyle='-', color='green')
+plt.xlabel('Crossing Index')
+plt.ylabel('Time Between Crossings (indices)')
+plt.title('Time Between Crossings')
+
+plt.tight_layout()
+plt.show()
 """
 Step Length Analysis 
 """
 #david 30-56
-pix_distances = step_len_anal(ank_pos, imp_frames, output)
+pix_distances = step_len_anal(ank_pos, imp_frames, output, leg_length_px,leg_length)
 print(pix_distances)
 
 print(height_in_pixels)
@@ -938,7 +1132,7 @@ Show important frames
 # fly issues from 47 ends too early at 53
 # david a bit too late 3 - 16 (should be 14ish)
 # adam ends early 16 - 18
-#imp_frames = [28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42,51,52,53, 54, 55, 56, 57]
+"""imp_frames = [17, 45, 66]
 #imp_frames = kinogram
 num_frames = len(imp_frames)
 fig, axs = plt.subplots(1, num_frames, figsize=(num_frames * 5, 5))
@@ -949,7 +1143,7 @@ for i in range(num_frames):
     axs[i].set_title(f"Contact {i + 1}")
 
 plt.tight_layout()
-plt.show()
+plt.show()"""
 
 """
 Flight and ground contact time analysis 
