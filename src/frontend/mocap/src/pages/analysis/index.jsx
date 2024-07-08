@@ -302,6 +302,7 @@ const loadImage = (src) => {
                 setResultVid(data.pic)
                 //setImages(data.pic)
                 setTestImg(data.pic)
+                setImages([])
                 addImage(data.kin1);
                 addImage(data.kin2);
                 addImage(data.kin3);
@@ -413,6 +414,9 @@ const loadImage = (src) => {
 
   useEffect(() => {
     console.log('upload successful')
+    setImages([])
+    //console.log('Images reset:', images);
+    setResultVid(null)
   }, [videoFile]);
 
   const downloadImage = async () => {
@@ -642,15 +646,15 @@ const loadImage = (src) => {
   </motion.div>
   </section>
   <section class="bannerCards text-sm-start text-center p-4">
-  <motion.div class="container"
-   variants={cardVariants}
+  <div class="container">
+  <h2 style={{color:'white'}}>Visualizations</h2>
+  <div class="row" style={{justifyContent:"center"}}>
+  <motion.div class="col-auto text-center"
+  variants={cardVariants}
    initial="offscreen"
             whileInView="onscreen"
             viewport={{ once: true, amount: 0.5 }}
   >
-  <h2 style={{color:'white'}}>Visualizations</h2>
-  <div class="row" style={{justifyContent:"center"}}>
-  <div class="col-auto text-center">
       <p>Flight vs Ground Contact Times</p>
           <div className="carder chart-container">
               <BarChart
@@ -667,8 +671,13 @@ const loadImage = (src) => {
               margin={{ top: 30, bottom: 40, left: 40, right: 10 }}
             />
           </div>
-  </div>
-  <div class="col-auto text-center">
+  </motion.div>
+  <motion.div class="col-auto text-center"
+  variants={cardVariants}
+   initial="offscreen"
+            whileInView="onscreen"
+            viewport={{ once: true, amount: 0.5 }}
+  >
       <p>Relative Stride Length</p>
           <div className="carder chart-container">
           <BarChart
@@ -680,10 +689,15 @@ const loadImage = (src) => {
           margin={{ top: 30, bottom: 40, left: 40, right: 10 }}
         />
           </div>
-  </div>
+  </motion.div>
   </div>
   <div class="row" style={{justifyContent:"center"}}>
-  <div class="col-auto text-center">
+  <motion.div class="col-auto text-center"
+    variants={cardVariants}
+   initial="offscreen"
+            whileInView="onscreen"
+            viewport={{ once: true, amount: 0.5 }}
+  >
       <p>Angles over Frames</p>
      <div className="carder chart-container" >
       <LineChart
@@ -697,8 +711,13 @@ const loadImage = (src) => {
   }}
 />
       </div>
-  </div>
-  <div class="col-auto text-center">
+  </motion.div>
+  <motion.div class="col-auto text-center"
+    variants={cardVariants}
+   initial="offscreen"
+            whileInView="onscreen"
+            viewport={{ once: true, amount: 0.5 }}
+  >
       <p>Acceleration Smoothness</p>
      <div className="carder chart-container">
       <LineChart
@@ -716,7 +735,7 @@ const loadImage = (src) => {
           ]}
       />
       </div>
-  </div>
+  </motion.div>
   </div>
   <div>
   <div className="analytics-panel pb-5">
@@ -735,7 +754,7 @@ const loadImage = (src) => {
           ))}
         </div>
   </div>
-    </motion.div>
+    </div>
   </section>
    </div>
 )}
