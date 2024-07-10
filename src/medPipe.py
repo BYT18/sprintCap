@@ -6,7 +6,8 @@ from mediapipe.framework.formats import landmark_pb2
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
-
+import statistics
+import pandas as pd
 
 def draw_landmarks_on_image(rgb_image, detection_result):
   pose_landmarks_list = detection_result.pose_landmarks
@@ -136,7 +137,6 @@ def max_vert_feedback(frontAnk, frontKnee, frontHip, frontToe, backAnk, backKnee
     #slight cross body arm swing - neutral rotation of spine
 
     return feedback
-
 
 def strike_feedback(frontAnk, frontKnee, frontHip, frontToe, backAnk, backKnee, backHip):
     feedback = []
@@ -445,15 +445,27 @@ def obj_detect(img, temp):
 """
 
 # Function to calculate velocity
-def calculate_velocity(positions, fps):
+def calculate_velocity(positions, fps, ref_len_actual, ref_len_px,title):
     velocities = []
     for i in range(1, len(positions)):
-        velocity = (np.array(positions[i]) - np.array(positions[i - 1])) * fps
+        #velocity = (np.array(positions[i]) - np.array(positions[i - 1])) * fps
+        #horizontal_velocity_px = (np.array(positions[i]) - np.array(positions[i - 1])) * fps
+        horizontal_velocity_px = euclidean_distance(positions[i],positions[i - 1]) * fps
+        velocity = (horizontal_velocity_px / ref_len_px[i]) * ref_len_actual
         velocities.append(velocity)
         # Example implementation, adjust based on your actual function
         # velocities = np.diff(positions, axis=0) * fps
-    return velocities
 
+    frames_x = range(len(velocities))
+    plt.figure(figsize=(10, 6))
+    plt.plot(frames_x, velocities, color='red', label='Velocity')
+    plt.xlabel('Frame Index')
+    plt.ylabel('Velocity (m/frame)')
+    plt.title('Velocity of ' + title)
+    plt.legend()
+    plt.show()
+
+    return velocities
 
 # Function to calculate relative velocity
 def compute_relative_velocity(previous_frame, current_frame, pixel_to_meter_ratio, fps):
@@ -487,6 +499,123 @@ def detect_scissor(values, threshold):
 def moving_average(values, window_size):
     cumsum = np.cumsum(np.insert(values, 0, 0))
     return (cumsum[window_size:] - cumsum[:-window_size]) / float(window_size)
+
+def find_median_of_consecutive_keys(data):
+    # Sort the dictionary by keys
+    sorted_keys = sorted(data.keys())
+
+    # Initialize variables
+    median_values = []
+    current_group = [sorted_keys[0]]
+
+    # Group consecutive keys
+    for i in range(1, len(sorted_keys)):
+        if sorted_keys[i] == sorted_keys[i - 1] + 1:
+            current_group.append(sorted_keys[i])
+        else:
+            # Find the median value in the current group
+            median_valueY = statistics.median([data[key][1] for key in current_group])
+            median_valueX = statistics.median([data[key][0] for key in current_group])
+            median_values.append((median_valueX,median_valueY))
+            current_group = [sorted_keys[i]]
+
+    # Don't forget to add the last group
+    if current_group:
+        median_valueY = statistics.median([data[key][1] for key in current_group])
+        median_valueX = statistics.median([data[key][0] for key in current_group])
+        median_values.append((median_valueX, median_valueY))
+
+    return median_values
+
+def torso_angles(start_points, end_points, fixed_line_points):
+    angles = []
+    start = 0
+    end = 0
+
+    # Iterate over the fixed line points to create segments
+    for i in range(len(fixed_line_points) - 1):
+        # Define the fixed line vector
+        vector_fixed = np.array([frame_width,
+                                 fixed_line_points[i + 1][1] - fixed_line_points[i][1]])
+
+        #for start, end in zip(start_points, end_points):
+        while start_points[start][0] < fixed_line_points[i + 1][0] and end_points[end][0]<fixed_line_points[i + 1][0]:
+            # Define the vector for the current segment in the list
+            vector_segment = np.array([end_points[end][0] - start_points[start][0], end_points[end][1] - start_points[start][1]])
+
+            # Calculate the angle between the fixed line and the current segment
+            dot_product = np.dot(vector_segment, vector_fixed)
+
+            # Calculate the magnitudes of the vectors
+            magnitude1 = np.linalg.norm(vector_segment)
+            magnitude2 = np.linalg.norm(vector_fixed)
+
+            # Calculate the cosine of the angle
+            cos_theta = dot_product / (magnitude1 * magnitude2)
+
+            # Ensure the value is within the valid range for arccos due to floating-point errors
+            cos_theta = np.clip(cos_theta, -1.0, 1.0)
+
+            # Calculate the angle in radians
+            angle_radians = np.arccos(cos_theta)
+
+            # Convert the angle to degrees
+            angle_degrees = np.degrees(angle_radians)
+
+            angles.append(angle_degrees)
+            start += 1
+            end += 1
+
+    frames_x = range(len(angles))
+
+    # Create a scatter plot
+    plt.plot(frames_x, angles, color='blue', label='Angles')
+    # Add labels and title
+    plt.xlabel('Frame')
+    plt.ylabel('Angles')
+    plt.title('Torso Angles over Frames')
+    # Add a legend
+    plt.legend()
+    plt.show()
+
+    return angles
+
+def angluar_velocity(angles, title):
+    # Calculate angular velocity
+    angular_velocity = [(angles[i+1] - angles[i]) for i in range(len(angles) - 1)]
+
+    # Generate x-values for angular velocity (indices start from 0 to len(angular_velocity) - 1)
+    frames_x = range(len(angular_velocity))
+
+    # Plot angular velocity
+    """plt.figure(figsize=(10, 6))
+    plt.plot(frames_x, angular_velocity, color='red', label='Angular Velocity')
+    plt.xlabel('Frame Index')
+    plt.ylabel('Angular Velocity (degrees/frame)')
+    plt.title('Angular Velocity of '+title+' Angles')
+    plt.legend()
+    plt.show()"""
+
+    return angular_velocity
+
+def standard_error(data):
+    return np.std(data, ddof=1) / np.sqrt(len(data))
+
+# Define a function to calculate the coefficient of variation
+def coefficient_of_variation(data):
+    mean = np.mean(data)
+    if mean == 0:
+        return np.nan  # Avoid division by zero
+    return np.std(data, ddof=1) / mean
+
+# Define a function to calculate the mean lag
+def mean_lag(data):
+    data = data.dropna()  # Drop NaN values to avoid issues
+    if len(data) < 2:
+        return np.nan
+    lags = [j - i for i, j in zip(data[:-1], data[1:])]
+    return np.mean(lags)
+
 
 """
 Main
@@ -538,6 +667,8 @@ height_in_pixels = 0
 ank_pos = []
 
 #smoothness and rom
+elbL_pos = []
+elbR_pos = []
 ankL_pos = []
 ankR_pos = []
 hipL_pos = []
@@ -548,11 +679,16 @@ kneeR_pos = []
 kneeR_velocities=[]
 thigh_angles = []
 mid_pelvis_pos = []
+nose_pos = []
+wrL_pos = []
+wrR_pos = []
+shouL_pos = []
+shouR_pos = []
 
 prev_ankle_pos = None
 prev_time = None
-leg_length = 0.9  # in meters
-leg_length_px = 1
+leg_length = 0.5  # in meters
+leg_length_px = []
 
 # Parameters for lucas kanade optical flow
 # lk_params = dict(winSize=(15, 15), maxLevel=2,criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
@@ -592,7 +728,15 @@ with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tra
             right_hip = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_HIP]
 
             left_elbow = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_ELBOW]
+            #right_elbow = results.pose_world_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_ELBOW]
             right_elbow = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_ELBOW]
+            #print(right_elbow)
+
+            left_wr = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_WRIST]
+            right_wr = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_WRIST]
+
+            left_shoulder = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_SHOULDER]
+            right_shoulder = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_SHOULDER]
 
             noseOrg = results.pose_landmarks.landmark[mp_pose.PoseLandmark.NOSE]
 
@@ -614,8 +758,15 @@ with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tra
             elbL = (int(left_elbow.x * frame_width), int(left_elbow.y * frame_height))
             elbR = (int(right_elbow.x * frame_width), int(right_elbow.y * frame_height))
 
+            wrL = (int(left_wr.x * frame_width), int(left_wr.y * frame_height))
+            wrR = (int(right_wr.x * frame_width), int(right_wr.y * frame_height))
+
+            shouL = (int(left_shoulder.x * frame_width), int(left_shoulder.y * frame_height))
+            shouR = (int(right_shoulder.x * frame_width), int(right_shoulder.y * frame_height))
+
             nose = (int(noseOrg.x * frame_width), int(noseOrg.y * frame_height))
 
+            #print(right_shoulder.z)
             """# Update landmarks
             current_landmarks = np.array([[left_ankle.x * frame.shape[1], left_ankle.y * frame.shape[0]],
                                           [right_ankle.x * frame.shape[1], right_ankle.y * frame.shape[0]]],
@@ -640,14 +791,21 @@ with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tra
             kneeL_pos.append(kneeL)
             kneeR_pos.append(kneeR)
             mid_pelvis_pos.append(midPelvis)
+            nose_pos.append(nose)
             hipL_pos.append(hipL)
             hipR_pos.append(hipR)
             ankL_pos.append(ankL)
             ankR_pos.append(ankR)
+            elbL_pos.append(elbL)
+            elbR_pos.append(elbR)
+            wrL_pos.append(wrL)
+            wrR_pos.append(wrR)
+            shouL_pos.append(shouL)
+            shouR_pos.append(shouR)
             # Calculate leg length in pixels
             #if abs(hipL[0] - ankL[0])<10 and abs(hipL[0] - kneeL[0])<10:
-            leg_length_px = euclidean_distance(hipL, ankL)
-            print(leg_length_px)
+            leg_length_px.append(euclidean_distance(hipR, kneeR))
+            #print(leg_length_px)
             #print(results.pose_world_landmarks.landmark)
 
             """# Calculate speed
@@ -721,9 +879,15 @@ with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tra
             #if abs(kneeL[0] - kneeR[0]) < 10 or (abs(elbL[0] - elbR[0]) < 10 and abs(kneeL[0] - kneeR[0]) < 25):
             if abs(kneeL[0] - kneeR[0]) < 25 and (abs(footL[1]-heelL[1])<10 or abs(footR[1]-heelR[1])<10):
                 ground_contacts += 1
-                ground = max(footL[1], footR[1])
+                if footL[1] > footR[1]:
+                    ground = footL[1]
+                    g1 = footL
+                else:
+                    ground = footR[1]
+                    g1 = footR
+                #ground = max(footL[1], footR[1])
                 ground_frames.append(frame_idx) #take lowest point of the ground points in the group
-                ground_points[frame_idx] = ground
+                ground_points[frame_idx] = g1
 
             """if prev_left_foot and prev_right_foot:
                 # Calculate the distance moved
@@ -764,7 +928,15 @@ feedback = []
 imp_frames = []
 contact = False
 threshold = 100000
+print("ground")
 print(ground_points)
+# Sort the dictionary by keys
+ground_points_smooth = find_median_of_consecutive_keys(ground_points)
+print(ground_points_smooth)
+print(len(nose_pos))
+print(len(mid_pelvis_pos))
+tor_angles = torso_angles(nose_pos,mid_pelvis_pos, ground_points_smooth)
+print(tor_angles)
 """contact = True
     ind = i
     prev_ind = i
@@ -802,7 +974,7 @@ with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tra
 
         if frame_idx in ground_frames:
             contact = True
-            threshold = ground_points[frame_idx]
+            threshold = ground_points[frame_idx][1]
             #print("thresh")
 
         # Convert the BGR image to RGB
@@ -856,36 +1028,36 @@ with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tra
                         f = toe_off_feedback(ankL, kneeL, hipL, ankR, kneeR, hipR, footR, heelR)
                     else:
                         f = toe_off_feedback(ankR, kneeR, hipR, ankL, kneeL, hipL, footL, heelL)
-                    print("Toe off")
-                    print(f)
+                    #print("Toe off")
+                    #print(f)
                 elif ind == 1:
                     if ankL[0] > ankR[0]:
                         f = max_vert_feedback(ankL, kneeL, hipL, footL, ankR, kneeR, hipR)
                     else:
                         f = max_vert_feedback(ankR, kneeR, hipR, footR, ankL, kneeL, hipL)
-                    print("MV")
-                    print(f)
+                    #print("MV")
+                    #print(f)
                 elif ind == 2:
                     if ankL[0] > ankR[0]:
                         f = strike_feedback(ankL, kneeL, hipL, footL, ankR, kneeR, hipR)
                     else:
                         f = strike_feedback(ankR, kneeR, hipR, footR, ankL, kneeL, hipL)
-                    print("Strike")
-                    print(f)
+                    #print("Strike")
+                    #print(f)
                 elif ind == 3:
                     if ankL[0] > ankR[0]:
                         f = touch_down_feedback(ankL, kneeL, hipL, heelL, footL, ankR, kneeR, hipR, footR, heelR)
                     else:
                         f = touch_down_feedback(ankR, kneeR, hipR, heelR, footR, ankL, kneeL, hipL, footL, heelL)
-                    print("TD")
-                    print(f)
+                    #print("TD")
+                    #print(f)
                 else:
                     if ankL[0] > ankR[0]:
                         f = full_supp_feedback(ankL, kneeL, hipL, footL, heelL, ankR, kneeR, hipR, footR, heelR)
                     else:
                         f = full_supp_feedback(ankR, kneeR, hipR, ankL, footR, heelR, kneeL, hipL, footL, heelL)
-                    print("FS")
-                    print(f)
+                    #print("FS")
+                    #print(f)
 
         # Draw the pose annotation on the frame
         if results.pose_landmarks and contact == True:
@@ -1002,17 +1174,17 @@ print('Right to Left Knee Intervals (frames):', right_to_left_intervals)
 Velocity and Smoothness Analysis 
 """
 # Calculate velocities
-velocitiesL = calculate_velocity(kneeL_pos, fps)
-velocitiesR = calculate_velocity(kneeR_pos, fps)
+velocitiesL = calculate_velocity(kneeL_pos, fps*8, leg_length,leg_length_px,"Left Knee")
+velocitiesR = calculate_velocity(kneeR_pos, fps*8, leg_length,leg_length_px,"Right Knee")
 print(velocitiesL)
 
 # Compute velocity magnitudes
 # since velocities are in x and y direction, need to reduce to scalar that does not have direction
-velocity_magnitudeL = np.linalg.norm(velocitiesL, axis=1)
-velocity_magnitudeR = np.linalg.norm(velocitiesR, axis=1)
+#velocity_magnitudeL = np.linalg.norm(velocitiesL, axis=1)
+#velocity_magnitudeR = np.linalg.norm(velocitiesR, axis=1)
 
 # Create time axis
-time_velocity = np.arange(len(velocity_magnitudeL)) / fps
+#time_velocity = np.arange(len(velocity_magnitudeL)) / fps
 
 # Plot velocities on the same axis
 """plt.figure(figsize=(10, 6))
@@ -1025,17 +1197,25 @@ plt.legend()"""
 #plt.show()
 
 """
+Positional analysis
 knee lift analysis
 """
-"""hipL_coords = np.array(hipL_pos)
+"""elbL_coords = np.array(elbL_pos)
+hipL_coords = np.array(hipL_pos)
 kneeL_coords = np.array(kneeL_pos)
 ankL_coords = np.array(ankL_pos)
 
+elbR_coords = np.array(elbR_pos)
 hipR_coords = np.array(hipR_pos)
 kneeR_coords = np.array(kneeR_pos)
 ankR_coords = np.array(ankR_pos)
 
 # Extract x and y coordinates
+elbL_x = elbL_coords[:, 0]
+elbL_y = elbL_coords[:, 1]
+elbR_x = elbR_coords[:, 0]
+elbR_y = elbR_coords[:, 1]
+
 hipL_x = hipL_coords[:, 0]
 hipL_y = hipL_coords[:, 1]
 hipR_x = hipR_coords[:, 0]
@@ -1053,11 +1233,13 @@ ankR_y = ankR_coords[:, 1]
 
 # Plot hip and knee positions
 plt.figure(figsize=(10, 6))
-plt.plot(hipL_x, hipL_y, color='pink', label='Hip Left Position', marker='o', linestyle='-', alpha=0.7)
+plt.plot(elbL_x, elbL_y, color='purple', label='Knee Left Position', marker='o', linestyle='-', alpha=0.7)
+plt.plot(elbR_x, elbR_y, color='red', label='Knee Right Position', marker='o', linestyle='-', alpha=0.7)
+#plt.plot(hipL_x, hipL_y, color='pink', label='Hip Left Position', marker='o', linestyle='-', alpha=0.7)
 #plt.plot(hipR_x, hipR_y, color='red', label='Hip Right Position', marker='o', linestyle='-', alpha=0.7)
 plt.plot(kneeL_x, kneeL_y, color='blue', label='Knee Left Position', marker='o', linestyle='-', alpha=0.7)
-#plt.plot(kneeR_x, kneeR_y, color='orange', label='Knee Right Position', marker='o', linestyle='-', alpha=0.7)
-plt.plot(ankL_x, ankL_y, color='green', label='Ank Left Position',marker='o', linestyle='-', alpha=0.7)
+plt.plot(kneeR_x, kneeR_y, color='orange', label='Knee Right Position', marker='o', linestyle='-', alpha=0.7)
+#plt.plot(ankL_x, ankL_y, color='green', label='Ank Left Position',marker='o', linestyle='-', alpha=0.7)
 #plt.plot(ankR_x, ankR_y, color='purple', label='Ank Right Position', marker='o', linestyle='-', alpha=0.7)
 plt.xlabel('X Coordinate')
 plt.ylabel('Y Coordinate')
@@ -1079,7 +1261,63 @@ plt.title('Scatter Plot with Indices as X-values')
 plt.legend()
 plt.show()"""
 
-# Apply moving average with a window size of 3
+# Angular velocities
+thigh_ang_vel = angluar_velocity(thigh_angles, "Thigh")
+
+kneeL_angles = []
+for i in range(len(kneeL_pos)):
+    a = compute_angle(hipL_pos[i],kneeL_pos[i],ankL_pos[i])
+    kneeL_angles.append(a)
+kneeL_ang_vel = angluar_velocity(kneeL_angles, "Knee Left")
+
+kneeR_angles = []
+for i in range(len(kneeR_pos)):
+    a = compute_angle(hipR_pos[i],kneeR_pos[i],ankR_pos[i])
+    kneeR_angles.append(a)
+kneeR_ang_vel = angluar_velocity(kneeR_angles, "Knee Right")
+
+elbL_angles = []
+for i in range(len(elbL_pos)):
+    a = compute_angle(shouL_pos[i],elbL_pos[i],wrL_pos[i])
+    elbL_angles.append(a)
+elbL_ang_vel = angluar_velocity(elbL_angles, "Elbow Left")
+
+elbR_angles = []
+for i in range(len(elbR_pos)):
+    a = compute_angle(shouR_pos[i],elbR_pos[i],wrR_pos[i])
+    elbR_angles.append(a)
+elbR_ang_vel = angluar_velocity(elbR_angles, "Elbow Right")
+
+hipR_angles = []
+for i in range(len(hipR_pos)):
+    a = compute_angle(shouR_pos[i],hipR_pos[i],kneeR_pos[i])
+    hipR_angles.append(a)
+hipR_ang_vel = angluar_velocity(hipR_angles, "Hip Right")
+
+"""
+Summary Table
+"""
+# Create a dictionary to store the lists
+key_data = {'AV_Thigh': thigh_ang_vel, 'AV_Knee_L': kneeL_ang_vel, 'AV_Knee_R': kneeR_ang_vel, 'AV_Elb_L': elbL_ang_vel, 'AV_Elb_R': elbR_ang_vel, 'AV_Hip_R': hipR_ang_vel}
+
+# Create a DataFrame from the dictionary
+df = pd.DataFrame(dict([(k, pd.Series(v)) for k, v in key_data.items()]))
+
+# Calculate summary statistics
+#summary = df.agg(['median', 'mean', 'min', 'max', standard_error, coefficient_of_variation, mean_lag]).transpose()
+#summary.columns = ['Median', 'Mean', 'Min', 'Max', 'Standard Error', 'Coefficient of Variation', 'Mean Lag']
+
+# Calculate built-in summary statistics
+summary = df.agg(['median', 'mean', 'min', 'max']).transpose()
+# Calculate custom statistics
+summary['Standard Error'] = df.apply(standard_error)
+summary['Coefficient of Variation'] = df.apply(coefficient_of_variation)
+summary['Mean Lag'] = df.apply(mean_lag)
+
+# Print the summary table
+print(summary)
+
+"""# Apply moving average with a window size of 3
 window_size = 3
 smoothed_values = moving_average(thigh_angles, window_size)
 zero_crossings = detect_scissor(smoothed_values,10)
@@ -1109,7 +1347,8 @@ plt.ylabel('Time Between Crossings (indices)')
 plt.title('Time Between Crossings')
 
 plt.tight_layout()
-plt.show()
+plt.show()"""
+
 """
 Step Length Analysis 
 """
@@ -1122,17 +1361,17 @@ sLength = step_length(1.77,height_in_pixels, pix_distances, results, 0, 0, (581,
 print('lenBelow')
 print(sLength)
 
-print(imp_frames)
-print(ground_frames)
-print(kinogram)
+#print(imp_frames)
+#print(ground_frames)
+#print(kinogram)
 
 """
 Show important frames
 """
-# fly issues from 47 ends too early at 53
+"""# fly issues from 47 ends too early at 53
 # david a bit too late 3 - 16 (should be 14ish)
 # adam ends early 16 - 18
-"""imp_frames = [17, 45, 66]
+imp_frames = [17, 45, 66]
 #imp_frames = kinogram
 num_frames = len(imp_frames)
 fig, axs = plt.subplots(1, num_frames, figsize=(num_frames * 5, 5))
@@ -1143,6 +1382,16 @@ for i in range(num_frames):
     axs[i].set_title(f"Contact {i + 1}")
 
 plt.tight_layout()
+plt.show()
+
+# Coordinates to draw
+points = [(0, 459.0), (frame_width, 465.5),(0, 465.5), (frame_width, 439.0)]
+# Plot the image
+plt.imshow(output[45])
+# Draw the points
+x_coords, y_coords = zip(*points)
+plt.scatter(x_coords, y_coords, color='red', s=100)  # s is the size of the points
+# Show the plot
 plt.show()"""
 
 """
@@ -1152,7 +1401,6 @@ f_g_times = contact_flight_analysis(imp_frames,1,1)
 
 ground_times = f_g_times[1]
 flight_times = f_g_times[0]
-
 
 # watch out for last flight time is always 0
 max_step_len = max(sLength)

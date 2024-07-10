@@ -12,5 +12,9 @@ class PoseSerializer(serializers.ModelSerializer):
 
         height = serializers.FloatField(min_value=0, max_value=300)
 
-        fields = ('pic','vid','kin1','kin2','kin3','kin4','kin5','x_vals', 'height')
+        image_urls = serializers.ListField(
+            child=serializers.URLField(max_length=200)
+        )
+
+        fields = ('pic','vid','kin1','kin2','kin3','kin4','kin5','x_vals','height')
         #exclude = ('pic',)

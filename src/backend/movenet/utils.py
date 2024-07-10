@@ -774,6 +774,22 @@ def get_gif(vid, pic, ath_height):
         #plt.savefig(f'key_frame_{i + 1}.png')
         #plt.close()
 
+    """image_urls = []
+    for i in range(len(output)):
+        # Convert the frame from BGR to RGB
+        rgb_frame = cv2.cvtColor(output[i], cv2.COLOR_BGR2RGB)
+
+        # Create a plot
+        plt.figure(figsize=(10, 6))
+        plt.imshow(rgb_frame)
+        plt.axis('off')
+
+        # Save the plot
+        plot_path = os.path.join('media/pics', f'out_{i + 1}.png')
+        image_urls.append(plot_path)
+        plt.savefig(plot_path, bbox_inches='tight', pad_inches=0)
+        plt.close()"""
+
     """
     Velocity and Smoothness Analysis 
     """
@@ -824,10 +840,14 @@ def get_gif(vid, pic, ath_height):
 
     # watch out for last flight time is always 0
     max_step_len = max(sLength)
-    avg_ground_time = sum(ground_times) / len(ground_times)
-    avg_flight_time = sum(flight_times) / (len(flight_times) - 1)
-    time_btw_steps = 0
-    print(avg_ground_time)
+    if len(ground_times) > 0 and len(flight_times) > 1:
+        avg_ground_time = sum(ground_times) / len(ground_times)
+        avg_flight_time = sum(flight_times) / (len(flight_times) - 1)
+        time_btw_steps = 0
+        print(avg_ground_time)
+    else:
+        avg_ground_time = 0
+        avg_flight_time = 0
 
     #return output_path
     #return [1, 2, 3, 5, 8, 10]

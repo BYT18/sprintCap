@@ -30,6 +30,9 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import * as Icon from 'react-bootstrap-icons';
 
+import Modal from 'react-bootstrap/Modal';
+import Button from 'react-bootstrap/Button';
+import Carousel from 'react-bootstrap/Carousel';
 
 
 /*const data = [
@@ -61,6 +64,10 @@ const xLabels = [
 ];*/
 
 const VideoUploader = () => {
+  const [show, setShow] = useState(false);
+  const handleClose = () => setShow(false);
+  const handleShow = () => setShow(true);
+
   const ref = useRef(null);
   const { scrollXProgress } = useScroll({ container: ref });
   const [videoFile, setVideoFile] = useState(null);
@@ -560,7 +567,7 @@ const loadImage = (src) => {
         <motion.li class="anli"
             whileHover={{scale:1.02}}
         >
-          <img src={images[0]} className="img-fluid" alt="Image" />
+          <img src={images[0]} className="img-fluid" alt="Image" onClick={handleShow} style={{ cursor: 'pointer' }}/>
           <div class="text-container">
               <h3 >Toe Off</h3>
               <textarea
@@ -575,7 +582,7 @@ const loadImage = (src) => {
          <motion.li class="anli"
             whileHover={{scale:1.02}}
         >
-            <img src={images[1]}/>
+            <img src={images[1]} onClick={handleShow} style={{ cursor: 'pointer' }}/>
             <div class="text-container">
               <h3 >Max Vertical Projection</h3>
               {/*<div class="scrollable-list" contenteditable="true">
@@ -599,7 +606,7 @@ const loadImage = (src) => {
          <motion.li class="anli"
             whileHover={{scale:1.02}}
         >
-            <img src={images[2]}/>
+            <img src={images[2]} onClick={handleShow} style={{ cursor: 'pointer' }}/>
             <div class="text-container">
               <h3 >Strike</h3>
               <textarea
@@ -614,7 +621,7 @@ const loadImage = (src) => {
          <motion.li class="anli"
             whileHover={{scale:1.02}}
         >
-            <img src={images[3]}/>
+            <img src={images[3]} onClick={handleShow} style={{ cursor: 'pointer' }}/>
             <div class="text-container">
               <h3 >Touch Down</h3>
               <textarea
@@ -629,7 +636,7 @@ const loadImage = (src) => {
          <motion.li class="anli"
             whileHover={{scale:1.02}}
         >
-            <img src={images[4]}/>
+            <img src={images[4]} onClick={handleShow} style={{ cursor: 'pointer' }}/>
             <div class="text-container">
               <h3 >Full Support</h3>
               <textarea
@@ -645,6 +652,34 @@ const loadImage = (src) => {
        <button onClick={downloadImage} className="download-button"><i className="bi bi-download"></i></button>
   </motion.div>
   </section>
+
+   <Modal show={show} onHide={handleClose} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Select Image</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+            <Carousel data-bs-theme="dark" interval={null}>
+              {images.map((image, index) => (
+                <Carousel.Item key={index}>
+                    <img
+                        className="d-block w-100 carousel-image" // Apply custom CSS class
+                        src={image}
+                        alt={`Slide ${index}`}
+                    />
+                </Carousel.Item>
+            ))}
+            </Carousel>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={handleClose}>
+            Close
+          </Button>
+          <Button variant="primary" onClick={handleClose}>
+            Save Changes
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
   <section class="bannerCards text-sm-start text-center p-4">
   <div class="container">
   <h2 style={{color:'white'}}>Visualizations</h2>

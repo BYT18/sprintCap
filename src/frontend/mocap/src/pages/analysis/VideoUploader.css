@@ -344,4 +344,20 @@ label {
   max-width: 400px;
 }
 
+.carImg {
+  background: white;
+  margin: 0 20px 0 0;
+  display: flex;
+  flex-direction: column; /* Arrange images in a column */
+  justify-content: center; /* Space out the images */
+  align-items: center; /* Center the images horizontally */
+  border-radius: 10px;
+}
 
+.carousel-image {
+  object-fit: contain;
+  width: 100%;
+  max-height: 50vh;
+  justify-content: center;
+  align-items: center; /* Center the images horizontally */
+}
