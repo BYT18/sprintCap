@@ -1621,22 +1621,26 @@ plt.show()"""
 Displacement Analysis
 """
 
-"""dis = []
+dis = []
 for i in range(len(ankR_pos)):
-    point1 = ankR_pos[i]
-    point2 = mid_pelvis_pos[i]
+    point1 = kneeR_pos[i]
+    point2 = kneeL_pos[i]
     dis.append(euclidean_distance(point1, point2))
 
 frames_x = range(len(dis))
 # Create a scatter plot
-plt.plot(frames_x, dis, color='blue', label='Ankle - Hips')
+plt.plot(frames_x, dis, color='red', label='KneeR - KneeL')
+g = extract_consecutive_values(ground_points)
+for interval in g:
+    plt.axvline(x=interval[0], color='b', linestyle='--', alpha=0.5)
+    plt.axvline(x=interval[2], color='b', linestyle='--', alpha=0.5)
 # Add labels and title
 plt.xlabel('Frame Index')
 plt.ylabel('Distance (Pixels')
-plt.title('Distance between Ankle and Hip over Frames')
+plt.title('Distance between Knees over Frames')
 # Add a legend
 plt.legend()
-plt.show()"""
+plt.show()
 
 """
 Flight and ground contact time analysis 
@@ -1652,124 +1656,6 @@ avg_ground_time = sum(ground_times)/len(ground_times)
 avg_flight_time = sum(flight_times)/(len(flight_times)-1)
 time_btw_steps = 0
 print(avg_ground_time)
-
-"""import numpy as np
-import matplotlib.pyplot as plt
-from scipy.interpolate import UnivariateSpline
-from scipy.optimize import curve_fit
-
-# Generate noisy sine wave
-x = np.arange(1, 10.1, 0.1)
-a = 4 * np.sin(x)
-a = a + np.random.randn(len(a)) + np.random.randn(len(a)) + np.random.randn(len(a))
-
-# Define span and weights
-span = 30
-weight = [(1 - abs((j - (span + 1) / 2) / (span / 2 + 1))**3)**3 for j in range(1, span + 1)]
-
-# Apply LOESS using UnivariateSpline (smoothness set via s parameter)
-spl = UnivariateSpline(x, a, s=span)
-b = spl(x)
-
-# Function for cubic polynomial
-def cubic_poly(x, a, b, c, d):
-    return a * x**3 + b * x**2 + c * x + d
-
-# Weighted cubic polynomial fit
-d = []
-e = []
-for i in range(len(a)):
-    start = max(0, int(i - span / 2))
-    end = min(len(a), int(i + span / 2))
-
-    x_range = x[start:end]
-    a_range = a[start:end]
-
-    if end - start < span:
-        weights = weight[:end-start]
-    else:
-        weights = weight
-
-    # Weighted fit
-    popt, _ = curve_fit(cubic_poly, x_range, a_range, sigma=weights)
-    d.append(cubic_poly(x[i], *popt))
-
-    # Unweighted fit
-    popt_unweighted, _ = curve_fit(cubic_poly, x_range, a_range)
-    e.append(cubic_poly(x[i], *popt_unweighted))
-
-# Plot results
-plt.plot(x, a, 'o', label='Noisy Data')
-plt.plot(x, b, '--', linewidth=3, label='LOESS')
-plt.plot(x, d, 'k', linewidth=1.5, label='Weighted Cubic Fit')
-plt.plot(x, e, 'r', linewidth=1.5, label='Unweighted Cubic Fit')
-plt.legend()
-plt.show()"""
-
-"""import numpy as np
-import matplotlib.pyplot as plt
-from scipy.optimize import curve_fit
-from statsmodels.nonparametric.smoothers_lowess import lowess
-
-# Generate noisy sine wave
-x = np.arange(1, 10.1, 0.1)
-a = 4 * np.sin(x)
-a = a + np.random.randn(len(a)) + np.random.randn(len(a)) + np.random.randn(len(a))
-
-# Define span and weights
-span = 30
-half_span = span // 2
-weights = np.array([(1 - abs((j - (span + 1) / 2) / (span / 2 + 1))**3)**3 for j in range(1, span + 1)])
-
-# Apply LOESS smoothing using statsmodels
-b = lowess(a, x, frac=span/len(a), return_sorted=False)
-
-# Function for cubic polynomial
-def cubic_poly(x, a, b, c, d):
-    return a * x**3 + b * x**2 + c * x + d
-
-# Initialize lists for fitted values
-d = np.zeros_like(a)
-e = np.zeros_like(a)
-
-# Weighted cubic polynomial fit
-for i in range(len(a)):
-    start = max(0, i - half_span)
-    end = min(len(a), i + half_span + 1)
-
-    x_range = x[start:end]
-    a_range = a[start:end]
-
-    # Adjust weights for the current window
-    current_weights = weights[:end-start]
-
-    # Ensure weights are of correct shape
-    current_weights = np.array(current_weights)
-    if len(current_weights) != len(a_range):
-        continue
-
-    # Weighted fit
-    try:
-        popt, _ = curve_fit(cubic_poly, x_range, a_range, sigma=current_weights, absolute_sigma=True)
-        d[i] = cubic_poly(x[i], *popt)
-    except:
-        d[i] = np.nan  # or handle the exception as needed
-
-    # Unweighted fit
-    try:
-        popt_unweighted, _ = curve_fit(cubic_poly, x_range, a_range)
-        e[i] = cubic_poly(x[i], *popt_unweighted)
-    except:
-        e[i] = np.nan  # or handle the exception as needed
-
-# Plot results
-plt.plot(x, a, 'o', label='Noisy Data')
-plt.plot(x, b, '--', linewidth=3, label='LOESS')
-plt.plot(x, d, 'k', linewidth=1.5, label='Weighted Cubic Fit')
-plt.plot(x, e, 'r', linewidth=1.5, label='Unweighted Cubic Fit')
-plt.legend()
-plt.show()
-"""
 
 """import numpy as np
 import matplotlib.pyplot as plt
@@ -1841,90 +1727,6 @@ plt.plot(x, e, 'r', linewidth=1.5, label='Unweighted Cubic Fit')
 plt.legend()
 plt.show()"""
 
-
-"""import numpy as np
-import matplotlib.pyplot as plt
-from statsmodels.nonparametric.smoothers_lowess import lowess
-from scipy.optimize import curve_fit
-
-# Generate noisy sine wave
-x = np.arange(1, 101, 1)
-a = 4 * np.sin(0.1 * x)
-a = a + np.random.randn(len(a)) + np.random.randn(len(a)) + np.random.randn(len(a))
-
-# Define span and weights
-span = 30
-half_span = span // 2
-weights = [(1 - abs((j - (span + 1) / 2) / (span / 2 + 1))**3)**3 for j in range(1, span + 1)]
-
-# Normalize weights
-weights = np.array(weights) / np.sum(weights)
-
-# Plot the weights
-plt.figure(figsize=(10, 6))
-plt.plot(range(1, span + 1), weights, marker='o', linestyle='-', color='b')
-plt.title('Weights for LOESS Smoothing')
-plt.xlabel('Index')
-plt.ylabel('Weight')
-plt.grid(True)
-plt.show()
-
-# Apply LOESS
-b = lowess(a, x, frac=span / len(a), return_sorted=False)
-
-# Function for cubic polynomial
-def cubic_poly(x, a, b, c, d):
-    return a * x**3 + b * x**2 + c * x + d
-
-# Weighted cubic polynomial fit
-d = []
-e = []
-
-for i in range(len(a)):
-    start = max(0, i - half_span)
-    end = min(len(a), i + half_span)
-
-    x_range = x[start:end]
-    a_range = a[start:end]
-
-    # Adjust weights to match the data segment length
-    current_weights = weights[:end - start]
-
-    current_weights = np.array(current_weights)
-
-    # Ensure weights match the segment length
-    if len(current_weights) != len(a_range):
-        raise ValueError(f"Weights length {len(current_weights)} does not match data segment length {len(a_range)}")
-
-    # Weighted fit
-    try:
-        popt, _ = curve_fit(cubic_poly, x_range, a_range, sigma=current_weights, absolute_sigma=True)
-        d.append(cubic_poly(x[i], *popt))
-    except Exception as ex:
-        print(f"Error in weighted fit at index {i}: {ex}")
-        d.append(np.nan)  # or some default value
-
-    # Unweighted fit
-    try:
-        popt_unweighted, _ = curve_fit(cubic_poly, x_range, a_range)
-        e.append(cubic_poly(x[i], *popt_unweighted))
-    except Exception as ex:
-        print(f"Error in unweighted fit at index {i}: {ex}")
-        e.append(np.nan)  # or some default value
-
-# Plot results
-plt.figure(figsize=(12, 8))
-plt.plot(x, a, 'o', label='Noisy Data')
-plt.plot(x, b, '--', linewidth=3, label='LOESS')
-plt.plot(x, d, 'k', linewidth=1.5, label='Weighted Cubic Fit')
-plt.plot(x, e, 'r', linewidth=1.5, label='Unweighted Cubic Fit')
-plt.legend()
-plt.title('LOESS and Polynomial Fits')
-plt.xlabel('X-axis')
-plt.ylabel('Values')
-plt.grid(True)
-plt.show()
-"""
 import numpy as np
 import time
 import math
@@ -2030,17 +1832,7 @@ class Loess(object):
             y = a + b * n_x
         return self.denormalize_y(y)
 
-
-xx = np.array([0.5578196, 2.0217271, 2.5773252, 3.4140288, 4.3014084,
-                4.7448394, 5.1073781, 6.5411662, 6.7216176, 7.2600583,
-                8.1335874, 9.1224379, 11.9296663, 12.3797674, 13.2728619,
-                4.2767453, 15.3731026, 15.6476637, 18.5605355, 18.5866354,
-                18.7572812])
-yy = np.array([18.63654, 103.49646, 150.35391, 190.51031, 208.70115,
-                213.71135, 228.49353, 233.55387, 234.55054, 223.89225,
-                227.68339, 223.91982, 168.01999, 164.95750, 152.61107,
-                160.78742, 168.55567, 152.42658, 221.70702, 222.69040,
-                243.18828])
+"""
 xx = np.arange(1, 101, 1)
 a = 4 * np.sin(0.1 * xx)
 a = a + np.random.randn(len(a)) + np.random.randn(len(a)) + np.random.randn(len(a))
@@ -2051,14 +1843,22 @@ ys=[]
 for x in xx:
     y = loess.estimate(x, window=30, use_matrix=False, degree=3)
     ys.append(y)
-    # print(x, y)
+    # print(x, y)"""
+
+xx = [(frame_index / 30) * 1000 for frame_index in range(len(elbR_angles))]
+print(xx)
+loess = Loess(xx, hipR_angles)
+ys=[]
+for x in xx:
+    y = loess.estimate(x, window=15, use_matrix=False, degree=3)
+    ys.append(y)
 
 plt.figure(figsize=(12, 8))
-plt.plot(xx, a, 'o', label='Noisy Data')
+plt.plot(xx, hipR_angles, 'o', label='Raw Data')
 plt.plot(xx, ys, '--', linewidth=3, label='LOESS')
 plt.legend()
-plt.title('LOESS and Polynomial Fits')
-plt.xlabel('X-axis')
-plt.ylabel('Values')
+plt.title('Right Hip Angles Over Time')
+plt.xlabel('Time (ms)')
+plt.ylabel('Angle (Degrees)')
 plt.grid(True)
 plt.show()
