@@ -8,6 +8,8 @@ import cv2
 import matplotlib.pyplot as plt
 import statistics
 import pandas as pd
+from statsmodels.nonparametric.smoothers_lowess import lowess
+from scipy.signal import find_peaks
 
 def draw_landmarks_on_image(rgb_image, detection_result):
   pose_landmarks_list = detection_result.pose_landmarks
@@ -236,16 +238,21 @@ def compute_angle(point1, point2, point3):
 
     return angle_degrees
 
-def contact_flight_analysis(frames, fps, tot_frames):
+def contact_flight_analysis(frames, fps, duration):
 
     imp_frames = frames
     #tot_frames = dur*curr_fps(slow-mo)
     #Total frames in the original video = Frame rate × Duration = 240 fps × 3 s = 720 frames
-    tot_frames = 3*720
+
+    #tot_frames = 3*720
+
     #Frame rate of the GIF = Total frames of GIF / Duration = 93 frames / 3 s
-    fps = 93 / 3
+    #fps = 93 / 3
+
     #Time per frame in GIF = Duration / Total frames of GIF = 3 s / 93 frames
-    tbf = 1 / fps
+
+    tbf = duration / (fps*8)
+
     gcontact_times = []
     flight_times = []
     counter = 0
@@ -260,7 +267,7 @@ def contact_flight_analysis(frames, fps, tot_frames):
             counter = 0
             flight_times.append(tbf*(imp_frames[i+1]-imp_frames[i]))
 
-    # Plotting the first set of bars
+    """# Plotting the first set of bars
     bars1 = plt.bar(range(len(gcontact_times)), gcontact_times, color='red', label='Ground')
 
     # Plotting the second set of bars on top of the first set
@@ -283,12 +290,14 @@ def contact_flight_analysis(frames, fps, tot_frames):
     plt.legend()
 
     # Display the plot
-    #plt.show()
+    plt.show()"""
     return [flight_times,gcontact_times]
 
 # use leg length to calibrate distance to pole, then use new leg length to calibrate distance from pole in next step, this shoudl give more accurate measurments
 def step_len_anal(ank_pos, frames, output_frames, leg_length_px, leg_length):
     imp_frames = frames
+    print("anal")
+    print(imp_frames)
     cap_frames = []
     s_lens = []
     initial = 0
@@ -297,13 +306,15 @@ def step_len_anal(ank_pos, frames, output_frames, leg_length_px, leg_length):
         if imp_frames[i] + 1 == imp_frames[i + 1] and initial == 0:
             #initial = left or right ankle position
             marker_pos = obj_detect(output_frames[imp_frames[i]],0)
-            initial = abs(ank_pos[i][0] - marker_pos)
+            #initial = abs(ank_pos[i][0] - marker_pos)
             cap_frames.append(imp_frames[i])
+            initial = euclidean_distance(ank_pos[i],marker_pos)
+            pixel_to_meter_ratio = leg_length / leg_length_px[imp_frames[i]]
+            initial = initial * pixel_to_meter_ratio
             """ initial = ank_pos[i]
             init = i
             print("a")
             print(i)
-            print(initial1)
             print(initial)
             print("a")"""
 
@@ -312,23 +323,25 @@ def step_len_anal(ank_pos, frames, output_frames, leg_length_px, leg_length):
         else:
             marker_pos = obj_detect(output_frames[imp_frames[i]], 0)
             #left_step_length_px1 = abs(abs(ank_pos[i+1][0]-marker_pos) - initial1)
-            s_lens.append(abs(abs(ank_pos[i+1][0]-marker_pos) - initial))
+            #s_lens.append(abs(abs(ank_pos[i+1][0]-marker_pos) - initial))
             cap_frames.append(imp_frames[i])
             #s_lens.append(ank_pos[i + 1][0] - initial)
-
+            left_step_length_px = euclidean_distance(ank_pos[i + 1], marker_pos)
             """ left_step_length_px = euclidean_distance(ank_pos[i+1],initial)
             left_step_length_px = abs(ank_pos[i+1][0] - initial[0])
             fin = i
             print("b")
             print(i)
-            print(left_step_length_px1)
+            print(ank_pos[i + 1])
+            print(leg_length_px[imp_frames[i+1]])
             print(left_step_length_px)
             print("b")"""
 
-           # pixel_to_meter_ratio = leg_length / leg_length_px
+            pixel_to_meter_ratio = leg_length / leg_length_px[imp_frames[i+1]]
             #left_step_length = (left_step_length_px / leg_length_px) * leg_length
-            #left_step_length = left_step_length_px * pixel_to_meter_ratio
-            #s_lens.append(left_step_length)
+            left_step_length = left_step_length_px * pixel_to_meter_ratio
+            left_step_length = abs(left_step_length - initial)
+            s_lens.append(left_step_length)
 
             initial = 0
 
@@ -367,6 +380,15 @@ def step_length(height, height_pixels, distances, results, start_frame, end_fram
         pixel_distance = ((distances[i]) ** 2) ** 0.5
         step_length_meters = pixel_distance * meters_per_pixel
         lens.append(step_length_meters)
+
+    """# Plot step lengths as a bar chart
+    plt.bar(range(len(lens)), lens, color='skyblue')
+    plt.title('Step Lengths in Meters')
+    plt.xlabel('Step Number')
+    plt.ylabel('Step Length (meters)')
+    plt.xticks(range(len(lens)), [f'Step {i + 1}' for i in range(len(lens))])
+    plt.grid(axis='y')
+    plt.show()"""
 
     return lens
 
@@ -423,7 +445,7 @@ def obj_detect(img, temp):
         plt.suptitle(meth)
 
         plt.show()"""
-        return mid
+        return (mid,bottom_right[1])
     #img_rgb = cv2.imread('mario.png')
     """img_rgb = img
     assert img_rgb is not None, "file could not be read, check with os.path.exists()"
@@ -444,7 +466,6 @@ def obj_detect(img, temp):
     return mid
 """
 
-# Function to calculate velocity
 def calculate_velocity(positions, fps, ref_len_actual, ref_len_px,title):
     velocities = []
     for i in range(1, len(positions)):
@@ -456,16 +477,32 @@ def calculate_velocity(positions, fps, ref_len_actual, ref_len_px,title):
         # Example implementation, adjust based on your actual function
         # velocities = np.diff(positions, axis=0) * fps
 
-    frames_x = range(len(velocities))
-    plt.figure(figsize=(10, 6))
-    plt.plot(frames_x, velocities, color='red', label='Velocity')
+    """frames_x = range(len(velocities))
+
+    smoothed = lowess(velocities, frames_x, frac=0.3)
+
+    # Create a scatter plot
+    # plt.plot(frames_x, angles, color='blue', label='Angles')
+    # Plot the results
+    plt.scatter(frames_x, velocities, label='Data', color='gray')
+    plt.plot(smoothed[:, 0], smoothed[:, 1], label='LOESS', color='red')
+    #plt.figure(figsize=(10, 6))
+    #plt.plot(frames_x, velocities, color='red', label='Velocity')
     plt.xlabel('Frame Index')
     plt.ylabel('Velocity (m/frame)')
     plt.title('Velocity of ' + title)
     plt.legend()
-    plt.show()
+    plt.show()"""
 
     return velocities
+
+def calculate_acceleration(velocities):
+    accels = []
+    for i in range(1, len(velocities)):
+        acc = (velocities[i] - velocities[i - 1])
+        accels.append(acc)
+
+    return accels
 
 # Function to calculate relative velocity
 def compute_relative_velocity(previous_frame, current_frame, pixel_to_meter_ratio, fps):
@@ -566,17 +603,23 @@ def torso_angles(start_points, end_points, fixed_line_points):
             start += 1
             end += 1
 
-    frames_x = range(len(angles))
+    """frames_x = range(len(angles))
+
+    # Perform LOESS smoothing
+    smoothed = lowess(angles, frames_x, frac=0.3)
 
     # Create a scatter plot
-    plt.plot(frames_x, angles, color='blue', label='Angles')
+    #plt.plot(frames_x, angles, color='blue', label='Angles')
+    # Plot the results
+    plt.scatter(frames_x, angles, label='Data', color='gray')
+    plt.plot(smoothed[:, 0], smoothed[:, 1], label='LOESS', color='red')
     # Add labels and title
     plt.xlabel('Frame')
     plt.ylabel('Angles')
     plt.title('Torso Angles over Frames')
     # Add a legend
     plt.legend()
-    plt.show()
+    plt.show()"""
 
     return angles
 
@@ -587,12 +630,19 @@ def angluar_velocity(angles, title):
     # Generate x-values for angular velocity (indices start from 0 to len(angular_velocity) - 1)
     frames_x = range(len(angular_velocity))
 
+    x = [(frame_index / 30) * 1000 for frame_index in frames_x]
+
     # Plot angular velocity
-    """plt.figure(figsize=(10, 6))
-    plt.plot(frames_x, angular_velocity, color='red', label='Angular Velocity')
+    """smoothed = lowess(angular_velocity, x, frac=0.3, delta=150)
+
+    # Plot the results
+    plt.scatter(x, angular_velocity, label='Data', color='gray')
+    plt.plot(smoothed[:, 0], smoothed[:, 1], label='LOESS', color='red')
+
+    #plt.plot(frames_x, angular_velocity, color='red', label='Angular Velocity')
     plt.xlabel('Frame Index')
     plt.ylabel('Angular Velocity (degrees/frame)')
-    plt.title('Angular Velocity of '+title+' Angles')
+    plt.title('Angular Velocity of '+title)
     plt.legend()
     plt.show()"""
 
@@ -616,11 +666,75 @@ def mean_lag(data):
     lags = [j - i for i, j in zip(data[:-1], data[1:])]
     return np.mean(lags)
 
+def get_lag(data):
+    # Identify peaks in the angular velocity signal
+    data = np.array(data)
+    peaks, _ = find_peaks(data)
+
+    # Compute lag (time difference) between consecutive peaks
+    lags = np.diff(peaks)
+
+    """# Plot angular velocity with peaks
+    plt.figure(figsize=(14, 5))
+
+    plt.subplot(1, 2, 1)
+    plt.plot(range(len(data)), data, label='Angular Velocity')
+    plt.plot(peaks, data[peaks], 'x', label='Peaks')
+    plt.xlabel('Time (s)')
+    plt.ylabel('Angular Velocity')
+    plt.legend()
+    plt.title('Angular Velocity with Peaks')
+
+    # Plot lags between peaks
+    plt.subplot(1, 2, 2)
+    plt.bar(range(len(lags)), lags, color='skyblue')
+    plt.xlabel('Peak Number')
+    plt.ylabel('Lag between Peaks (s)')
+    plt.title('Lag between Peaks')
+    plt.grid(True)
+
+    plt.tight_layout()
+    plt.show()"""
+
+
+def extract_consecutive_values(data):
+    result = []
+
+    # Initialize variables to store the first and last values of consecutive keys
+    first_key = None
+    last_key = None
+    first_value = None
+    last_value = None
+
+    # Iterate through the sorted keys of the dictionary
+    sorted_keys = sorted(data.keys())
+    for i, key in enumerate(sorted_keys):
+        value = data[key]
+
+        # If it's the first key or the current key is not consecutive to the previous one
+        if i == 0 or key != sorted_keys[i - 1] + 1:
+            # If we have previously stored values, add them to the result
+            if first_key is not None:
+                result.append((first_key, first_value, last_key, last_value))
+
+            # Reset for the new group of consecutive keys
+            first_key = key
+            first_value = value
+
+        # Update the last_key and last_value for each iteration
+        last_key = key
+        last_value = value
+
+    # Append the last group of consecutive keys after the loop
+    if first_key is not None:
+        result.append((first_key, first_value, last_key, last_value))
+
+    return result
+
 
 """
 Main
 """
-
 # STEP 1: Import the necessary modules.
 import mediapipe as mp
 from mediapipe.tasks import python
@@ -642,6 +756,30 @@ frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 # Define the codec and create VideoWriter object
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Codec for mp4 files
 out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))
+
+"""###
+img = cv2.imread("fullbody.jpg")
+rgb_frame = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+pose = mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tracking_confidence=0.3)
+# Process the frame to get pose landmarks
+results = pose.process(rgb_frame)
+mp_drawing.draw_landmarks(rgb_frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
+
+left_ankle = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_ANKLE]
+left_hip = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_HIP]
+ankL = (int(left_ankle.x * frame_width), int(left_ankle.y * frame_height))
+hipL =  (int(left_hip.x * frame_width), int(left_hip.y * frame_height))
+left_toe = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_FOOT_INDEX]
+left_eye = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_EYE]
+toeL = (int(left_toe.x * frame_width), int(left_toe.y * frame_height))
+eyeL =  (int(left_eye.x * frame_width), int(left_eye.y * frame_height))
+print(euclidean_distance(ankL,hipL)*(183/euclidean_distance(ankL,eyeL)))
+# Plot the image
+plt.imshow(rgb_frame)
+# Draw the points
+plt.show()
+###"""
+
 
 # variables for frame analysis
 kinogram = [0,0,0,0,0]
@@ -678,12 +816,15 @@ kneeL_velocities=[]
 kneeR_pos = []
 kneeR_velocities=[]
 thigh_angles = []
+kneeR_angles = []
 mid_pelvis_pos = []
 nose_pos = []
 wrL_pos = []
 wrR_pos = []
 shouL_pos = []
 shouR_pos = []
+backside = []
+frontside = []
 
 prev_ankle_pos = None
 prev_time = None
@@ -802,6 +943,12 @@ with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tra
             wrR_pos.append(wrR)
             shouL_pos.append(shouL)
             shouR_pos.append(shouR)
+
+            if (ankR[0] > midPelvis[0]):
+                frontside.append(ankR)
+            else:
+                backside.append(ankR)
+
             # Calculate leg length in pixels
             #if abs(hipL[0] - ankL[0])<10 and abs(hipL[0] - kneeL[0])<10:
             leg_length_px.append(euclidean_distance(hipR, kneeR))
@@ -824,6 +971,9 @@ with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tra
             """
             prev_ankle_pos = ankL
             prev_time = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
+
+            tAng = compute_angle(hipR, kneeR, ankR)
+            kneeR_angles.append(tAng)
 
             tAng = compute_angle(kneeL,midPelvis,kneeR)
             thigh_angles.append(tAng)
@@ -1131,16 +1281,16 @@ with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tra
 """
 Cooperation Analysis
 """
-first_elements = [t[0] for t in kneeL_pos]
+"""first_elements = [t[0] for t in kneeL_pos]
 first_elements2 = [t[0] for t in kneeR_pos]
 frames = range(len(thigh_angles))
-"""plt.figure(figsize=(12, 6))
+plt.figure(figsize=(12, 6))
 plt.plot(frames, first_elements, label='Left Knee')
-plt.plot(frames, first_elements2, label='Right Knee')"""
+plt.plot(frames, first_elements2, label='Right Knee')
 #plt.axhline(y=1, color='k', linestyle='--', label='Midline')
 
 # Mark crossings
-"""for crossing in left_knee_crossings:
+for crossing in left_knee_crossings:
     plt.axvline(x=frames[crossing], color='b', linestyle='--', alpha=0.5)
 for crossing in right_knee_crossings:
     plt.axvline(x=frames[crossing], color='r', linestyle='--', alpha=0.5)
@@ -1149,7 +1299,7 @@ plt.xlabel('Frame')
 plt.ylabel('Horizontal Position (pixels)')
 plt.title('Knee Positions and Midline Crossings')
 plt.legend()
-plt.show()"""
+plt.show()
 
 left_to_right_intervals = []
 right_to_left_intervals = []
@@ -1167,16 +1317,53 @@ for crossing in right_knee_crossings:
 
 print('Left to Right Knee Intervals (frames):', left_to_right_intervals)
 print('Right to Left Knee Intervals (frames):', right_to_left_intervals)
-
+"""
 
 
 """
 Velocity and Smoothness Analysis 
 """
 # Calculate velocities
-velocitiesL = calculate_velocity(kneeL_pos, fps*8, leg_length,leg_length_px,"Left Knee")
+"""velocitiesL = calculate_velocity(kneeL_pos, fps*8, leg_length,leg_length_px,"Left Knee")
 velocitiesR = calculate_velocity(kneeR_pos, fps*8, leg_length,leg_length_px,"Right Knee")
-print(velocitiesL)
+v_elb_R = calculate_velocity(elbR_pos, fps*8, leg_length,leg_length_px,"Right Elbow")
+v_ank_R = calculate_velocity(ankR_pos, fps*8, leg_length,leg_length_px,"Right Elbow")
+v_hip_R = calculate_velocity(hipR_pos, fps*8, leg_length,leg_length_px,"Right Elbow")
+
+frames_x = range(len(velocitiesR))
+
+smoothed = lowess(v_hip_R, frames_x, frac=0.3)
+smoothed2 = lowess(velocitiesR, frames_x, frac=0.3)
+smoothed3 = lowess(v_ank_R, frames_x, frac=0.3)
+
+# Create a scatter plot
+# plt.plot(frames_x, angles, color='blue', label='Angles')
+# Plot the results
+#plt.scatter(frames_x, velocitiesL, label='Data', color='gray')
+plt.plot(smoothed[:, 0], smoothed[:, 1], label='LOESS Hip', color='red')
+plt.plot(smoothed2[:, 0], smoothed2[:, 1], label='LOESS Knee', color='blue')
+plt.plot(smoothed3[:, 0], smoothed3[:, 1], label='LOESS Ankle', color='green')
+#plt.figure(figsize=(10, 6))
+#plt.plot(frames_x, velocities, color='red', label='Velocity')
+plt.xlabel('Frame Index')
+plt.ylabel('Velocity (m/frame)')
+plt.title('Velocity of Leg Components')
+plt.legend()
+plt.show()"""
+
+"""ratios = []
+for v1, v2 in zip(velocitiesR, velocitiesL):
+    if v2 == 0:
+        ratios.append(float('inf'))  # Handle division by zero
+    else:
+        ratios.append(v1 / v2)
+
+plt.plot(range((len(ratios))), ratios, label='Knee Velocity Ratio', color='orange')
+plt.xlabel('Frame Index')
+plt.ylabel('Velocity (units/s)')
+plt.title('Velocity Ratio Comparison of Left and Right Knees')
+
+plt.show()"""
 
 # Compute velocity magnitudes
 # since velocities are in x and y direction, need to reduce to scalar that does not have direction
@@ -1200,7 +1387,7 @@ plt.legend()"""
 Positional analysis
 knee lift analysis
 """
-"""elbL_coords = np.array(elbL_pos)
+elbL_coords = np.array(elbL_pos)
 hipL_coords = np.array(hipL_pos)
 kneeL_coords = np.array(kneeL_pos)
 ankL_coords = np.array(ankL_pos)
@@ -1230,20 +1417,26 @@ ankL_x = ankL_coords[:, 0]
 ankL_y = ankL_coords[:, 1]
 ankR_x = ankR_coords[:, 0]
 ankR_y = ankR_coords[:, 1]
-
+"""
 # Plot hip and knee positions
 plt.figure(figsize=(10, 6))
-plt.plot(elbL_x, elbL_y, color='purple', label='Knee Left Position', marker='o', linestyle='-', alpha=0.7)
-plt.plot(elbR_x, elbR_y, color='red', label='Knee Right Position', marker='o', linestyle='-', alpha=0.7)
+#plt.plot(elbL_x, elbL_y, color='purple', label='Knee Left Position', marker='o', linestyle='-', alpha=0.7)
+#plt.plot(elbR_x, elbR_y, color='red', label='Knee Right Position', marker='o', linestyle='-', alpha=0.7)
 #plt.plot(hipL_x, hipL_y, color='pink', label='Hip Left Position', marker='o', linestyle='-', alpha=0.7)
 #plt.plot(hipR_x, hipR_y, color='red', label='Hip Right Position', marker='o', linestyle='-', alpha=0.7)
-plt.plot(kneeL_x, kneeL_y, color='blue', label='Knee Left Position', marker='o', linestyle='-', alpha=0.7)
-plt.plot(kneeR_x, kneeR_y, color='orange', label='Knee Right Position', marker='o', linestyle='-', alpha=0.7)
+#plt.plot(kneeL_x, kneeL_y, color='blue', label='Knee Left Position', marker='o', linestyle='-', alpha=0.7)
+plt.plot(range(len(kneeR_x)), kneeR_x, color='orange', label='Knee Right Position', marker='o', linestyle='-', alpha=0.7)
 #plt.plot(ankL_x, ankL_y, color='green', label='Ank Left Position',marker='o', linestyle='-', alpha=0.7)
-#plt.plot(ankR_x, ankR_y, color='purple', label='Ank Right Position', marker='o', linestyle='-', alpha=0.7)
-plt.xlabel('X Coordinate')
-plt.ylabel('Y Coordinate')
-plt.title('Hip and Knee Positions')
+plt.plot(range(len(ankR_x)), ankR_x, color='purple', label='Ank Right Position', marker='o', linestyle='-', alpha=0.7)
+
+g = extract_consecutive_values(ground_points)
+for interval in g:
+    plt.axvline(x=interval[0], color='b', linestyle='--', alpha=0.5)
+    plt.axvline(x=interval[2], color='b', linestyle='--', alpha=0.5)
+
+plt.xlabel('Frame Index')
+plt.ylabel('X Coordinate')
+plt.title('Knee and Ankle X Positions')
 plt.legend()
 plt.grid(True)
 plt.show()"""
@@ -1252,11 +1445,11 @@ plt.show()"""
 # Generate x-values as indices
 frames_x = range(len(thigh_angles))
 # Create a scatter plot
-plt.scatter(frames_x, thigh_angles, color='blue', label='Data points')
+plt.plot(frames_x, thigh_angles, color='blue', label='Data points')
 # Add labels and title
-plt.xlabel('Index')
-plt.ylabel('Y-axis')
-plt.title('Scatter Plot with Indices as X-values')
+plt.xlabel('Frame Index')
+plt.ylabel('Angle (Degrees)')
+plt.title('Thigh Angles over Frames')
 # Add a legend
 plt.legend()
 plt.show()"""
@@ -1294,6 +1487,9 @@ for i in range(len(hipR_pos)):
     hipR_angles.append(a)
 hipR_ang_vel = angluar_velocity(hipR_angles, "Hip Right")
 
+smoothed = lowess(elbR_ang_vel, range(len(elbR_ang_vel)), frac=0.3)
+get_lag(elbR_ang_vel)
+get_lag(smoothed[:,1])
 """
 Summary Table
 """
@@ -1334,9 +1530,9 @@ plt.subplot(2, 1, 1)
 plt.scatter(frames, thigh_angles, color='blue', label='Data points')
 for zc in zero_crossings:
     plt.axvline(zc, color='r', linestyle='--', label='Crossing' if zc == zero_crossings[0] else "")
-plt.xlabel('Index')
-plt.ylabel('Y-values')
-plt.title('Scatter Plot with Crossings')
+plt.xlabel('Frame Index')
+plt.ylabel('Angle (Degrees)')
+plt.title('Thigh Scissoring Cycle')
 plt.legend()
 
 # Plot time between zero crossings
@@ -1357,9 +1553,9 @@ pix_distances = step_len_anal(ank_pos, imp_frames, output, leg_length_px,leg_len
 print(pix_distances)
 
 print(height_in_pixels)
-sLength = step_length(1.77,height_in_pixels, pix_distances, results, 0, 0, (581, 460),(678, 460))
-print('lenBelow')
-print(sLength)
+#sLength = step_length(1.77,height_in_pixels, pix_distances, results, 0, 0, (581, 460),(678, 460))
+#print('lenBelow')
+#print(sLength)
 
 #print(imp_frames)
 #print(ground_frames)
@@ -1371,7 +1567,7 @@ Show important frames
 """# fly issues from 47 ends too early at 53
 # david a bit too late 3 - 16 (should be 14ish)
 # adam ends early 16 - 18
-imp_frames = [17, 45, 66]
+imp_frames = [17, 29, 45, 58, 66]
 #imp_frames = kinogram
 num_frames = len(imp_frames)
 fig, axs = plt.subplots(1, num_frames, figsize=(num_frames * 5, 5))
@@ -1382,8 +1578,8 @@ for i in range(num_frames):
     axs[i].set_title(f"Contact {i + 1}")
 
 plt.tight_layout()
-plt.show()
-
+plt.show()"""
+"""
 # Coordinates to draw
 points = [(0, 459.0), (frame_width, 465.5),(0, 465.5), (frame_width, 439.0)]
 # Plot the image
@@ -1395,16 +1591,474 @@ plt.scatter(x_coords, y_coords, color='red', s=100)  # s is the size of the poin
 plt.show()"""
 
 """
+Slope analysis
+"""
+"""forearm_slopes = []
+for i in range(len(elbR_pos)):
+    point1 = elbR_pos[i]
+    point2 = wrR_pos[i]
+    forearm_slopes.append(compute_slope(point1, point2))
+
+thigh_slopes = []
+for i in range(len(kneeR_pos)):
+    point1 = hipR_pos[i]
+    point2 = kneeR_pos[i]
+    thigh_slopes.append(compute_slope(point1, point2))
+
+frames_x = range(len(thigh_slopes))
+# Create a scatter plot
+plt.plot(frames_x, thigh_slopes, color='blue', label='Thigh')
+plt.plot(frames_x, forearm_slopes, color='red', label='Forearm')
+# Add labels and title
+plt.xlabel('Frame Index')
+plt.ylabel('Slope')
+plt.title('Slope over Frames')
+# Add a legend
+plt.legend()
+plt.show()"""
+
+"""
+Displacement Analysis
+"""
+
+"""dis = []
+for i in range(len(ankR_pos)):
+    point1 = ankR_pos[i]
+    point2 = mid_pelvis_pos[i]
+    dis.append(euclidean_distance(point1, point2))
+
+frames_x = range(len(dis))
+# Create a scatter plot
+plt.plot(frames_x, dis, color='blue', label='Ankle - Hips')
+# Add labels and title
+plt.xlabel('Frame Index')
+plt.ylabel('Distance (Pixels')
+plt.title('Distance between Ankle and Hip over Frames')
+# Add a legend
+plt.legend()
+plt.show()"""
+
+"""
 Flight and ground contact time analysis 
 """
-f_g_times = contact_flight_analysis(imp_frames,1,1)
+f_g_times = contact_flight_analysis(imp_frames,fps,len(output)/fps)
 
 ground_times = f_g_times[1]
 flight_times = f_g_times[0]
 
 # watch out for last flight time is always 0
-max_step_len = max(sLength)
+max_step_len = max(pix_distances)
 avg_ground_time = sum(ground_times)/len(ground_times)
 avg_flight_time = sum(flight_times)/(len(flight_times)-1)
 time_btw_steps = 0
 print(avg_ground_time)
+
+"""import numpy as np
+import matplotlib.pyplot as plt
+from scipy.interpolate import UnivariateSpline
+from scipy.optimize import curve_fit
+
+# Generate noisy sine wave
+x = np.arange(1, 10.1, 0.1)
+a = 4 * np.sin(x)
+a = a + np.random.randn(len(a)) + np.random.randn(len(a)) + np.random.randn(len(a))
+
+# Define span and weights
+span = 30
+weight = [(1 - abs((j - (span + 1) / 2) / (span / 2 + 1))**3)**3 for j in range(1, span + 1)]
+
+# Apply LOESS using UnivariateSpline (smoothness set via s parameter)
+spl = UnivariateSpline(x, a, s=span)
+b = spl(x)
+
+# Function for cubic polynomial
+def cubic_poly(x, a, b, c, d):
+    return a * x**3 + b * x**2 + c * x + d
+
+# Weighted cubic polynomial fit
+d = []
+e = []
+for i in range(len(a)):
+    start = max(0, int(i - span / 2))
+    end = min(len(a), int(i + span / 2))
+
+    x_range = x[start:end]
+    a_range = a[start:end]
+
+    if end - start < span:
+        weights = weight[:end-start]
+    else:
+        weights = weight
+
+    # Weighted fit
+    popt, _ = curve_fit(cubic_poly, x_range, a_range, sigma=weights)
+    d.append(cubic_poly(x[i], *popt))
+
+    # Unweighted fit
+    popt_unweighted, _ = curve_fit(cubic_poly, x_range, a_range)
+    e.append(cubic_poly(x[i], *popt_unweighted))
+
+# Plot results
+plt.plot(x, a, 'o', label='Noisy Data')
+plt.plot(x, b, '--', linewidth=3, label='LOESS')
+plt.plot(x, d, 'k', linewidth=1.5, label='Weighted Cubic Fit')
+plt.plot(x, e, 'r', linewidth=1.5, label='Unweighted Cubic Fit')
+plt.legend()
+plt.show()"""
+
+"""import numpy as np
+import matplotlib.pyplot as plt
+from scipy.optimize import curve_fit
+from statsmodels.nonparametric.smoothers_lowess import lowess
+
+# Generate noisy sine wave
+x = np.arange(1, 10.1, 0.1)
+a = 4 * np.sin(x)
+a = a + np.random.randn(len(a)) + np.random.randn(len(a)) + np.random.randn(len(a))
+
+# Define span and weights
+span = 30
+half_span = span // 2
+weights = np.array([(1 - abs((j - (span + 1) / 2) / (span / 2 + 1))**3)**3 for j in range(1, span + 1)])
+
+# Apply LOESS smoothing using statsmodels
+b = lowess(a, x, frac=span/len(a), return_sorted=False)
+
+# Function for cubic polynomial
+def cubic_poly(x, a, b, c, d):
+    return a * x**3 + b * x**2 + c * x + d
+
+# Initialize lists for fitted values
+d = np.zeros_like(a)
+e = np.zeros_like(a)
+
+# Weighted cubic polynomial fit
+for i in range(len(a)):
+    start = max(0, i - half_span)
+    end = min(len(a), i + half_span + 1)
+
+    x_range = x[start:end]
+    a_range = a[start:end]
+
+    # Adjust weights for the current window
+    current_weights = weights[:end-start]
+
+    # Ensure weights are of correct shape
+    current_weights = np.array(current_weights)
+    if len(current_weights) != len(a_range):
+        continue
+
+    # Weighted fit
+    try:
+        popt, _ = curve_fit(cubic_poly, x_range, a_range, sigma=current_weights, absolute_sigma=True)
+        d[i] = cubic_poly(x[i], *popt)
+    except:
+        d[i] = np.nan  # or handle the exception as needed
+
+    # Unweighted fit
+    try:
+        popt_unweighted, _ = curve_fit(cubic_poly, x_range, a_range)
+        e[i] = cubic_poly(x[i], *popt_unweighted)
+    except:
+        e[i] = np.nan  # or handle the exception as needed
+
+# Plot results
+plt.plot(x, a, 'o', label='Noisy Data')
+plt.plot(x, b, '--', linewidth=3, label='LOESS')
+plt.plot(x, d, 'k', linewidth=1.5, label='Weighted Cubic Fit')
+plt.plot(x, e, 'r', linewidth=1.5, label='Unweighted Cubic Fit')
+plt.legend()
+plt.show()
+"""
+
+"""import numpy as np
+import matplotlib.pyplot as plt
+from statsmodels.nonparametric.smoothers_lowess import lowess
+from scipy.optimize import curve_fit
+
+# Generate noisy sine wave
+x = np.arange(1, 10.1, 0.1)
+a = 4 * np.sin(x)
+a = a + np.random.randn(len(a)) + np.random.randn(len(a)) + np.random.randn(len(a))
+
+# Define span and weights
+span = 30
+weight = [(1 - abs((j - (span + 1) / 2) / (span / 2 + 1))**3)**3 for j in range(1, span + 1)]
+
+# Plot the weights
+plt.figure(figsize=(10, 6))
+plt.plot(range(1, span + 1), weight, marker='o', linestyle='-', color='b')
+plt.title('Weights for LOESS Smoothing')
+plt.xlabel('Index')
+plt.ylabel('Weight')
+plt.grid(True)
+plt.show()
+
+# Apply LOESS
+b = lowess(a, x, frac=span / len(a), return_sorted=False)
+
+# Function for cubic polynomial
+def cubic_poly(x, a, b, c, d):
+    return a * x**3 + b * x**2 + c * x + d
+
+# Weighted cubic polynomial fit
+d = []
+e = []
+print("lenA" + str(len(a)))
+for i in range(len(a)):
+    start = int(i - span / 2)
+    end = int(i + span / 2)
+
+    #x_range = x[start:end]
+    #a_range = a[start:end]
+
+    k=0
+    o=30
+    if (start <= 0):
+        k = 0 - start
+        start = 0
+    if (end >= len(a)):
+        end = len(a)-1
+        o = end - start
+
+    weights = weight[k:o]
+    print(start)
+    print(end)
+    print(len(weights))
+    # Weighted fit
+    popt, _ = curve_fit(cubic_poly,  x[start:end], a[start:end], sigma=weights)
+    d.append(cubic_poly(x[i], *popt))
+
+    # Unweighted fit
+    popt_unweighted, _ = curve_fit(cubic_poly,  x[start:end],  a[start:end])
+    e.append(cubic_poly(x[i], *popt_unweighted))
+
+# Plot results
+plt.plot(x, a, 'o', label='Noisy Data')
+plt.plot(x, b, '--', linewidth=3, label='LOESS')
+plt.plot(x, d, 'k', linewidth=1.5, label='Weighted Cubic Fit')
+plt.plot(x, e, 'r', linewidth=1.5, label='Unweighted Cubic Fit')
+plt.legend()
+plt.show()"""
+
+
+"""import numpy as np
+import matplotlib.pyplot as plt
+from statsmodels.nonparametric.smoothers_lowess import lowess
+from scipy.optimize import curve_fit
+
+# Generate noisy sine wave
+x = np.arange(1, 101, 1)
+a = 4 * np.sin(0.1 * x)
+a = a + np.random.randn(len(a)) + np.random.randn(len(a)) + np.random.randn(len(a))
+
+# Define span and weights
+span = 30
+half_span = span // 2
+weights = [(1 - abs((j - (span + 1) / 2) / (span / 2 + 1))**3)**3 for j in range(1, span + 1)]
+
+# Normalize weights
+weights = np.array(weights) / np.sum(weights)
+
+# Plot the weights
+plt.figure(figsize=(10, 6))
+plt.plot(range(1, span + 1), weights, marker='o', linestyle='-', color='b')
+plt.title('Weights for LOESS Smoothing')
+plt.xlabel('Index')
+plt.ylabel('Weight')
+plt.grid(True)
+plt.show()
+
+# Apply LOESS
+b = lowess(a, x, frac=span / len(a), return_sorted=False)
+
+# Function for cubic polynomial
+def cubic_poly(x, a, b, c, d):
+    return a * x**3 + b * x**2 + c * x + d
+
+# Weighted cubic polynomial fit
+d = []
+e = []
+
+for i in range(len(a)):
+    start = max(0, i - half_span)
+    end = min(len(a), i + half_span)
+
+    x_range = x[start:end]
+    a_range = a[start:end]
+
+    # Adjust weights to match the data segment length
+    current_weights = weights[:end - start]
+
+    current_weights = np.array(current_weights)
+
+    # Ensure weights match the segment length
+    if len(current_weights) != len(a_range):
+        raise ValueError(f"Weights length {len(current_weights)} does not match data segment length {len(a_range)}")
+
+    # Weighted fit
+    try:
+        popt, _ = curve_fit(cubic_poly, x_range, a_range, sigma=current_weights, absolute_sigma=True)
+        d.append(cubic_poly(x[i], *popt))
+    except Exception as ex:
+        print(f"Error in weighted fit at index {i}: {ex}")
+        d.append(np.nan)  # or some default value
+
+    # Unweighted fit
+    try:
+        popt_unweighted, _ = curve_fit(cubic_poly, x_range, a_range)
+        e.append(cubic_poly(x[i], *popt_unweighted))
+    except Exception as ex:
+        print(f"Error in unweighted fit at index {i}: {ex}")
+        e.append(np.nan)  # or some default value
+
+# Plot results
+plt.figure(figsize=(12, 8))
+plt.plot(x, a, 'o', label='Noisy Data')
+plt.plot(x, b, '--', linewidth=3, label='LOESS')
+plt.plot(x, d, 'k', linewidth=1.5, label='Weighted Cubic Fit')
+plt.plot(x, e, 'r', linewidth=1.5, label='Unweighted Cubic Fit')
+plt.legend()
+plt.title('LOESS and Polynomial Fits')
+plt.xlabel('X-axis')
+plt.ylabel('Values')
+plt.grid(True)
+plt.show()
+"""
+import numpy as np
+import time
+import math
+
+from typing import Tuple
+
+def tricubic(x):
+    y = np.zeros_like(x)
+    idx = (x >= -1) & (x <= 1)
+    y[idx] = np.power(1.0 - np.power(np.abs(x[idx]), 3), 3)
+    return y
+
+class Loess(object):
+
+    @staticmethod
+    def normalize_array(array: np.ndarray) -> Tuple[np.ndarray, float, float]:
+        min_val = np.min(array)
+        max_val = np.max(array)
+        return (array - min_val) / (max_val - min_val), min_val, max_val
+
+    def __init__(self,
+                 xx: np.ndarray,
+                 yy: np.ndarray,
+                 degree: int = 1):
+        self.n_xx, self.min_xx, self.max_xx = self.normalize_array(xx)
+        self.n_yy, self.min_yy, self.max_yy = self.normalize_array(yy)
+        self.degree = degree
+
+    @staticmethod
+    def get_min_range(distances: np.ndarray,
+                      window: int) -> np.ndarray:
+        min_idx = np.argmin(distances)
+        n = len(distances)
+        if min_idx == 0:
+            return np.arange(0, window)
+        if min_idx == n-1:
+            return np.arange(n - window, n)
+
+        min_range = [min_idx]
+        while len(min_range) < window:
+            i0 = min_range[0]
+            i1 = min_range[-1]
+            if i0 == 0:
+                min_range.append(i1 + 1)
+            elif i1 == n-1:
+                min_range.insert(0, i0 - 1)
+            elif distances[i0-1] < distances[i1+1]:
+                min_range.insert(0, i0 - 1)
+            else:
+                min_range.append(i1 + 1)
+        return np.array(min_range)
+
+    @staticmethod
+    def get_weights(distances: np.ndarray,
+                    min_range: np.ndarray) -> np.ndarray:
+        max_distance = np.max(distances[min_range])
+        weights = tricubic(distances[min_range] / max_distance)
+        return weights
+
+    def normalize_x(self, value: float) -> float:
+        return (value - self.min_xx) / (self.max_xx - self.min_xx)
+
+    def denormalize_y(self, value: float) -> float:
+        return value * (self.max_yy - self.min_yy) + self.min_yy
+
+    def estimate(self,
+                 x: float,
+                 window: int,
+                 use_matrix: bool = False,
+                 degree: int = 1) -> float:
+        n_x = self.normalize_x(x)
+        distances = np.abs(self.n_xx - n_x)
+        min_range = self.get_min_range(distances, window)
+        weights = self.get_weights(distances, min_range)
+
+        if use_matrix or degree > 1:
+            wm = np.multiply(np.eye(window), weights)
+            xm = np.ones((window, degree + 1))
+
+            xp = np.array([[math.pow(n_x, p)] for p in range(degree + 1)])
+            for i in range(1, degree + 1):
+                xm[:, i] = np.power(self.n_xx[min_range], i)
+
+            ym = self.n_yy[min_range]
+            xmt_wm = np.transpose(xm) @ wm
+            beta = np.linalg.pinv(xmt_wm @ xm) @ xmt_wm @ ym
+            y = (beta @ xp)[0]
+        else:
+            xx = self.n_xx[min_range]
+            yy = self.n_yy[min_range]
+            sum_weight = np.sum(weights)
+            sum_weight_x = np.dot(xx, weights)
+            sum_weight_y = np.dot(yy, weights)
+            sum_weight_x2 = np.dot(np.multiply(xx, xx), weights)
+            sum_weight_xy = np.dot(np.multiply(xx, yy), weights)
+
+            mean_x = sum_weight_x / sum_weight
+            mean_y = sum_weight_y / sum_weight
+
+            b = (sum_weight_xy - mean_x * mean_y * sum_weight) / \
+                (sum_weight_x2 - mean_x * mean_x * sum_weight)
+            a = mean_y - b * mean_x
+            y = a + b * n_x
+        return self.denormalize_y(y)
+
+
+xx = np.array([0.5578196, 2.0217271, 2.5773252, 3.4140288, 4.3014084,
+                4.7448394, 5.1073781, 6.5411662, 6.7216176, 7.2600583,
+                8.1335874, 9.1224379, 11.9296663, 12.3797674, 13.2728619,
+                4.2767453, 15.3731026, 15.6476637, 18.5605355, 18.5866354,
+                18.7572812])
+yy = np.array([18.63654, 103.49646, 150.35391, 190.51031, 208.70115,
+                213.71135, 228.49353, 233.55387, 234.55054, 223.89225,
+                227.68339, 223.91982, 168.01999, 164.95750, 152.61107,
+                160.78742, 168.55567, 152.42658, 221.70702, 222.69040,
+                243.18828])
+xx = np.arange(1, 101, 1)
+a = 4 * np.sin(0.1 * xx)
+a = a + np.random.randn(len(a)) + np.random.randn(len(a)) + np.random.randn(len(a))
+
+loess = Loess(xx, a)
+
+ys=[]
+for x in xx:
+    y = loess.estimate(x, window=30, use_matrix=False, degree=3)
+    ys.append(y)
+    # print(x, y)
+
+plt.figure(figsize=(12, 8))
+plt.plot(xx, a, 'o', label='Noisy Data')
+plt.plot(xx, ys, '--', linewidth=3, label='LOESS')
+plt.legend()
+plt.title('LOESS and Polynomial Fits')
+plt.xlabel('X-axis')
+plt.ylabel('Values')
+plt.grid(True)
+plt.show()
