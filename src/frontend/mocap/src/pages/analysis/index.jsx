@@ -263,15 +263,24 @@ const loadImage = (src) => {
 
         formData.append('height', height);
 
+        //const payload = {
+        //    e,
+        //    height,
+        //    blob,
+        //};
+
+
         //formData.append("pic", p);
         //console.log(e)
         try {
             // Create the POST request using the fetch API
+            const token = localStorage.getItem('access_token');
             const response = await fetch('http://127.0.0.1:8000/test/', {
             //const response = await fetch('http://3.143.116.75:8000/test/', {
                 method: 'POST',
                 headers: {
 
+                'Authorization': `Bearer ${token}` // Include the Authorization header
                 },
                 body: formData,
             });
@@ -357,10 +366,12 @@ const loadImage = (src) => {
             } else {
                 // Handle error responses
                 console.error('Error:', response.statusText);
+                setLoading(false);
             }
         } catch (error) {
             // Handle network errors
             console.error('Network error:', error.message);
+            setLoading(false);
         }
     };
 

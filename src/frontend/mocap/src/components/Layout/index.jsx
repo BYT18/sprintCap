@@ -13,6 +13,8 @@ import logo from '../../logo_transparent.png';
 function Layout(props){
 const location = useLocation();
 
+  const [isAuth, setIsAuth] = useState(false);
+
   const getNavbarStyle = () => {
     console.log(location.pathname)
     switch (location.pathname) {
@@ -32,6 +34,13 @@ const location = useLocation();
         return 'nav';
     }
   };
+
+     useEffect(() => {
+     if (localStorage.getItem('access_token') !== null) {
+        setIsAuth(true);
+     }
+    }, [isAuth]);
+
     return <>
     <section className={`nav ${getNavStyle()}`}>
         {/*<nav className="navbar navbar-expand-lg bg-body-tertiary container-fluid">*/}
@@ -72,14 +81,7 @@ const location = useLocation();
             Analyze
            </NavLink>
         </li>*/}
-        <li className="nav-item mx-2">
-          <NavLink
-            to="/analysis/"
-            className={({ isActive }) => (isActive ? "nav-link active-link" : "nav-link")}
-          >
-            Analyze
-           </NavLink>
-        </li>
+
         <li className="nav-item mx-2">
           <NavLink
             to="/about/"
@@ -88,6 +90,26 @@ const location = useLocation();
             About
            </NavLink>
         </li>
+        {isAuth && (<div>
+        <li className="nav-item mx-2">
+          <NavLink
+            to="/analysis/"
+            className={({ isActive }) => (isActive ? "nav-link active-link" : "nav-link")}
+          >
+            Analyze
+           </NavLink>
+        </li>
+          <li className="nav-item mx-2">
+          <NavLink
+            to="/profile/"
+            className={({ isActive }) => (isActive ? "nav-link active-link" : "nav-link")}
+            >
+            Profile
+           </NavLink>
+            </li>
+            </div>
+        )}
+        {!isAuth && (
         <li className="nav-item mx-2">
           <NavLink
             to="/api/user/"
@@ -96,9 +118,8 @@ const location = useLocation();
             Login
            </NavLink>
         </li>
-
-
-            </div>
+        )}
+          </div>
           </div>
         </nav>
       </section>

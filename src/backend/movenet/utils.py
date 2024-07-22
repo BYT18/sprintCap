@@ -839,13 +839,18 @@ def get_gif(vid, pic, ath_height):
     flight_times = f_g_times[0]
 
     # watch out for last flight time is always 0
-    max_step_len = max(sLength)
-    if len(ground_times) > 0 and len(flight_times) > 1:
-        avg_ground_time = sum(ground_times) / len(ground_times)
-        avg_flight_time = sum(flight_times) / (len(flight_times) - 1)
-        time_btw_steps = 0
-        print(avg_ground_time)
+    if len(sLength) != 0:
+        max_step_len = max(sLength)
+        if len(ground_times) > 0 and len(flight_times) > 1:
+            avg_ground_time = sum(ground_times) / len(ground_times)
+            avg_flight_time = sum(flight_times) / (len(flight_times) - 1)
+            time_btw_steps = 0
+            print(avg_ground_time)
+        else:
+            avg_ground_time = 0
+            avg_flight_time = 0
     else:
+        max_step_len =0
         avg_ground_time = 0
         avg_flight_time = 0
 

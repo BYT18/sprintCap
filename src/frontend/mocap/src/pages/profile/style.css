@@ -1,0 +1,92 @@
+.card-custom-width {
+    min-width: 60vw;
+    margin: 0 auto;
+}
+
+.circular-image {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+    margin: 0 auto 20px; /* Center the image and add some bottom margin */
+}
+
+.text-box-as-text {
+    border: none;
+    background-color: transparent;
+    outline: none;
+    width: 100%;
+    color: inherit;
+    font: inherit;
+    padding: 0;
+    margin: 0;
+}
+
+.text-box-as-text:focus {
+    border-bottom: 1px solid #000;
+    background-color: transparent;
+}
+
+.text-box-as-h2 {
+    border: none;
+    background-color: transparent;
+    outline: none;
+    width: 100%;
+    color: inherit;
+    font: inherit;
+    font-size: 2em; /* Same as h2 */
+    font-weight: bold; /* Same as h2 */
+    text-align: center;
+    padding: 0;
+    margin: 0;
+    display: block;
+}
+
+.text-box-as-h2:focus {
+    border-bottom: 1px solid #000; /* Optional: add a bottom border on focus */
+    background-color: transparent;
+}
+
+.img-fluid {
+    max-height:50vh;
+}
+
+.button-container {
+    display: flex;
+    justify-content: space-between;
+}
+
+.logout-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+}
+
+.round-button {
+    width: 100px; /* Adjust size as needed */
+    height: 100px; /* Adjust size as needed */
+    border-radius: 50%;
+    background-color: #007BFF; /* Adjust color as needed */
+    color: white;
+    border: none;
+    font-size: 16px; /* Adjust font size as needed */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    outline: none;
+    transition: background-color 0.3s ease;
+}
+
+.round-button:hover {
+    background-color: #0056b3; /* Darker shade for hover effect */
+}
+
+.scan-button-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+}

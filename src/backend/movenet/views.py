@@ -78,3 +78,65 @@ class AnalysisView(generics.ListCreateAPIView):
         if not os.path.exists(file_path):
             return Response({"message": "File not found"}, status=status.HTTP_404_NOT_FOUND)
         return FileResponse(open(file_path, 'rb'), content_type='video/mov')
+
+"""from rest_framework import generics
+from .models import UserProfile
+from .serializers import UserProfileSerializer
+
+class UserProfileList(generics.ListCreateAPIView):
+    queryset = UserProfile.objects.all()
+    serializer_class = UserProfileSerializer
+
+class UserProfileDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = UserProfile.objects.all()
+    serializer_class = UserProfileSerializer
+"""
+
+from rest_framework import generics, status
+from rest_framework.response import Response
+from rest_framework.permissions import AllowAny
+from django.contrib.auth import authenticate
+from rest_framework_simplejwt.tokens import RefreshToken
+from .serializers import RegisterSerializer, LoginSerializer, UserSerializer,UserProfileSerializer
+from django.contrib.auth.models import User
+from rest_framework.permissions import IsAuthenticated
+from .models import UserProfile
+
+class RegisterView(generics.CreateAPIView):
+    queryset = User.objects.all()
+    permission_classes = (AllowAny,)
+    serializer_class = RegisterSerializer
+
+class LoginView(generics.GenericAPIView):
+    permission_classes = (AllowAny,)
+    serializer_class = LoginSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+        })
+
+class UserProfileView(generics.RetrieveAPIView):
+    permission_classes = (IsAuthenticated,)
+    serializer_class = UserSerializer
+
+    def get_object(self):
+        #user = self.request.user
+        #UserProfile.objects.get_or_create(user=user)
+        return self.request.user
+
+class UserDetailView(generics.RetrieveAPIView):
+    permission_classes = (IsAuthenticated,)
+    serializer_class = UserProfileSerializer
+
+    def get_object(self):
+        # Retrieve the user instance from the request
+        user = self.request.user
+        # Ensure that a UserProfile instance exists for the user
+        profile, created = UserProfile.objects.get_or_create(user=user)
+        return profile

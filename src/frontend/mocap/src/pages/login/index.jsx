@@ -1,63 +1,116 @@
-import React from 'react';
-import {
-  MDBBtn,
-  MDBContainer,
-  MDBRow,
-  MDBCol,
-  MDBCard,
-  MDBCardBody,
-  MDBInput,
-  MDBIcon
-}
-from 'mdb-react-ui-kit';
+import React, { useState } from 'react';
+import { Form, Button, Container, Row, Col, Card, Alert } from 'react-bootstrap';
+import './style.css'; // Import the custom CSS file
 
-function Login() {
-  return (
-    <MDBContainer fluid>
+const Login = () => {
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
+    const [user, setUser] = useState(null);
+    const [token, setToken] = useState('');
+    const [name, setName] = useState('');
+    const [error, setError] = useState('');
 
-      <MDBRow className='d-flex justify-content-center align-items-center h-100'>
-        <MDBCol col='12'>
+    const login = async (u, p) => {
+        const formData = new FormData();
+        formData.append("username", u);
+        formData.append('password', p);
+        try {
+            const response = await fetch('http://127.0.0.1:8000/login/', {
+                method: 'POST',
+                headers: {},
+                body: formData,
+            });
+            if (response.ok) {
+                const data = await response.json();
+                localStorage.clear();
+                 localStorage.setItem('access_token', data['access']);
+                 localStorage.setItem('refresh_token', data['refresh']);
+                setToken(data['access']);
+                await fetch_profile(data['access']);
+            } else {
+                setError('Invalid username or password');
+                localStorage.clear();
+            }
+        } catch (error) {
+            setError('Network error');
+        }
+    };
 
-          <MDBCard className='bg-dark text-white my-5 mx-auto' style={{borderRadius: '1rem', maxWidth: '400px'}}>
-            <MDBCardBody className='p-5 d-flex flex-column align-items-center mx-auto w-100'>
+    const fetch_profile = async (accessToken) => {
+        try {
+            const response = await fetch('http://127.0.0.1:8000/prof/', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${accessToken}`,
+                },
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setName(data['name']);
+                setUser(data);
+                window.location.href = '/'
+            } else {
+                setError('Failed to fetch profile');
+            }
+        } catch (error) {
+            setError('Network error');
+        }
+    };
 
-              <h2 className="fw-bold mb-2 text-uppercase" style={{ color: 'white' }}>Login</h2>
-              <p className="text-white-50 mb-5" >Please enter your login and password!</p>
+    const handleLogin = async () => {
+        setError('');
+        await login(username, password);
+    };
 
-              <MDBInput wrapperClass='mb-4 mx-5 w-100' labelClass='text-white' label='Email address' id='formControlLg' type='email' size="lg"/>
-              <MDBInput wrapperClass='mb-4 mx-5 w-100' labelClass='text-white' label='Password' id='formControlLg' type='password' size="lg"/>
+    return (
+  <div className="container full-height">
+            <Row className="justify-content-center w-100">
+                <Col md={6} lg={4} md={8} lg={6} className="d-flex justify-content-center">
+                    <Card className="shadow-lg p-4 min-width-card">
+                        <Card.Body>
+                            <h2 className="text-center mb-4">Login</h2>
+                            {error && <Alert variant="danger">{error}</Alert>}
+                            <Form>
+                                <Form.Group controlId="formUsername">
+                                    <Form.Label>Username</Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        placeholder="Enter username"
+                                        value={username}
+                                        onChange={(e) => setUsername(e.target.value)}
+                                    />
+                                </Form.Group>
+                                <Form.Group controlId="formPassword" className="mt-3">
+                                    <Form.Label>Password</Form.Label>
+                                    <Form.Control
+                                        type="password"
+                                        placeholder="Enter password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                    />
+                                </Form.Group>
 
-              <p className="small mb-3 pb-lg-2"><a class="text-white-50" href="#!">Forgot password?</a></p>
-              <MDBBtn outline className='mx-2 px-5' style={{ color: 'white' }} size='lg'>
-                Login
-              </MDBBtn>
-
-              <div className='d-flex flex-row mt-3 mb-5'>
-                <MDBBtn tag='a' color='none' className='m-3' style={{ color: 'white' }}>
-                  <MDBIcon fab icon='facebook-f' size="lg"/>
-                </MDBBtn>
-
-                <MDBBtn tag='a' color='none' className='m-3' style={{ color: 'white' }}>
-                  <MDBIcon fab icon='twitter' size="lg"/>
-                </MDBBtn>
-
-                <MDBBtn tag='a' color='none' className='m-3' style={{ color: 'white' }}>
-                  <MDBIcon fab icon='google' size="lg"/>
-                </MDBBtn>
-              </div>
-
-              <div>
-                <p className="mb-0">Don't have an account? <a href="#!" class="text-white-50 fw-bold">Sign Up</a></p>
-
-              </div>
-            </MDBCardBody>
-          </MDBCard>
-
-        </MDBCol>
-      </MDBRow>
-
-    </MDBContainer>
-  );
-}
+                                <div className="button-container mt-3">
+                                    <Button variant="primary" onClick={handleLogin} block className="mt-3">
+                                      Login
+                                     </Button>
+                                    <Button variant="secondary" type="submit" block className="mt-5" onClick={logout}>
+                                        Register
+                                    </Button>
+                                </div>
+                            </Form>
+                            {user && (
+                                <Alert variant="success" className="mt-3">
+                                    Welcome {name}!
+                                </Alert>
+                            )}
+                        </Card.Body>
+                    </Card>
+                </Col>
+            </Row>
+        </div>
+    );
+};
 
 export default Login;

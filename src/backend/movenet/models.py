@@ -16,3 +16,14 @@ class Pose(models.Model):
 
     def __str__(self):
         return "Pose"
+
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    name = models.TextField(null=True, blank=True)
+    dob = models.DateField(null=True, blank=True)
+    height = models.FloatField(null=True, blank=True)
+    profile_pic = models.ImageField(upload_to='profile_pictures/', blank=True, null=True)
+
+    def __str__(self):
+        return self.user.username
