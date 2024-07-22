@@ -9,6 +9,7 @@ import Home from './pages/home/index'
 import Login from './pages/login/index'
 import Analysis from './pages/analysis/index'
 import Kin from './pages/kin/index'
+import Profile from './pages/profile/index'
 import ScrollToTop from './components/ScrollToTop/index';
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
                 <Route path='/comp/'  element={<VidComp/>} />
                 <Route path='/analysis/'  element={<Analysis/>} />
                 <Route path='/about/'  element={<Kin/>} />
+                <Route path='/profile/'  element={<Profile/>} />
             </Route>
             <Route path='/api/user/'  element={<Login/>} />
           </Routes>
