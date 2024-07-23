@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Form, Button, Container, Row, Col, Card, Alert } from 'react-bootstrap';
+import { Form, Button, Container, Row, Col, Card, Alert, Breadcrumb } from 'react-bootstrap';
+import { Link } from 'react-router-dom';
 import './style.css'; // Import the custom CSS file
 
 const Login = () => {
@@ -63,6 +64,10 @@ const Login = () => {
         await login(username, password);
     };
 
+    const register = () => {
+        window.location.href = '/'
+    };
+
     return (
   <div className="container full-height">
             <Row className="justify-content-center w-100">
@@ -92,12 +97,10 @@ const Login = () => {
                                 </Form.Group>
 
                                 <div className="button-container mt-3">
-                                    <Button variant="primary" onClick={handleLogin} block className="mt-3">
+                                    <Button variant="primary" onClick={handleLogin} block>
                                       Login
                                      </Button>
-                                    <Button variant="secondary" type="submit" block className="mt-5" onClick={logout}>
-                                        Register
-                                    </Button>
+                                    <Link className="text-button" to="/api/register/">Register here</Link>
                                 </div>
                             </Form>
                             {user && (

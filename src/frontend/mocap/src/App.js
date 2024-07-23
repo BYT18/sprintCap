@@ -11,6 +11,7 @@ import Analysis from './pages/analysis/index'
 import Kin from './pages/kin/index'
 import Profile from './pages/profile/index'
 import ScrollToTop from './components/ScrollToTop/index';
+import Register from './pages/register/index'
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
                 <Route path='/profile/'  element={<Profile/>} />
             </Route>
             <Route path='/api/user/'  element={<Login/>} />
+            <Route path='/api/register/'  element={<Register/>} />
           </Routes>
       </Router>
     </main>

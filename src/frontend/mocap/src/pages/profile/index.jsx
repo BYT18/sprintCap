@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Form, Button, Container, Row, Col, Card, Alert, Modal } from 'react-bootstrap';
 import './style.css';
+import {
+  motion,
+  useScroll,
+  useSpring,
+  useTransform,
+  MotionValue
+} from "framer-motion";
 
 const Profile = () => {
     const [profile, setProfile] = useState(null);
@@ -102,7 +109,13 @@ const Profile = () => {
 
     return (
       <section className="bannerCards text-sm-start text-center p-4">
-            <div className="container">
+            <motion.div className="container"initial={{ opacity: 0, scale: 0.5 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{
+        duration: 0.8,
+        delay: 0.5,
+        ease: [0, 0.71, 0.2, 1.01]
+      }}>
                 <Row className="justify-content-md-center">
                     <Col md={12}>
                         <Card className="shadow-lg p-4 card-custom-width">
@@ -194,7 +207,7 @@ const Profile = () => {
         <Button o onClick={handleClose}>Close</Button>
       </Modal.Footer>
     </Modal>
-            </div>
+            </motion.div>
         </section>
     );
 };

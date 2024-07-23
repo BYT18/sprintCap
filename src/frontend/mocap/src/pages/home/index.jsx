@@ -9,6 +9,9 @@ import myImage2 from "../../assets/max_ver3.png";
 import myImage3 from "../../assets/strike_R2.png";
 import myImage4 from "../../assets/toe_off_L2.png";
 import myImage5 from "../../assets/full_sup_L2.png";
+import me from "../../assets/tang.png";
+import bolt from "../../assets/usain.png";
+import splitter from "../../assets/Content.png";
 
 import Reviews from "../../components/Reviews/index.jsx";
 
@@ -116,7 +119,7 @@ const Home = () => {
   <div class="b-example-divider"></div>
 
   {/* Cards Section */}
-      <motion.section className="team-section py-5 text-center" style={{display: "flex",flexDirection: "column",
+  <motion.section className="team-section py-5 text-center" style={{display: "flex",flexDirection: "column",
       alignItems: "center", minHeight:"50vh"}}
                   variants={cardVariants}
             initial="offscreen"
@@ -207,7 +210,22 @@ Elevate your sprinting and running performance with our cutting-edge platform th
       </motion.div>
       </motion.section>
 
-      {/* News Section */}
+    <div className="image-section">
+                <img src={splitter} alt="Background" className="background-image" />
+                <div className="overlay-container">
+                     <img
+                        src={bolt} className="overlay-image" />
+                     <img
+                        src={me} className="overlay-image2" />
+                 </div>
+                    <div className="text-overlay">
+                        <h1>Compare</h1>
+                        <p>with the very best</p>
+                    </div>
+                </div>
+
+
+      {/* News Section
       <motion.section className="news-section py-5" style={{ minHeight: "80vh",display: "flex",
       alignItems: "center"}}
            variants={cardVariants}
@@ -280,6 +298,7 @@ Elevate your sprinting and running performance with our cutting-edge platform th
           </div>
         </div>
       </motion.section>
+      */}
 
       <motion.section className="news-section py-5" style={{ minHeight: "80vh",display: "flex",alignItems: "center"}}
            variants={cardVariants}
