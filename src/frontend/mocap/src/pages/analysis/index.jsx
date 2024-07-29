@@ -22,6 +22,7 @@ import myImage5 from "../../assets/full_sup_L2.png";
 import Loader from '../../components/Loader/index.jsx';
 import PasteImage from '../../components/Dropdown/index.jsx';
 import Slider from '../../components/Slider/index.jsx';
+import VideoCrop from '../../components/VideoCrop/index.jsx';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 import "bootstrap-icons/font/bootstrap-icons.css";
@@ -33,7 +34,7 @@ import * as Icon from 'react-bootstrap-icons';
 import Modal from 'react-bootstrap/Modal';
 import Button from 'react-bootstrap/Button';
 import Carousel from 'react-bootstrap/Carousel';
-
+import Form from 'react-bootstrap/Form';
 
 /*const data = [
   { x: 100, y: 200, id: 1 },
@@ -77,6 +78,7 @@ const VideoUploader = () => {
   const [resultVid, setResultVid] = useState(null);
   const [loading, setLoading] = useState(false);
   const [pasteImage, setPasteImage] = useState(null);
+  const [isToggled, setIsToggled] = useState(false);
 
   const [datas, setDatas] = useState([]);
   const [chartData, setChartData] = useState({});
@@ -103,6 +105,9 @@ const VideoUploader = () => {
   const [contactLabels, setContactLabels] = useState(null);
   const [angLabels, setAngLabels] = useState(null);
 
+  const handleToggleChange = (e) => {
+        setIsToggled(e.target.checked);
+  };
 
   const addImage = (newImage) => {
       setImages(prevImages => [...prevImages, newImage]);
@@ -413,6 +418,28 @@ const loadImage = (src) => {
     setItemsFS(updatedItems);
   };
 
+
+      const fileInputRef = useRef(null);
+
+  const handleFileChangePaste = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setPasteImage(event.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+   const handleDoubleClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    } else {
+      console.error("File input ref is not set correctly.");
+    }
+  }
+
   const cardVariants: Variants = {
   offscreen: {
     opacity: 0,
@@ -478,6 +505,7 @@ const loadImage = (src) => {
       }}>
       <div className="video-uploader">
           <h2>Upload and Display Video</h2>
+          <VideoCrop />
           <input class="form-control mb-2" type="file" id="formFileMultiple" accept="video/*" onChange={handleVideoUpload}/>
           {/*<input style={{color:'black'}} class="pb-3" type="file" accept="video/*" onChange={handleVideoUpload} />*/}
           {videoURL && (
@@ -496,18 +524,36 @@ const loadImage = (src) => {
           <Tooltip id="my-tooltip" />
         </div>
         <div className="container mt-4">
-          <div
+            <Form>
+             `<Form.Check
+                type="switch"
+                id="custom-switch"
+                label="Toggle Step Length Analysis"
+                style={{color:"black"}}
+                checked={isToggled}
+                onChange={handleToggleChange}
+              />`
+            </Form>
+          {isToggled && (<div
               className="paste-area"
               onPaste={handlePaste}
+               onDoubleClick={handleDoubleClick}
               style={{ border: '2px dashed #ccc', padding: '20px', textAlign: 'center', cursor: 'pointer' }}
               data-tooltip-id="my-tooltip" data-tooltip-content="This is used to compute step length and velocity"
             >
-              <p style={{color:"black"}}>Click here and press Ctrl+V to paste image of measuring device</p>
+              <p style={{color:"black"}}>Click here and press Ctrl+V to paste image of measuring device or double click to upload image</p>
                          <Tooltip id="my-tooltip" />
               {pasteImage && <img src={pasteImage} alt="Pasted" style={{ maxWidth: '100%', maxHeight: '400px', marginTop: '20px' }} />}
-            </div>
+              <input
+        type="file"
+        accept="image/*"
+        style={{ display: 'none' }}
+        ref={fileInputRef}
+        onChange={handleFileChangePaste}
+     />
+            </div>)}
         </div>
-        <div className="container mt-2">
+        {/*<div className="container mt-2">
               <div className="slider-container">
               <label style={{color:"black"}} htmlFor="height-slider">Select Height: {height} cm</label>
               <input
@@ -520,7 +566,7 @@ const loadImage = (src) => {
                 className="slider"
               />
             </div>
-        </div>
+        </div>*/}
         <div className="container mt-2">
           <button type="button" class="btn btn-secondary" onClick={handleAnalyze}>
             Analyze

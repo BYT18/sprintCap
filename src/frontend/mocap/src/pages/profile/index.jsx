@@ -12,6 +12,7 @@ import {
 const Profile = () => {
     const [profile, setProfile] = useState(null);
     const [height, setHeight] = useState('');
+    const [leg, setLeg] = useState('');
     const [name, setName] = useState('');
     const [profileImage, setProfileImage] = useState(null);
     const [message, setMessage] = useState('');
@@ -20,8 +21,12 @@ const Profile = () => {
     const [imageURL, setImageURL] = useState('');
 
     const [show, setShow] = useState(false);
-    const handleClose = () => setShow(false);
+    const handleClose = () => {
+        setShow(false)
+        setShowLength(false)
+    };
     const handleShow = () => setShow(true);
+    const [showLength, setShowLength] = useState(false);
 
     const [slider, setSlider] = useState(30); // Default height value (in cm)
 
@@ -79,12 +84,12 @@ const Profile = () => {
         const formData = new FormData();
         formData.append('height', height);
         if (profileImage) {
-            formData.append('profile_image', profileImage);
+            formData.append('profile_pic', profileImage);
         }
 
         const token = localStorage.getItem('access_token');
         try {
-            const response = await fetch('http://127.0.0.1:8000/profile/update/', {
+            const response = await fetch('http://127.0.0.1:8000/prof/', {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -95,6 +100,45 @@ const Profile = () => {
                 const data = await response.json();
                 setProfile(data);
                 setMessage('Profile updated successfully');
+            } else {
+                console.error('Failed to update profile');
+                setMessage('Failed to update profile');
+            }
+        } catch (error) {
+            console.error('Network error', error);
+            setMessage('Network error');
+        }
+    };
+
+    const urlToFile = async (url, filename) => {
+        const response = await fetch(url);
+        const blob = await response.blob();
+        return new File([blob], filename, { type: blob.type });
+    };
+
+    const handleMeasure = async (e) => {
+        e.preventDefault();
+        const file = await urlToFile(imageURL, 'image.jpg'); // Convert URL to File object
+        const formData = new FormData();
+        formData.append('leg', slider);
+        formData.append('img', file);
+        console.log(imageURL)
+
+        const token = localStorage.getItem('access_token');
+        try {
+            const response = await fetch('http://127.0.0.1:8000/prof/', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: formData,
+            });
+            if (response.ok) {
+                const data = await response.json();
+                //setProfile(data);
+                console.log(data)
+                setLeg(data)
+                setShowLength(true)
             } else {
                 console.error('Failed to update profile');
                 setMessage('Failed to update profile');
@@ -202,9 +246,16 @@ const Profile = () => {
                 <img src={imageURL} alt="Selected" className="img-fluid" />
             </div>
           )}
+          {showLength && (
+          <div className="image-container">
+            <p>{leg}</p>
+             </div>
+          )
+          }
       </Modal.Body>
       <Modal.Footer>
-        <Button o onClick={handleClose}>Close</Button>
+        <Button onClick={handleClose}>Close</Button>
+        <Button onClick={handleMeasure}>Scan</Button>
       </Modal.Footer>
     </Modal>
             </motion.div>
