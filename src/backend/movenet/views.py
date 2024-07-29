@@ -13,6 +13,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework import permissions"""
 
 from .utils import get_gif
+from .scanner import get_dim
 from .models import Pose
 
 """import tensorflow as tf
@@ -130,13 +131,32 @@ class UserProfileView(generics.RetrieveAPIView):
         #UserProfile.objects.get_or_create(user=user)
         return self.request.user
 
-class UserDetailView(generics.RetrieveAPIView):
+
+class UserDetailView(generics.RetrieveUpdateAPIView):
     permission_classes = (IsAuthenticated,)
     serializer_class = UserProfileSerializer
 
     def get_object(self):
-        # Retrieve the user instance from the request
         user = self.request.user
-        # Ensure that a UserProfile instance exists for the user
         profile, created = UserProfile.objects.get_or_create(user=user)
         return profile
+
+    def put(self, request, *args, **kwargs):
+        profile = self.get_object()
+        serializer = self.get_serializer(profile, data=request.data, partial=True)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def post(self, request, *args, **kwargs):
+        profile = self.get_object()
+        leg_len = get_dim(request.data['img'],request.data['leg'])
+        #serializer = self.get_serializer(profile, data=request.data)
+        return Response(leg_len, status=status.HTTP_200_OK)
+
+        #if serializer.is_valid():
+        #    serializer.save()
+        #    return Response(serializer.data, status=status.HTTP_200_OK)
+        #return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

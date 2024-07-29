@@ -23,6 +23,7 @@ class UserProfile(models.Model):
     name = models.TextField(null=True, blank=True)
     dob = models.DateField(null=True, blank=True)
     height = models.FloatField(null=True, blank=True)
+    femur_len = models.FloatField(null=True, blank=True)
     profile_pic = models.ImageField(upload_to='profile_pictures/', blank=True, null=True)
 
     def __str__(self):

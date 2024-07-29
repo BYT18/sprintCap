@@ -43,7 +43,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
-        fields = ['user', 'dob', 'height', 'profile_pic','name']
+        fields = ['user', 'dob', 'height', 'profile_pic','name',"femur_len"]
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
