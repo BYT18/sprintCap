@@ -94,7 +94,7 @@ html {
 .parallax-title {
   margin: 0;
   color: white;
-  left: calc(50% + 130px);
+  left: calc(50% + 20vw);
   font-size: 56px;
   font-weight: 700;
   letter-spacing: -3px;
@@ -103,9 +103,9 @@ html {
 }
 
 .parallax-text {
-  margin-top: 90px;
+  margin-top: 15vh;
   color: white;
-  left: calc(55% + 100px);
+  left: calc(55% + 10vw);
   font-size: 20px;
   font-weight: 200;
   line-height: 1.2;
@@ -126,7 +126,7 @@ html {
 .secDiv {
   /*width: 300px;
   height: 550px;*/
-  width: 30vw;
+  width: 35vw;
   height: 75vh;
   position: relative;
   max-height: 90vh;
@@ -178,14 +178,14 @@ position: absolute;
 /* Media queries for responsive design */
 @media (max-width: 768px) {
   .secDiv {
-    /*height: auto;*/
-    width:100%;
-    padding: 20px;
+    height: 60%;
+    width:80%;
+    padding: 10px;
   }
 
   .parallax-title {
     font-size: 1.5rem;
-    top: 5%;
+    top: 25%;
   }
 
   .parallax-text {
