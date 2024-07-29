@@ -238,7 +238,7 @@ def compute_angle(point1, point2, point3):
 
     return angle_degrees
 
-def contact_flight_analysis(frames, fps, duration):
+def contact_flight_analysis(frames, fps, true_fps_factor, duration):
 
     imp_frames = frames
     #tot_frames = dur*curr_fps(slow-mo)
@@ -251,7 +251,7 @@ def contact_flight_analysis(frames, fps, duration):
 
     #Time per frame in GIF = Duration / Total frames of GIF = 3 s / 93 frames
 
-    tbf = duration / (fps*8)
+    tbf = duration / (fps*true_fps_factor)
 
     gcontact_times = []
     flight_times = []
@@ -264,8 +264,11 @@ def contact_flight_analysis(frames, fps, duration):
                 flight_times.append(0)
         else:
             gcontact_times.append(counter*tbf)
+            if (imp_frames[i + 1] - imp_frames[i] > counter*1.3):
+                flight_times.append((tbf * (imp_frames[i + 1] - imp_frames[i]))/((imp_frames[i + 1] - imp_frames[i])//counter))
+            else:
+                flight_times.append((tbf * (imp_frames[i + 1] - imp_frames[i])))
             counter = 0
-            flight_times.append(tbf*(imp_frames[i+1]-imp_frames[i]))
 
     """# Plotting the first set of bars
     bars1 = plt.bar(range(len(gcontact_times)), gcontact_times, color='red', label='Ground')
@@ -296,7 +299,6 @@ def contact_flight_analysis(frames, fps, duration):
 # use leg length to calibrate distance to pole, then use new leg length to calibrate distance from pole in next step, this shoudl give more accurate measurments
 def step_len_anal(ank_pos, frames, output_frames, leg_length_px, leg_length):
     imp_frames = frames
-    print("anal")
     print(imp_frames)
     cap_frames = []
     s_lens = []
@@ -337,13 +339,15 @@ def step_len_anal(ank_pos, frames, output_frames, leg_length_px, leg_length):
             print(left_step_length_px)
             print("b")"""
 
-            pixel_to_meter_ratio = leg_length / leg_length_px[imp_frames[i+1]]
-            #left_step_length = (left_step_length_px / leg_length_px) * leg_length
-            left_step_length = left_step_length_px * pixel_to_meter_ratio
-            left_step_length = abs(left_step_length - initial)
-            s_lens.append(left_step_length)
+            #idk what this is for
+            if len(leg_length_px)>=imp_frames[i+1]:
+                pixel_to_meter_ratio = leg_length / leg_length_px[imp_frames[i+1]]
+                #left_step_length = (left_step_length_px / leg_length_px) * leg_length
+                left_step_length = left_step_length_px * pixel_to_meter_ratio
+                left_step_length = abs(left_step_length - initial)
+                s_lens.append(left_step_length)
 
-            initial = 0
+                initial = 0
 
     """initial = ank_pos[1]
     print("verif")
@@ -623,17 +627,18 @@ def torso_angles(start_points, end_points, fixed_line_points):
 
     return angles
 
-def angluar_velocity(angles, title):
+def angular_velocity(angles, title):
     # Calculate angular velocity
-    angular_velocity = [(angles[i+1] - angles[i]) for i in range(len(angles) - 1)]
+    #angular_velocity = [(angles[i+1] - angles[i]) for i in range(len(angles) - 1)]
+    angular_velocity = angles
 
     # Generate x-values for angular velocity (indices start from 0 to len(angular_velocity) - 1)
-    frames_x = range(len(angular_velocity))
+    x = range(len(angular_velocity))
 
-    x = [(frame_index / 30) * 1000 for frame_index in frames_x]
+    #x = [(frame_index / 30) * 1000 for frame_index in frames_x]
 
-    # Plot angular velocity
-    """smoothed = lowess(angular_velocity, x, frac=0.3, delta=150)
+    """# Plot angular velocity
+    smoothed = lowess(angular_velocity, x, frac=0.3, delta=30)
 
     # Plot the results
     plt.scatter(x, angular_velocity, label='Data', color='gray')
@@ -696,7 +701,6 @@ def get_lag(data):
     plt.tight_layout()
     plt.show()"""
 
-
 def extract_consecutive_values(data):
     result = []
 
@@ -744,7 +748,8 @@ mp_drawing = mp.solutions.drawing_utils
 mp_pose = mp.solutions.pose
 
 # Upload Video
-video_path = 'adam.mov'
+video_path = 'dheer.MOV'
+#video_path = './working_vids/timo.MOV'
 output_path = 'output_video.mp4'
 cap = cv2.VideoCapture(video_path)
 
@@ -826,6 +831,9 @@ shouR_pos = []
 backside = []
 frontside = []
 
+norm_elbR =[]
+
+
 prev_ankle_pos = None
 prev_time = None
 leg_length = 0.5  # in meters
@@ -835,7 +843,7 @@ leg_length_px = []
 # lk_params = dict(winSize=(15, 15), maxLevel=2,criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
 
 prev_landmarks = None
-with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tracking_confidence=0.3) as pose:
+with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.7, min_tracking_confidence=0.7) as pose:
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
@@ -1015,9 +1023,10 @@ with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tra
                     height_in_pixels = pix
                 kinogram[4] = frame_idx
 
-
             # strike R
-            if abs(kneeL[0] - hipL[0]) < knee_hip_alignment_strike and ankL[1] + 15 < ground:
+            # opposite leg is close to underneath COM and strike foot is infront of body and opposite foot higher than strike knee
+            if abs(kneeL[0] - hipL[0]) < knee_hip_alignment_strike and ankL[1] + 15 < ground and ankR[0]>hipR[0]:
+                #and ankL[1]<kneeR[1]
                 knee_hip_alignment_strike = abs(kneeL[0] - hipL[0])
                 kinogram[2] = frame_idx
 
@@ -1085,8 +1094,8 @@ ground_points_smooth = find_median_of_consecutive_keys(ground_points)
 print(ground_points_smooth)
 print(len(nose_pos))
 print(len(mid_pelvis_pos))
-tor_angles = torso_angles(nose_pos,mid_pelvis_pos, ground_points_smooth)
-print(tor_angles)
+#tor_angles = torso_angles(nose_pos,mid_pelvis_pos, ground_points_smooth)
+#print(tor_angles)
 """contact = True
     ind = i
     prev_ind = i
@@ -1100,6 +1109,7 @@ cap = cv2.VideoCapture(video_path)
 # Get the frame rate and frame size of the video
 fps = cap.get(cv2.CAP_PROP_FPS)
 print("fps " + str(fps))
+print(ground_frames)
 frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 # Define the codec and create VideoWriter object
@@ -1455,63 +1465,64 @@ plt.legend()
 plt.show()"""
 
 # Angular velocities
-thigh_ang_vel = angluar_velocity(thigh_angles, "Thigh")
+thigh_ang_vel = angular_velocity(thigh_angles, "Thigh")
 
 kneeL_angles = []
 for i in range(len(kneeL_pos)):
     a = compute_angle(hipL_pos[i],kneeL_pos[i],ankL_pos[i])
     kneeL_angles.append(a)
-kneeL_ang_vel = angluar_velocity(kneeL_angles, "Knee Left")
+kneeL_ang_vel = angular_velocity(kneeL_angles, "Knee Left")
 
 kneeR_angles = []
 for i in range(len(kneeR_pos)):
     a = compute_angle(hipR_pos[i],kneeR_pos[i],ankR_pos[i])
     kneeR_angles.append(a)
-kneeR_ang_vel = angluar_velocity(kneeR_angles, "Knee Right")
+kneeR_ang_vel = angular_velocity(kneeR_angles, "Knee Right")
 
 elbL_angles = []
 for i in range(len(elbL_pos)):
     a = compute_angle(shouL_pos[i],elbL_pos[i],wrL_pos[i])
     elbL_angles.append(a)
-elbL_ang_vel = angluar_velocity(elbL_angles, "Elbow Left")
+elbL_ang_vel = angular_velocity(elbL_angles, "Elbow Left")
 
 elbR_angles = []
 for i in range(len(elbR_pos)):
     a = compute_angle(shouR_pos[i],elbR_pos[i],wrR_pos[i])
     elbR_angles.append(a)
-elbR_ang_vel = angluar_velocity(elbR_angles, "Elbow Right")
+elbR_ang_vel = angular_velocity(elbR_angles, "Elbow Right")
 
 hipR_angles = []
 for i in range(len(hipR_pos)):
     a = compute_angle(shouR_pos[i],hipR_pos[i],kneeR_pos[i])
     hipR_angles.append(a)
-hipR_ang_vel = angluar_velocity(hipR_angles, "Hip Right")
+hipR_ang_vel = angular_velocity(hipR_angles, "Hip Right")
 
 smoothed = lowess(elbR_ang_vel, range(len(elbR_ang_vel)), frac=0.3)
 get_lag(elbR_ang_vel)
 get_lag(smoothed[:,1])
+
 """
 Summary Table
 """
-# Create a dictionary to store the lists
+"""# Create a dictionary to store the lists
 key_data = {'AV_Thigh': thigh_ang_vel, 'AV_Knee_L': kneeL_ang_vel, 'AV_Knee_R': kneeR_ang_vel, 'AV_Elb_L': elbL_ang_vel, 'AV_Elb_R': elbR_ang_vel, 'AV_Hip_R': hipR_ang_vel}
 
 # Create a DataFrame from the dictionary
-df = pd.DataFrame(dict([(k, pd.Series(v)) for k, v in key_data.items()]))
+df = pd.DataFrame(dict([(k, pd.Series(v)) for k, v in key_data.items()]))"""
 
 # Calculate summary statistics
 #summary = df.agg(['median', 'mean', 'min', 'max', standard_error, coefficient_of_variation, mean_lag]).transpose()
 #summary.columns = ['Median', 'Mean', 'Min', 'Max', 'Standard Error', 'Coefficient of Variation', 'Mean Lag']
 
 # Calculate built-in summary statistics
-summary = df.agg(['median', 'mean', 'min', 'max']).transpose()
+"""summary = df.agg(['median', 'mean', 'min', 'max']).transpose()
 # Calculate custom statistics
 summary['Standard Error'] = df.apply(standard_error)
 summary['Coefficient of Variation'] = df.apply(coefficient_of_variation)
 summary['Mean Lag'] = df.apply(mean_lag)
 
 # Print the summary table
-print(summary)
+#print(summary)"""
 
 """# Apply moving average with a window size of 3
 window_size = 3
@@ -1549,10 +1560,10 @@ plt.show()"""
 Step Length Analysis 
 """
 #david 30-56
-pix_distances = step_len_anal(ank_pos, imp_frames, output, leg_length_px,leg_length)
-print(pix_distances)
-
-print(height_in_pixels)
+#pix_distances = step_len_anal(ank_pos, imp_frames, output, leg_length_px,leg_length)
+#print("lengs")
+#print(pix_distances)
+#print(height_in_pixels)
 #sLength = step_length(1.77,height_in_pixels, pix_distances, results, 0, 0, (581, 460),(678, 460))
 #print('lenBelow')
 #print(sLength)
@@ -1564,6 +1575,19 @@ print(height_in_pixels)
 """
 Show important frames
 """
+print(imp_frames)
+imp_frames = kinogram
+num_frames = len(imp_frames)
+fig, axs = plt.subplots(1, num_frames, figsize=(num_frames * 5, 5))
+
+for i in range(num_frames):
+    axs[i].imshow(output[imp_frames[i]])
+    axs[i].axis('off')
+    axs[i].set_title(f"Contact {i + 1}")
+
+plt.tight_layout()
+plt.show()
+
 """# fly issues from 47 ends too early at 53
 # david a bit too late 3 - 16 (should be 14ish)
 # adam ends early 16 - 18
@@ -1621,7 +1645,7 @@ plt.show()"""
 Displacement Analysis
 """
 
-dis = []
+"""dis = []
 for i in range(len(ankR_pos)):
     point1 = kneeR_pos[i]
     point2 = kneeL_pos[i]
@@ -1640,15 +1664,17 @@ plt.ylabel('Distance (Pixels')
 plt.title('Distance between Knees over Frames')
 # Add a legend
 plt.legend()
-plt.show()
+plt.show()"""
 
 """
 Flight and ground contact time analysis 
 """
-f_g_times = contact_flight_analysis(imp_frames,fps,len(output)/fps)
+f_g_times = contact_flight_analysis(imp_frames,fps,1,len(output)/fps)
 
 ground_times = f_g_times[1]
 flight_times = f_g_times[0]
+print(ground_times)
+print(flight_times)
 
 # watch out for last flight time is always 0
 max_step_len = max(pix_distances)
@@ -1728,9 +1754,7 @@ plt.legend()
 plt.show()"""
 
 import numpy as np
-import time
 import math
-
 from typing import Tuple
 
 def tricubic(x):
@@ -1845,16 +1869,18 @@ for x in xx:
     ys.append(y)
     # print(x, y)"""
 
-xx = [(frame_index / 30) * 1000 for frame_index in range(len(elbR_angles))]
-print(xx)
-loess = Loess(xx, hipR_angles)
+#xx = [(frame_index / 30) * 1000 for frame_index in range(len(elbR_angles))]
+
+"""xx = range(len(elbR_angles))
+
+loess = Loess(xx, elbR_angles)
 ys=[]
 for x in xx:
-    y = loess.estimate(x, window=15, use_matrix=False, degree=3)
+    y = loess.estimate(x, window=30, use_matrix=False, degree=3)
     ys.append(y)
 
 plt.figure(figsize=(12, 8))
-plt.plot(xx, hipR_angles, 'o', label='Raw Data')
+plt.plot(xx, elbR_angles, 'o', label='Raw Data')
 plt.plot(xx, ys, '--', linewidth=3, label='LOESS')
 plt.legend()
 plt.title('Right Hip Angles Over Time')
@@ -1862,3 +1888,241 @@ plt.xlabel('Time (ms)')
 plt.ylabel('Angle (Degrees)')
 plt.grid(True)
 plt.show()
+"""
+
+xx = range(len(elbR_angles))
+
+"""loess = Loess(xx, elbR_angles)
+ys=[]
+for x in xx:
+    y = loess.estimate(x, window=20, use_matrix=False, degree=3)
+    ys.append(y)
+
+loess = Loess(xx, hipR_angles)
+ys2=[]
+for x in xx:
+    y = loess.estimate(x, window=20, use_matrix=False, degree=3)
+    ys2.append(y)
+
+loess = Loess(xx, kneeR_angles)
+ys3=[]
+for x in xx:
+    y = loess.estimate(x, window=20, use_matrix=False, degree=3)
+    ys3.append(y)
+
+# Create a DataFrame
+df = pd.DataFrame({
+    'knee': ys3,
+    'hip': ys2,
+    'elbow': ys,
+    #'knee': kneeR_angles,
+    #'hip': hipR_angles,
+    #'elbow': elbR_angles,
+})
+
+# Save the DataFrame to a CSV file
+df.to_csv('positions.csv', index=False)"""
+
+
+"""from validation import calculate_angles3, detect_spike_ranges, compute_cross_correlation, plot_angles, mean, cross_correlation, normalized_cross_correlation
+
+# Read the entire TSV file into a list of lines
+with open('Random_Moves.tsv', 'r') as f:
+    lines = f.readlines()
+
+# Extract metadata
+metadata = {}
+index = 0
+while index < len(lines) and not lines[index].startswith('-'):
+    parts = lines[index].strip().split('\t')
+    key = parts[0]
+    value = parts[1:]
+    metadata[key] = value if len(value) > 1 else value[0]
+    index += 1
+
+# Extract the marker names and trajectory types
+marker_names = metadata['MARKER_NAMES']
+trajectory_types = metadata['TRAJECTORY_TYPES']
+
+# Read the trajectory data starting from the line that starts with the first number
+trajectory_data = []
+while index < len(lines):
+    if lines[index].strip() != "":
+        trajectory_data.append(list(map(float, lines[index].strip().split('\t'))))
+    index += 1
+
+# Convert the trajectory data to a numpy array
+trajectory_data = np.array(trajectory_data)
+
+# Print the metadata
+#print("Metadata:")
+for key, value in metadata.items():
+    #print(f"{key}: {value}")
+
+# Print the marker names and trajectory types
+#print("\nMarker Names:", marker_names)
+#print("Trajectory Types:", trajectory_types)
+
+# Print the trajectory data
+#print("\nTrajectory Data:")
+#print(trajectory_data)
+
+# Create a pandas DataFrame from the trajectory data
+num_markers = len(marker_names)
+columns = []
+for marker in marker_names:
+    columns.extend([f"{marker}_X", f"{marker}_Y", f"{marker}_Z"])
+
+df = pd.DataFrame(trajectory_data, columns=columns)
+#print("\nDataFrame:")
+#print(df)
+
+# Example marker triples for angle calculation (user-defined)
+marker_triples = [
+    ('Sh', 'El', 'Wr'),
+    ('Sh', 'Hi', 'Kn'),
+    ('Hi', 'Kn', 'An')
+]
+
+# Calculate angles
+qualysis_angles = calculate_angles3(df, marker_triples)
+
+# Find spike indices
+spike_indices = detect_spike_ranges(qualysis_angles['Sh-Hi-Kn'],2.5)
+#print(spike_indices)
+
+sp = pd.DataFrame({'time': range(len(qualysis_angles['Sh-Hi-Kn'])), 'signal': qualysis_angles['Sh-Hi-Kn']})
+
+# In a real scenario, you might use a threshold to identify spikes
+spike_indices = range(spike_indices[0]-1, spike_indices[len(spike_indices)-1]+1)
+
+# Mask the spikes
+sp.loc[spike_indices, 'signal'] = np.nan
+
+# Interpolate to fill the spikes
+sp['signal'] = sp['signal'].interpolate()
+#print(sp)
+qualysis_angles['Sh-Hi-Kn'] = sp['signal']
+
+# Upsample by repeating every frame 3 times
+data = {
+    'frame': range(len(qualysis_angles['Sh-El-Wr'])),
+    'e': qualysis_angles['Sh-El-Wr'],
+    'h': qualysis_angles['Sh-Hi-Kn'],
+    'k': qualysis_angles['Hi-Kn-An']
+}
+
+df3 = pd.DataFrame(data)
+df_upsampled = df3.loc[df3.index.repeat(3)].reset_index(drop=True)
+
+# Downsample by taking every 20th frame
+df_downsampled = df_upsampled.iloc[::20].reset_index(drop=True)
+qualysis_angles['Sh-El-Wr'] = df_downsampled['e']
+qualysis_angles['Sh-Hi-Kn'] = df_downsampled['h']
+qualysis_angles['Hi-Kn-An'] = df_downsampled['k']
+
+LOESSes = []
+p1 = []
+p2=[]
+p3=[]
+for i in range(2,46):
+    xx = range(len(elbR_angles))
+    loess = Loess(xx, elbR_angles)
+    ys = []
+    for x in xx:
+        y = loess.estimate(x, window=i, use_matrix=False, degree=3)
+        ys.append(y)
+
+    loess = Loess(xx, hipR_angles)
+    ys2 = []
+    for x in xx:
+        y = loess.estimate(x, window=i, use_matrix=False, degree=3)
+        ys2.append(y)
+
+    loess = Loess(xx, kneeR_angles)
+    ys3 = []
+    for x in xx:
+        y = loess.estimate(x, window=i, use_matrix=False, degree=3)
+        ys3.append(y)
+
+    if i == 10:
+        p1 = ys2
+    if i == 20:
+        p2 = ys2
+    if i == 45:
+        p3 = ys2
+
+
+    # Create a DataFrame
+    df2 = pd.DataFrame({
+        'knee': ys3,
+        'hip': ys2,
+        'elbow': ys,
+    })
+
+    phone_angles = {"e": df2['elbow'], "h": df2['hip'], "k": df2['knee']}
+    # Process the angles: take the absolute value and subtract 180
+    phone_angles["e"] = np.abs(phone_angles["e"] - 180)
+    phone_angles["k"] = np.abs(phone_angles["k"] - 180)
+    phone_angles["h"] = np.abs(phone_angles["h"] - 180)
+
+    #phone_angles["e"] = phone_angles["e"][37:690]
+    #phone_angles["k"] = phone_angles["k"][37:690]
+    #phone_angles["h"] = phone_angles["h"][37:690]
+
+    target_length = len(phone_angles['k'])  # Length of the shorter dataset
+
+    # Compute cross-correlation between knee angles and hip positions
+    #correlation, lag = compute_cross_correlation(phone_angles['k'], qualysis_angles['Hi-Kn-An'])
+    #correlation /= np.max(correlation)
+
+    #correlation2, lag2 = compute_cross_correlation(phone_angles['e'], qualysis_angles['Sh-El-Wr'])
+    #correlation2 /= np.max(correlation2)
+
+    #correlation3, lag3 = compute_cross_correlation(phone_angles['h'], qualysis_angles['Sh-Hi-Kn'])
+    #correlation3 /= np.max(correlation3)
+    
+    correlation, lag = normalized_cross_correlation(phone_angles['k'], qualysis_angles['Hi-Kn-An'])
+    correlation2, lag2 = normalized_cross_correlation(phone_angles['e'], qualysis_angles['Sh-El-Wr'])
+    correlation3, lag3 = normalized_cross_correlation(phone_angles['h'], qualysis_angles['Sh-Hi-Kn'])
+
+    # Find the lag with the maximum cross-correlation coefficient
+    shift_lag = lag2[np.argmax(correlation2)]
+
+    #print(f'Lag with maximum cross-correlation coefficient: {shift_lag}')
+    #print(correlation2)
+    #print(correlation3)
+    #print(correlation)
+
+    LOESSes.append((max(correlation2)+correlation[np.argmax(correlation2)]+correlation3[np.argmax(correlation2)])/3)
+
+    #print(len(phone_angles['k']))
+    #print(len(qualysis_angles['Hi-Kn-An']))
+    #correlation = cross_correlation(phone_angles['k'], qualysis_angles['Hi-Kn-An'])
+    #print('Correlation:', correlation)
+    #correlation2 = cross_correlation(phone_angles['h'], qualysis_angles['Sh-Hi-Kn'])
+    #print('Correlation:', correlation2)
+    #correlation3 = cross_correlation(phone_angles['e'], qualysis_angles['Sh-El-Wr'])
+    #print('Correlation:', correlation3)
+
+    #print((correlation2 + correlation + correlation3) / 3)
+    #LOESSes.append((correlation2 + correlation + correlation3) / 3)
+
+plt.figure(figsize=(12, 6))
+plt.plot(LOESSes, label='data')
+plt.title('Adjust')
+plt.xlabel('Frame')
+plt.ylabel('Mean Correlation Coeff')
+plt.legend()
+plt.show()
+
+plt.figure(figsize=(12, 6))
+plt.plot(hipR_angles, label='Orig')
+plt.plot(p1, label='span 10')
+plt.plot(p2, label='span 20')
+plt.plot(p3, label='span 45')
+plt.title('Adjust')
+plt.xlabel('Frame')
+plt.ylabel('Angles')
+plt.legend()
+plt.show()"""
