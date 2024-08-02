@@ -264,7 +264,8 @@ def contact_flight_analysis(frames, fps, true_fps_factor, duration):
                 flight_times.append(0)
         else:
             gcontact_times.append(counter*tbf)
-            if (imp_frames[i + 1] - imp_frames[i] > counter*1.3):
+
+            if (imp_frames[i + 1] - imp_frames[i] > counter*1.3) and counter!=0:
                 flight_times.append((tbf * (imp_frames[i + 1] - imp_frames[i]))/((imp_frames[i + 1] - imp_frames[i])//counter))
             else:
                 flight_times.append((tbf * (imp_frames[i + 1] - imp_frames[i])))
@@ -414,7 +415,7 @@ def obj_detect(img, temp):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     assert img is not None, "file could not be read, check with os.path.exists()"
     img2 = img.copy()
-    template = cv2.imread('pole.png', cv2.IMREAD_GRAYSCALE)
+    template = cv2.imread('./random/pole.png', cv2.IMREAD_GRAYSCALE)
     assert template is not None, "file could not be read, check with os.path.exists()"
     w, h = template.shape[::-1]
 
@@ -544,6 +545,8 @@ def moving_average(values, window_size):
 def find_median_of_consecutive_keys(data):
     # Sort the dictionary by keys
     sorted_keys = sorted(data.keys())
+    print(data)
+    print(sorted_keys)
 
     # Initialize variables
     median_values = []
@@ -748,7 +751,7 @@ mp_drawing = mp.solutions.drawing_utils
 mp_pose = mp.solutions.pose
 
 # Upload Video
-video_path = 'dheer.MOV'
+video_path = './working_vids/fly.mov'
 #video_path = './working_vids/timo.MOV'
 output_path = 'output_video.mp4'
 cap = cv2.VideoCapture(video_path)
@@ -757,6 +760,9 @@ cap = cv2.VideoCapture(video_path)
 fps = cap.get(cv2.CAP_PROP_FPS)
 frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+median_frame = total_frames // 2
 
 # Define the codec and create VideoWriter object
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Codec for mp4 files
@@ -994,12 +1000,6 @@ with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.7, min_tra
             point2 = kneeL
             point3 = hipL
             angle = compute_angle(point1, point2, point3)
-            """print(frame_idx)
-            print(ground)
-            print(footL)
-            print(footR)
-            print(angle)
-            print("")"""
             #if ((kneeR[0] - kneeL[0]) ** 2 + (kneeR[1] - kneeL[1]) ** 2) ** 0.5 > max_knee_seperation and footL[1]>ground:
             if ((kneeR[0] - kneeL[0]) ** 2 + (kneeR[1] - kneeL[1]) ** 2) ** 0.5 > max_knee_seperation and footL[1] + 5 >ground:
                 max_knee_seperation = ((kneeR[0] - kneeL[0]) ** 2 + (kneeR[1] - kneeL[1]) ** 2) ** 0.5
@@ -1103,7 +1103,8 @@ print(len(mid_pelvis_pos))
     print(imp_frames)
     max_knee_seperation = 0
     key = 0
-    threshold = 100000"""
+    threshold = 100000
+"""
 
 cap = cv2.VideoCapture(video_path)
 # Get the frame rate and frame size of the video
@@ -1560,9 +1561,9 @@ plt.show()"""
 Step Length Analysis 
 """
 #david 30-56
-#pix_distances = step_len_anal(ank_pos, imp_frames, output, leg_length_px,leg_length)
+pix_distances = step_len_anal(ank_pos, imp_frames, output, leg_length_px, leg_length)
 #print("lengs")
-#print(pix_distances)
+print(pix_distances)
 #print(height_in_pixels)
 #sLength = step_length(1.77,height_in_pixels, pix_distances, results, 0, 0, (581, 460),(678, 460))
 #print('lenBelow')
@@ -1575,7 +1576,7 @@ Step Length Analysis
 """
 Show important frames
 """
-print(imp_frames)
+"""print(imp_frames)
 imp_frames = kinogram
 num_frames = len(imp_frames)
 fig, axs = plt.subplots(1, num_frames, figsize=(num_frames * 5, 5))
@@ -1586,7 +1587,7 @@ for i in range(num_frames):
     axs[i].set_title(f"Contact {i + 1}")
 
 plt.tight_layout()
-plt.show()
+plt.show()"""
 
 """# fly issues from 47 ends too early at 53
 # david a bit too late 3 - 16 (should be 14ish)
@@ -1669,15 +1670,17 @@ plt.show()"""
 """
 Flight and ground contact time analysis 
 """
-f_g_times = contact_flight_analysis(imp_frames,fps,1,len(output)/fps)
+f_g_times = contact_flight_analysis(imp_frames,fps,8,len(output)/fps)
 
 ground_times = f_g_times[1]
 flight_times = f_g_times[0]
+print("times")
+print(len(output)/fps)
 print(ground_times)
 print(flight_times)
 
 # watch out for last flight time is always 0
-max_step_len = max(pix_distances)
+#max_step_len = max(pix_distances)
 avg_ground_time = sum(ground_times)/len(ground_times)
 avg_flight_time = sum(flight_times)/(len(flight_times)-1)
 time_btw_steps = 0

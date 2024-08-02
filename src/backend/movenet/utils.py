@@ -1,5 +1,6 @@
 #!pip install -q mediapipe
 #!wget -O pose_landmarker.task -q https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_heavy/float16/1/pose_landmarker_heavy.task
+import statistics
 
 from mediapipe import solutions
 import subprocess
@@ -234,16 +235,9 @@ def compute_angle(point1, point2, point3):
 
     return angle_degrees
 
-def contact_flight_analysis(frames, fps, tot_frames):
-
+def contact_flight_analysis(frames, fps, true_fps_factor, duration):
     imp_frames = frames
-    #tot_frames = dur*curr_fps(slow-mo)
-    #Total frames in the original video = Frame rate × Duration = 240 fps × 3 s = 720 frames
-    tot_frames = 3*720
-    #Frame rate of the GIF = Total frames of GIF / Duration = 93 frames / 3 s
-    fps = 93 / 3
-    #Time per frame in GIF = Duration / Total frames of GIF = 3 s / 93 frames
-    tbf = 1 / fps
+    tbf = duration / (fps*true_fps_factor)
     gcontact_times = []
     flight_times = []
     counter = 0
@@ -254,60 +248,55 @@ def contact_flight_analysis(frames, fps, tot_frames):
                 gcontact_times.append(counter*tbf)
                 flight_times.append(0)
         else:
-            gcontact_times.append(counter*tbf)
+            #gcontact_times.append(counter*tbf)
+            #counter = 0
+            #flight_times.append(tbf*(imp_frames[i+1]-imp_frames[i]))
+            gcontact_times.append(counter * tbf)
+            if (imp_frames[i + 1] - imp_frames[i] > counter * 1.3) and counter != 0:
+                flight_times.append(
+                    (tbf * (imp_frames[i + 1] - imp_frames[i])) / ((imp_frames[i + 1] - imp_frames[i]) // counter))
+            else:
+                flight_times.append((tbf * (imp_frames[i + 1] - imp_frames[i])))
             counter = 0
-            flight_times.append(tbf*(imp_frames[i+1]-imp_frames[i]))
 
-    # Plotting the first set of bars
-    bars1 = plt.bar(range(len(gcontact_times)), gcontact_times, color='red', label='Ground')
-
-    # Plotting the second set of bars on top of the first set
-    bars2 = plt.bar(range(len(flight_times)), flight_times, color='blue', label='Flight', alpha=0.5, bottom=gcontact_times)
-
-    # Adding labels to the bars
-    for bar1, bar2 in zip(bars1, bars2):
-        height1 = bar1.get_height()
-        height2 = bar2.get_height()
-        plt.text(bar1.get_x() + bar1.get_width() / 2., height1 / 2, '{:.3f}'.format(height1), ha='center', va='center', color='white')
-        plt.text(bar2.get_x() + bar2.get_width() / 2., height1 + height2 / 2, '{:.3f}'.format(height2), ha='center', va='center', color='black')
-
-
-    # Adding labels and title
-    plt.xlabel('Step')
-    plt.ylabel('Time')
-    plt.title('Stacked Bar Chart')
-
-    # Adding legend
-    plt.legend()
-
-    # Display the plot
-    #plt.show()
-
-    plot_path = os.path.join('media/pics', 'contact_time.png')
-    plt.savefig(plot_path)
     return [flight_times,gcontact_times]
 
 
-def step_len_anal(ank_pos, frames, output_frames, pic):
+def step_len_anal(ank_pos, frames, output_frames, leg_length_px, leg_length):
     imp_frames = frames
+    print(imp_frames)
+    cap_frames = []
     s_lens = []
-
     initial = 0
     for i in range(len(imp_frames) - 1):
+        #if frames are consequtive then they are looking at the same ground contact
         if imp_frames[i] + 1 == imp_frames[i + 1] and initial == 0:
             #initial = left or right ankle position
-            marker_pos = obj_detect(output_frames[imp_frames[i]],pic)
-            initial = abs(ank_pos[i][0] - marker_pos)
-            #initial = ank_pos[i][0]
+            marker_pos = obj_detect(output_frames[imp_frames[i]],0)
+            #initial = abs(ank_pos[i][0] - marker_pos)
+            cap_frames.append(imp_frames[i])
+            initial = euclidean_distance(ank_pos[i],marker_pos)
+            pixel_to_meter_ratio = leg_length / leg_length_px[imp_frames[i]]
+            initial = initial * pixel_to_meter_ratio
 
         elif imp_frames[i] + 1 == imp_frames[i + 1] and initial != 0:
             continue
         else:
-            marker_pos = obj_detect(output_frames[imp_frames[i]], pic)
-            s_lens.append(abs(abs(ank_pos[i+1][0]-marker_pos) - initial))
+            marker_pos = obj_detect(output_frames[imp_frames[i]], 0)
+            #left_step_length_px1 = abs(abs(ank_pos[i+1][0]-marker_pos) - initial1)
+            #s_lens.append(abs(abs(ank_pos[i+1][0]-marker_pos) - initial))
+            cap_frames.append(imp_frames[i])
             #s_lens.append(ank_pos[i + 1][0] - initial)
-            initial = 0
+            left_step_length_px = euclidean_distance(ank_pos[i + 1], marker_pos)
 
+            #idk what this is for
+            if len(leg_length_px)>=imp_frames[i+1]:
+                pixel_to_meter_ratio = leg_length / leg_length_px[imp_frames[i+1]]
+                #left_step_length = (left_step_length_px / leg_length_px) * leg_length
+                left_step_length = left_step_length_px * pixel_to_meter_ratio
+                left_step_length = abs(left_step_length - initial)
+                s_lens.append(left_step_length)
+                initial = 0
     return s_lens
 
 def step_length(height, height_pixels, distances, results, start_frame, end_frame, start_foot_coords, end_foot_coords):
@@ -378,10 +367,186 @@ def obj_detect(img, temp):
 
         return mid
 
+# Function to calculate Euclidean distance
+def euclidean_distance(point1, point2):
+    return np.sqrt((point1[0] - point2[0])**2 + (point1[1] - point2[1])**2)
+
+def find_median_of_consecutive_keys(data):
+    # Sort the dictionary by keys
+    sorted_keys = sorted(data.keys())
+    print(data)
+    print(sorted_keys)
+
+    # Initialize variables
+    median_values = []
+    current_group = [sorted_keys[0]]
+
+    # Group consecutive keys
+    for i in range(1, len(sorted_keys)):
+        if sorted_keys[i] == sorted_keys[i - 1] + 1:
+            current_group.append(sorted_keys[i])
+        else:
+            # Find the median value in the current group
+            median_valueY = statistics.median([data[key][1] for key in current_group])
+            median_valueX = statistics.median([data[key][0] for key in current_group])
+            median_values.append((median_valueX,median_valueY))
+            current_group = [sorted_keys[i]]
+
+    # Don't forget to add the last group
+    if current_group:
+        median_valueY = statistics.median([data[key][1] for key in current_group])
+        median_valueX = statistics.median([data[key][0] for key in current_group])
+        median_values.append((median_valueX, median_valueY))
+
+    return median_values
+
+
+def torso_angles(start_points, end_points, fixed_line_points, frame_width):
+    angles = []
+    start = 0
+    end = 0
+
+    # Iterate over the fixed line points to create segments
+    for i in range(len(fixed_line_points) - 1):
+        # Define the fixed line vector
+        vector_fixed = np.array([frame_width,
+                                 fixed_line_points[i + 1][1] - fixed_line_points[i][1]])
+
+        #for start, end in zip(start_points, end_points):
+        while start_points[start][0] < fixed_line_points[i + 1][0] and end_points[end][0]<fixed_line_points[i + 1][0]:
+            # Define the vector for the current segment in the list
+            vector_segment = np.array([end_points[end][0] - start_points[start][0], end_points[end][1] - start_points[start][1]])
+
+            # Calculate the angle between the fixed line and the current segment
+            dot_product = np.dot(vector_segment, vector_fixed)
+
+            # Calculate the magnitudes of the vectors
+            magnitude1 = np.linalg.norm(vector_segment)
+            magnitude2 = np.linalg.norm(vector_fixed)
+
+            # Calculate the cosine of the angle
+            cos_theta = dot_product / (magnitude1 * magnitude2)
+
+            # Ensure the value is within the valid range for arccos due to floating-point errors
+            cos_theta = np.clip(cos_theta, -1.0, 1.0)
+
+            # Calculate the angle in radians
+            angle_radians = np.arccos(cos_theta)
+
+            # Convert the angle to degrees
+            angle_degrees = np.degrees(angle_radians)
+
+            angles.append(angle_degrees)
+            start += 1
+            end += 1
+
+    return angles
+import math
+from typing import Tuple
+
+def tricubic(x):
+    y = np.zeros_like(x)
+    idx = (x >= -1) & (x <= 1)
+    y[idx] = np.power(1.0 - np.power(np.abs(x[idx]), 3), 3)
+    return y
+
+class Loess(object):
+
+    @staticmethod
+    def normalize_array(array: np.ndarray) -> Tuple[np.ndarray, float, float]:
+        min_val = np.min(array)
+        max_val = np.max(array)
+        return (array - min_val) / (max_val - min_val), min_val, max_val
+
+    def __init__(self,
+                 xx: np.ndarray,
+                 yy: np.ndarray,
+                 degree: int = 1):
+        self.n_xx, self.min_xx, self.max_xx = self.normalize_array(xx)
+        self.n_yy, self.min_yy, self.max_yy = self.normalize_array(yy)
+        self.degree = degree
+
+    @staticmethod
+    def get_min_range(distances: np.ndarray,
+                      window: int) -> np.ndarray:
+        min_idx = np.argmin(distances)
+        n = len(distances)
+        if min_idx == 0:
+            return np.arange(0, window)
+        if min_idx == n-1:
+            return np.arange(n - window, n)
+
+        min_range = [min_idx]
+        while len(min_range) < window:
+            i0 = min_range[0]
+            i1 = min_range[-1]
+            if i0 == 0:
+                min_range.append(i1 + 1)
+            elif i1 == n-1:
+                min_range.insert(0, i0 - 1)
+            elif distances[i0-1] < distances[i1+1]:
+                min_range.insert(0, i0 - 1)
+            else:
+                min_range.append(i1 + 1)
+        return np.array(min_range)
+
+    @staticmethod
+    def get_weights(distances: np.ndarray,
+                    min_range: np.ndarray) -> np.ndarray:
+        max_distance = np.max(distances[min_range])
+        weights = tricubic(distances[min_range] / max_distance)
+        return weights
+
+    def normalize_x(self, value: float) -> float:
+        return (value - self.min_xx) / (self.max_xx - self.min_xx)
+
+    def denormalize_y(self, value: float) -> float:
+        return value * (self.max_yy - self.min_yy) + self.min_yy
+
+    def estimate(self,
+                 x: float,
+                 window: int,
+                 use_matrix: bool = False,
+                 degree: int = 1) -> float:
+        n_x = self.normalize_x(x)
+        distances = np.abs(self.n_xx - n_x)
+        min_range = self.get_min_range(distances, window)
+        weights = self.get_weights(distances, min_range)
+
+        if use_matrix or degree > 1:
+            wm = np.multiply(np.eye(window), weights)
+            xm = np.ones((window, degree + 1))
+
+            xp = np.array([[math.pow(n_x, p)] for p in range(degree + 1)])
+            for i in range(1, degree + 1):
+                xm[:, i] = np.power(self.n_xx[min_range], i)
+
+            ym = self.n_yy[min_range]
+            xmt_wm = np.transpose(xm) @ wm
+            beta = np.linalg.pinv(xmt_wm @ xm) @ xmt_wm @ ym
+            y = (beta @ xp)[0]
+        else:
+            xx = self.n_xx[min_range]
+            yy = self.n_yy[min_range]
+            sum_weight = np.sum(weights)
+            sum_weight_x = np.dot(xx, weights)
+            sum_weight_y = np.dot(yy, weights)
+            sum_weight_x2 = np.dot(np.multiply(xx, xx), weights)
+            sum_weight_xy = np.dot(np.multiply(xx, yy), weights)
+
+            mean_x = sum_weight_x / sum_weight
+            mean_y = sum_weight_y / sum_weight
+
+            b = (sum_weight_xy - mean_x * mean_y * sum_weight) / \
+                (sum_weight_x2 - mean_x * mean_x * sum_weight)
+            a = mean_y - b * mean_x
+            y = a + b * n_x
+        return self.denormalize_y(y)
+
 """
 Main
 """
-def get_gif(vid, pic, ath_height):
+def get_gif(vid, pic, ath_height,slowmo):
     # STEP 1: Import the necessary modules.
     import mediapipe as mp
     import tempfile
@@ -428,6 +593,10 @@ def get_gif(vid, pic, ath_height):
     ank_pos = []
 
     # smoothness and rom
+    elbL_pos = []
+    elbR_pos = []
+    ankL_pos = []
+    ankR_pos = []
     hipL_pos = []
     hipR_pos = []
     kneeL_pos = []
@@ -435,12 +604,23 @@ def get_gif(vid, pic, ath_height):
     kneeR_pos = []
     kneeR_velocities = []
     thigh_angles = []
+    kneeR_angles = []
+    mid_pelvis_pos = []
+    nose_pos = []
+    wrL_pos = []
+    wrR_pos = []
+    shouL_pos = []
+    shouR_pos = []
+    backside = []
+    frontside = []
 
     # variables for ground contacts
     ground_points={}
     ground_frames = []
     ground_contacts = 0
 
+    leg_length = 0.5  # in meters
+    leg_length_px = []
 
     with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tracking_confidence=0.3) as pose:
         while cap.isOpened():
@@ -461,8 +641,6 @@ def get_gif(vid, pic, ath_height):
             if results.pose_landmarks:
                 mp_drawing.draw_landmarks(frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
 
-                #get_kinogram_frames(frame,results,kinogram,max_knee_seperation)
-                noseOrg = results.pose_landmarks.landmark[mp_pose.PoseLandmark.NOSE]
                 left_knee = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_KNEE]
                 right_knee = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_KNEE]
 
@@ -477,7 +655,17 @@ def get_gif(vid, pic, ath_height):
                 right_hip = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_HIP]
 
                 left_elbow = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_ELBOW]
+                # right_elbow = results.pose_world_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_ELBOW]
                 right_elbow = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_ELBOW]
+                # print(right_elbow)
+
+                left_wr = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_WRIST]
+                right_wr = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_WRIST]
+
+                left_shoulder = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_SHOULDER]
+                right_shoulder = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_SHOULDER]
+
+                noseOrg = results.pose_landmarks.landmark[mp_pose.PoseLandmark.NOSE]
 
                 # Convert normalized coordinates to pixel values
                 kneeL = (int(left_knee.x * frame_width), int(left_knee.y * frame_height))
@@ -490,33 +678,57 @@ def get_gif(vid, pic, ath_height):
                 heelL = (int(left_heel.x * frame_width), int(left_heel.y * frame_height))
                 heelR = (int(right_heel.x * frame_width), int(right_heel.y * frame_height))
 
-                hipL =  (int(left_hip.x * frame_width), int(left_hip.y * frame_height))
+                hipL = (int(left_hip.x * frame_width), int(left_hip.y * frame_height))
                 hipR = (int(right_hip.x * frame_width), int(right_hip.y * frame_height))
-                midPelvis = (int(((right_hip.x + left_hip.x)/2) * frame_width), int(((right_hip.y + left_hip.y)/2) * frame_height))
+                midPelvis = (int(((right_hip.x + left_hip.x) / 2) * frame_width),
+                             int(((right_hip.y + left_hip.y) / 2) * frame_height))
 
                 elbL = (int(left_elbow.x * frame_width), int(left_elbow.y * frame_height))
                 elbR = (int(right_elbow.x * frame_width), int(right_elbow.y * frame_height))
+
+                wrL = (int(left_wr.x * frame_width), int(left_wr.y * frame_height))
+                wrR = (int(right_wr.x * frame_width), int(right_wr.y * frame_height))
+
+                shouL = (int(left_shoulder.x * frame_width), int(left_shoulder.y * frame_height))
+                shouR = (int(right_shoulder.x * frame_width), int(right_shoulder.y * frame_height))
 
                 nose = (int(noseOrg.x * frame_width), int(noseOrg.y * frame_height))
 
                 kneeL_pos.append(kneeL)
                 kneeR_pos.append(kneeR)
+                mid_pelvis_pos.append(midPelvis)
+                nose_pos.append(nose)
                 hipL_pos.append(hipL)
                 hipR_pos.append(hipR)
+                ankL_pos.append(ankL)
+                ankR_pos.append(ankR)
+                elbL_pos.append(elbL)
+                elbR_pos.append(elbR)
+                wrL_pos.append(wrL)
+                wrR_pos.append(wrR)
+                shouL_pos.append(shouL)
+                shouR_pos.append(shouR)
+
+                if (ankR[0] > midPelvis[0]):
+                    frontside.append(ankR)
+                else:
+                    backside.append(ankR)
+
+                leg_length_px.append(euclidean_distance(hipR, kneeR))
+
+                prev_ankle_pos = ankL
+                prev_time = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
+
+                tAng = compute_angle(hipR, kneeR, ankR)
+                kneeR_angles.append(tAng)
 
                 tAng = compute_angle(kneeL, midPelvis, kneeR)
                 thigh_angles.append(tAng)
 
-                #toeoff
+                # toeoff
                 # max thigh seperation
                 # works for toe off, could also do max distance between ankle and opposite knee
                 # to get different feet/sides, just check which foot is in front of pelvis
-                point1 = ankL
-                point2 = kneeL
-                point3 = hipL
-                angle = compute_angle(point1, point2, point3)
-
-                # if ((kneeR[0] - kneeL[0]) ** 2 + (kneeR[1] - kneeL[1]) ** 2) ** 0.5 > max_knee_seperation and footL[1]>ground:
                 if ((kneeR[0] - kneeL[0]) ** 2 + (kneeR[1] - kneeL[1]) ** 2) ** 0.5 > max_knee_seperation and footL[
                     1] + 5 > ground:
                     max_knee_seperation = ((kneeR[0] - kneeL[0]) ** 2 + (kneeR[1] - kneeL[1]) ** 2) ** 0.5
@@ -541,7 +753,9 @@ def get_gif(vid, pic, ath_height):
                     kinogram[4] = frame_idx
 
                 # strike R
-                if abs(kneeL[0] - hipL[0]) < knee_hip_alignment_strike and ankL[1] + 15 < ground:
+                # opposite leg is close to underneath COM and strike foot is infront of body and opposite foot higher than strike knee
+                if abs(kneeL[0] - hipL[0]) < knee_hip_alignment_strike and ankL[1] + 15 < ground and ankR[0] > hipR[0]:
+                    # and ankL[1]<kneeR[1]
                     knee_hip_alignment_strike = abs(kneeL[0] - hipL[0])
                     kinogram[2] = frame_idx
 
@@ -550,20 +764,23 @@ def get_gif(vid, pic, ath_height):
                     max_y = ((ankR[1] - ankL[1]) ** 2) ** 0.5
                     kinogram[3] = frame_idx
 
-                #if abs(kneeL[0] - kneeR[0]) < 10 or (abs(elbL[0] - elbR[0]) < 10 and abs(kneeL[0] - kneeR[0]) < 25):
-                if abs(kneeL[0] - kneeR[0]) < 25 and (abs(footL[1]-heelL[1])<10 or abs(footR[1]-heelR[1])<10):
+                # if abs(kneeL[0] - kneeR[0]) < 10 or (abs(elbL[0] - elbR[0]) < 10 and abs(kneeL[0] - kneeR[0]) < 25):
+                if abs(kneeL[0] - kneeR[0]) < 25 and (abs(footL[1] - heelL[1]) < 10 or abs(footR[1] - heelR[1]) < 10):
                     ground_contacts += 1
-                    ground = max(footL[1], footR[1])
-                    ground_frames.append(frame_idx) #take lowest point of the ground points in the group
-                    ground_points[frame_idx] = ground
+                    if footL[1] > footR[1]:
+                        ground = footL[1]
+                        g1 = footL
+                    else:
+                        ground = footR[1]
+                        g1 = footR
+                    ground_frames.append(frame_idx)  # take lowest point of the ground points in the group
+                    ground_points[frame_idx] = g1
 
             # Write the frame to the output video
             out.write(frame)
             output.append(frame)
 
         # Release resources
-        #cap.release()
-        #out.release()
         cv2.destroyAllWindows()
 
     # variables for kinogram feedback
@@ -572,6 +789,9 @@ def get_gif(vid, pic, ath_height):
     imp_frames = []
     contact = False
     threshold = 100000
+
+    ground_points_smooth = find_median_of_consecutive_keys(ground_points)
+    #tor_angles = torso_angles(nose_pos,mid_pelvis_pos, ground_points_smooth, frame_width)
 
     cap = cv2.VideoCapture(video_path)
     # Get the frame rate and frame size of the video
@@ -771,8 +991,6 @@ def get_gif(vid, pic, ath_height):
         # Save the plot
         plot_path = os.path.join('media/pics', f'key_frame_{i + 1}.png')
         plt.savefig(plot_path, bbox_inches='tight', pad_inches=0)
-        #plt.savefig(f'key_frame_{i + 1}.png')
-        #plt.close()
 
     """image_urls = []
     for i in range(len(output)):
@@ -811,7 +1029,7 @@ def get_gif(vid, pic, ath_height):
     velocity_magnitudeR_list = velocity_magnitudeR.tolist()
     time_velocity_list = time_velocity.tolist()
 
-    num_frames = len(imp_frames)
+    """num_frames = len(imp_frames)
     fig, axs = plt.subplots(1, num_frames, figsize=(num_frames * 5, 5))
 
     for i in range(num_frames):
@@ -820,20 +1038,20 @@ def get_gif(vid, pic, ath_height):
         axs[i].set_title(f"Contact {i + 1}")
 
     plt.tight_layout()
-    #plt.show()
+    #plt.show()"""
 
     """
     Step Length Analysis 
     """
-    # david 30-56
-    pix_distances = step_len_anal(ank_pos, imp_frames, output, pic)
-    #sLength = step_length(1.77, height_in_pixels, pix_distances, results, 0, 0, (581, 460), (678, 460))
-    sLength = step_length(ath_height, height_in_pixels, pix_distances, 0, 0, 0, 0,0)
+    sLength = step_len_anal(ank_pos, imp_frames, output, leg_length_px,leg_length)
 
     """
     Flight and ground contact time analysis 
     """
-    f_g_times = contact_flight_analysis(imp_frames, 1, 1)
+    if slowmo == 1:
+        f_g_times = contact_flight_analysis(imp_frames,fps,8,len(output)/fps)
+    else:
+        f_g_times = contact_flight_analysis(imp_frames,fps,1,len(output)/fps)
 
     ground_times = f_g_times[1]
     flight_times = f_g_times[0]
@@ -854,11 +1072,44 @@ def get_gif(vid, pic, ath_height):
         avg_ground_time = 0
         avg_flight_time = 0
 
-    #return output_path
-    #return [1, 2, 3, 5, 8, 10]
-    # could return dictionary whcih would be easier to read
-    #"vL": velocity_magnitudeL, "vR": velocity_magnitudeR, "vT": time_velocity
+    pos_data = {
+        'P_R_knee': kneeR_pos,
+        'P_L_knee': kneeL_pos,
+        'P_R_hip': hipR_pos,
+        'P_L_hip': hipL_pos,
+        'P_pelv': mid_pelvis_pos,
+        'P_R_elbow': elbR_pos,
+        # 'P_L_elbow': elbL_pos,
+        'P_R_shou': shouR_pos,
+        # 'P_L_shou': shouL_pos,
+        'P_R_ankle': ankR_pos,
+        'P_R_wr': wrR_pos,
+        # 'P_L_ankle': ankL_pos,
+        #'P_R_toe': toeR_pos,
+        'P_head': nose_pos,
+    }
+
+    smoothed_data = {}
+
+    for key, value in pos_data.items():
+        # Split the tuples into two lists: one for x coordinates, one for y coordinates
+        x_values, y_values = zip(*value)
+
+        # Create Loess objects for x and y values
+        loess_x = Loess(range(len(x_values)), list(x_values))
+        loess_y = Loess(range(len(y_values)), list(y_values))
+
+        # Smooth x and y values separately
+        smoothed_x = [loess_x.estimate(i, window=12, use_matrix=False, degree=3) for i in range(len(x_values))]
+        smoothed_y = [loess_y.estimate(i, window=12, use_matrix=False, degree=3) for i in range(len(y_values))]
+
+        # Combine smoothed x and y values back into tuples
+        smoothed_positions = list(zip(smoothed_x, smoothed_y))
+
+        # Store the smoothed data in the dictionary
+        smoothed_data[key] = smoothed_positions
+
+
     return {"ground":ground_times,"flight":flight_times,"kneePos":kneeL_pos,"feedback":feedback,
             "avg_f":avg_flight_time, "avg_g":avg_ground_time, "maxSL":max_step_len, "sLen" : sLength, "ang":thigh_angles,
             "vL": velocity_magnitudeL_list, "vR": velocity_magnitudeR_list, "vT": time_velocity_list}
-    #return [ground_times,flight_times]

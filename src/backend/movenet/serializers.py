@@ -13,11 +13,13 @@ class PoseSerializer(serializers.ModelSerializer):
 
         height = serializers.FloatField(min_value=0, max_value=300)
 
+        slowmo = serializers.IntegerField()
+
         image_urls = serializers.ListField(
             child=serializers.URLField(max_length=200)
         )
 
-        fields = ('pic','vid','kin1','kin2','kin3','kin4','kin5','x_vals','height')
+        fields = ('pic','vid','kin1','kin2','kin3','kin4','kin5','x_vals','height', 'slowmo')
         #exclude = ('pic',)
 
 """from django.contrib.auth.models import User
