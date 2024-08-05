@@ -39,7 +39,8 @@ const Profile = () => {
         const fetchProfile = async () => {
             const token = localStorage.getItem('access_token');
             try {
-                const response = await fetch('http://127.0.0.1:8000/prof/', {
+                //const response = await fetch('http://127.0.0.1:8000/prof/', {
+                const response = await fetch('http://3.143.116.75:8000/prof/', {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
