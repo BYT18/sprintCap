@@ -262,7 +262,7 @@ def contact_flight_analysis(frames, fps, true_fps_factor, duration):
     return [flight_times,gcontact_times]
 
 
-def step_len_anal(ank_pos, frames, output_frames, leg_length_px, leg_length):
+def step_len_anal(ank_pos, frames, output_frames, pic, leg_length_px, leg_length):
     imp_frames = frames
     print(imp_frames)
     cap_frames = []
@@ -272,7 +272,7 @@ def step_len_anal(ank_pos, frames, output_frames, leg_length_px, leg_length):
         #if frames are consequtive then they are looking at the same ground contact
         if imp_frames[i] + 1 == imp_frames[i + 1] and initial == 0:
             #initial = left or right ankle position
-            marker_pos = obj_detect(output_frames[imp_frames[i]],0)
+            marker_pos = obj_detect(output_frames[imp_frames[i]],pic)
             #initial = abs(ank_pos[i][0] - marker_pos)
             cap_frames.append(imp_frames[i])
             initial = euclidean_distance(ank_pos[i],marker_pos)
@@ -282,7 +282,7 @@ def step_len_anal(ank_pos, frames, output_frames, leg_length_px, leg_length):
         elif imp_frames[i] + 1 == imp_frames[i + 1] and initial != 0:
             continue
         else:
-            marker_pos = obj_detect(output_frames[imp_frames[i]], 0)
+            marker_pos = obj_detect(output_frames[imp_frames[i]], pic)
             #left_step_length_px1 = abs(abs(ank_pos[i+1][0]-marker_pos) - initial1)
             #s_lens.append(abs(abs(ank_pos[i+1][0]-marker_pos) - initial))
             cap_frames.append(imp_frames[i])
@@ -361,11 +361,11 @@ def obj_detect(img, temp):
         bottom_right = (top_left[0] + w, top_left[1] + h)
 
         cv2.rectangle(img, top_left, bottom_right, 255, 2)
-        mid = top_left[0]+ (bottom_right[0]-top_left[0])/2
+        mid = top_left[0] + (bottom_right[0] - top_left[0]) / 2
         print(mid)
         print(min_val)
 
-        return mid
+        return (mid, bottom_right[1])
 
 # Function to calculate Euclidean distance
 def euclidean_distance(point1, point2):
@@ -813,7 +813,7 @@ def get_gif(vid, pic, ath_height,slowmo):
 
             if frame_idx in ground_frames:
                 contact = True
-                threshold = ground_points[frame_idx]
+                threshold = ground_points[frame_idx][1]
 
             # Convert the BGR image to RGB
             rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -1043,7 +1043,7 @@ def get_gif(vid, pic, ath_height,slowmo):
     """
     Step Length Analysis 
     """
-    sLength = step_len_anal(ank_pos, imp_frames, output, leg_length_px,leg_length)
+    sLength = step_len_anal(ank_pos, imp_frames, output, pic, leg_length_px,leg_length)
 
     """
     Flight and ground contact time analysis 

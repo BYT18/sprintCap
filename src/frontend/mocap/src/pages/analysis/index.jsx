@@ -22,6 +22,7 @@ import myImage5 from "../../assets/full_sup_L2.png";
 import Loader from '../../components/Loader/index.jsx';
 import PasteImage from '../../components/Dropdown/index.jsx';
 import Slider from '../../components/Slider/index.jsx';
+import VideoRec from '../../components/VideoRec/index.jsx';
 import VideoCrop from '../../components/VideoCrop/index.jsx';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -36,14 +37,6 @@ import Button from 'react-bootstrap/Button';
 import Carousel from 'react-bootstrap/Carousel';
 import Form from 'react-bootstrap/Form';
 
-/*const data = [
-  { x: 100, y: 200, id: 1 },
-  { x: 120, y: 100, id: 2 },
-  { x: 170, y: 300, id: 3 },
-  { x: 140, y: 250, id: 4 },
-  { x: 150, y: 400, id: 5 },
-  { x: 110, y: 280, id: 6 },
-];*/
 const data = []
 
 const uData = [40, 30, 20, 27, 18, 23, 34];
@@ -57,12 +50,6 @@ const xLabels = [
   'Page G',
 ];
 
-/*const analData = [
-  { title: 'Time between steps', value: '0.24', unit: 'SECONDS'},
-  { title: 'Max step length', value: '1.08', unit: 'METS'},
-  { title: 'Mean Ground Time', value: avgG, unit: 'SECONDS'},
-  { title: 'Mean Flight Time', value: avgF, unit: 'SECONDS'}
-];*/
 
 const VideoUploader = () => {
   const [show, setShow] = useState(false);
@@ -79,6 +66,7 @@ const VideoUploader = () => {
   const [loading, setLoading] = useState(false);
   const [pasteImage, setPasteImage] = useState(null);
   const [isToggled, setIsToggled] = useState(false);
+  const [isSlowToggled, setIsSlowToggled] = useState(false);
 
   const [datas, setDatas] = useState([]);
   const [chartData, setChartData] = useState({});
@@ -107,6 +95,10 @@ const VideoUploader = () => {
 
   const handleToggleChange = (e) => {
         setIsToggled(e.target.checked);
+  };
+
+  const handleSlowToggleChange = (e) => {
+        setIsSlowToggled(e.target.checked);
   };
 
   const addImage = (newImage) => {
@@ -268,6 +260,13 @@ const loadImage = (src) => {
 
         formData.append('height', height);
 
+        // Check the value of slwomo and append the appropriate value to formData
+        if (isSlowToggled) {
+            formData.append('slowmo', 1);
+        } else {
+            formData.append('slowmo', 0);
+        }
+
         //const payload = {
         //    e,
         //    height,
@@ -280,8 +279,8 @@ const loadImage = (src) => {
         try {
             // Create the POST request using the fetch API
             const token = localStorage.getItem('access_token');
-            const response = await fetch('http://127.0.0.1:8000/test/', {
-            //const response = await fetch('http://3.143.116.75:8000/test/', {
+            //const response = await fetch('http://127.0.0.1:8000/test/', {
+            const response = await fetch('http://3.143.116.75:8000/test/', {
                 method: 'POST',
                 headers: {
 
@@ -505,7 +504,8 @@ const loadImage = (src) => {
       }}>
       <div className="video-uploader">
           <h2>Upload and Display Video</h2>
-          <VideoCrop />
+          <VideoRec />
+           {/*<VideoCrop />*/}
           <input class="form-control mb-2" type="file" id="formFileMultiple" accept="video/*" onChange={handleVideoUpload}/>
           {/*<input style={{color:'black'}} class="pb-3" type="file" accept="video/*" onChange={handleVideoUpload} />*/}
           {videoURL && (
@@ -525,6 +525,15 @@ const loadImage = (src) => {
         </div>
         <div className="container mt-4">
             <Form>
+            <Form.Check
+                type="switch"
+                id="custom-switch"
+                label="Slowmo"
+                style={{color:"black"}}
+                checked={isSlowToggled}
+                onChange={handleSlowToggleChange}
+                onChange={handleSlowToggleChange}
+              />
              `<Form.Check
                 type="switch"
                 id="custom-switch"
@@ -532,25 +541,25 @@ const loadImage = (src) => {
                 style={{color:"black"}}
                 checked={isToggled}
                 onChange={handleToggleChange}
-              />`
+              />
             </Form>
           {isToggled && (<div
               className="paste-area"
               onPaste={handlePaste}
-               onDoubleClick={handleDoubleClick}
+              //onDoubleClick={handleDoubleClick}
               style={{ border: '2px dashed #ccc', padding: '20px', textAlign: 'center', cursor: 'pointer' }}
               data-tooltip-id="my-tooltip" data-tooltip-content="This is used to compute step length and velocity"
             >
               <p style={{color:"black"}}>Click here and press Ctrl+V to paste image of measuring device or double click to upload image</p>
                          <Tooltip id="my-tooltip" />
               {pasteImage && <img src={pasteImage} alt="Pasted" style={{ maxWidth: '100%', maxHeight: '400px', marginTop: '20px' }} />}
-              <input
+{/*              <input
         type="file"
         accept="image/*"
         style={{ display: 'none' }}
         ref={fileInputRef}
         onChange={handleFileChangePaste}
-     />
+     />*/}
             </div>)}
         </div>
         {/*<div className="container mt-2">

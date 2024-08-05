@@ -12,7 +12,7 @@ class Pose(models.Model):
 
     x_vals = models.JSONField(null=True, blank=True)  # Requires Django 3.1+
     height = models.FloatField(null = True, blank=True)
-
+    slowmo = models.IntegerField(null=True, blank=True)
 
     def __str__(self):
         return "Pose"

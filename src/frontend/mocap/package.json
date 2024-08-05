@@ -5,6 +5,7 @@
   "dependencies": {
     "@emotion/react": "^11.11.4",
     "@emotion/styled": "^11.11.5",
+    "@ffmpeg/ffmpeg": "^0.12.10",
     "@floating-ui/react": "^0.26.17",
     "@mui/material": "^5.15.18",
     "@mui/x-charts": "^7.5.1",
@@ -16,14 +17,17 @@
     "file-saver": "^2.0.5",
     "framer-motion": "^10.16.16",
     "mdb-react-ui-kit": "^7.0.0",
+    "nouislider-react": "^3.4.2",
     "react": "^18.2.0",
     "react-bootstrap": "^2.10.4",
     "react-bootstrap-icons": "^1.11.4",
     "react-dom": "^18.2.0",
+    "react-dropzone": "^14.2.3",
     "react-rating-stars-component": "^2.2.0",
     "react-router-dom": "^6.21.1",
     "react-scripts": "5.0.1",
     "react-tooltip": "^5.27.0",
+    "react-video-editor": "^1.0.2",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
