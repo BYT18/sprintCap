@@ -10,7 +10,7 @@ import "./styles.css"; // Import the CSS file for styling
 
 import myImage1 from "../../assets/s1.png";
 import myImage2 from "../../assets/s22.png";
-import myImage3 from "../../assets/s3.png";
+import myImage3 from "../../assets/s3_2.png";
 import myImage4 from "../../assets/s4.png";
 import myImage5 from "../../assets/s5.png";
 import myImage6 from "../../assets/s6.png";

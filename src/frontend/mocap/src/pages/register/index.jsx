@@ -4,15 +4,16 @@ import './style.css'; // Import the custom CSS file
 import { Link } from 'react-router-dom';
 
 const Register = () => {
-const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [name, setName] = useState('');
     const [height, setHeight] = useState('');
     const [profilePicture, setProfilePicture] = useState(null);
-        const [user, setUser] = useState(null);
+    const [user, setUser] = useState(null);
     const [error, setError] = useState('');
+    const [token, setToken] = useState('');
 
-    const handleRegister = (e) => {
+    {/*const handleRegister = (e) => {
         e.preventDefault();
         // Handle the registration logic here
         console.log({
@@ -22,11 +23,80 @@ const [username, setUsername] = useState('');
             height,
             profilePicture
         });
+    };*/}
+
+    const handleRegister = async (e) => {
+        e.preventDefault();
+        const formData = new FormData();
+        formData.append("email", email);
+        formData.append('password', password);
+        try {
+            const response = await fetch('http://127.0.0.1:8000/register/', {
+            //const response = await fetch('http://3.131.119.69:8000/login/', {
+                method: 'POST',
+                headers: {},
+                body: formData,
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setUser(data['user'])
+                localStorage.clear();
+                localStorage.setItem('access_token', data['access']);
+                localStorage.setItem('refresh_token', data['refresh']);
+                console.log(data)
+                console.log(data['access'])
+                setToken(data['access']);
+                await handleSubmit()
+                //window.location.href = '/'
+            } else {
+                setError('Invalid username or password');
+                localStorage.clear();
+            }
+        } catch (error) {
+            setError('Network error');
+        }
     };
+
+     const handleSubmit = async () => {
+        const formData = new FormData();
+        formData.append('dob', '2000-01-01'); // Ensure dob is a valid date format
+        formData.append('height', height);
+        formData.append('name', "joe");
+        formData.append('femur_len', 12);
+
+        if (profilePicture) {
+            formData.append('profile_pic', profilePicture);
+        }
+
+        const token = localStorage.getItem('access_token');
+        try {
+            const response = await fetch('http://127.0.0.1:8000/create/', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: formData,
+            });
+            if (response.ok) {
+                const data = await response.json();
+                //setProfile(data);
+                //setMessage('Profile updated successfully');
+            } else {
+                console.error('Failed to update profile');
+                //setMessage('Failed to update profile');
+            }
+        } catch (error) {
+            console.error('Network error', error);
+            //setMessage('Network error');
+        }
+    };
+
+
 
     const handleFileChange = (e) => {
         setProfilePicture(e.target.files[0]);
     };
+
 
 
     return (
@@ -39,12 +109,12 @@ const [username, setUsername] = useState('');
                             {error && <Alert variant="danger">{error}</Alert>}
                             <Form onSubmit={handleRegister}>
             <Form.Group controlId="formUsername">
-                <Form.Label>Username</Form.Label>
+                <Form.Label>Email</Form.Label>
                 <Form.Control
                     type="text"
-                    placeholder="Enter username"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Enter email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                 />
             </Form.Group>
             <Form.Group controlId="formPassword" className="mt-3">

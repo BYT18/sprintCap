@@ -16,8 +16,8 @@ const Login = () => {
         formData.append("username", u);
         formData.append('password', p);
         try {
-            //const response = await fetch('http://127.0.0.1:8000/login/', {
-            const response = await fetch('http://3.131.119.69:8000/login/', {
+            const response = await fetch('http://127.0.0.1:8000/login/', {
+            //const response = await fetch('http://3.131.119.69:8000/login/', {
                 method: 'POST',
                 headers: {},
                 body: formData,
@@ -25,8 +25,8 @@ const Login = () => {
             if (response.ok) {
                 const data = await response.json();
                 localStorage.clear();
-                 localStorage.setItem('access_token', data['access']);
-                 localStorage.setItem('refresh_token', data['refresh']);
+                localStorage.setItem('access_token', data['access']);
+                localStorage.setItem('refresh_token', data['refresh']);
                 setToken(data['access']);
                 await fetch_profile(data['access']);
             } else {
@@ -40,8 +40,8 @@ const Login = () => {
 
     const fetch_profile = async (accessToken) => {
         try {
-            //const response = await fetch('http://127.0.0.1:8000/prof/', {
-            const response = await fetch('http://3.131.119.69:8000/prof/', {
+            const response = await fetch('http://127.0.0.1:8000/prof/', {
+            //const response = await fetch('http://3.131.119.69:8000/prof/', {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -80,10 +80,10 @@ const Login = () => {
                             {error && <Alert variant="danger">{error}</Alert>}
                             <Form>
                                 <Form.Group controlId="formUsername">
-                                    <Form.Label>Username</Form.Label>
+                                    <Form.Label>Email</Form.Label>
                                     <Form.Control
                                         type="text"
-                                        placeholder="Enter username"
+                                        placeholder="Enter email"
                                         value={username}
                                         onChange={(e) => setUsername(e.target.value)}
                                     />

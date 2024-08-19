@@ -1,8 +1,8 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './style.css'
 import { Link } from 'react-router-dom';
-import { motion, inView, Variants } from 'framer-motion';
+import { motion, inView, Variants, Reorder, AnimatePresence,useMotionValue, } from 'framer-motion';
 
 import myImage1 from "../../assets/touchdown_R2.png";
 import myImage2 from "../../assets/max_ver3.png";
@@ -14,6 +14,10 @@ import bolt from "../../assets/usain.png";
 import splitter from "../../assets/Untitled.png";
 
 import Reviews from "../../components/Reviews/index.jsx";
+
+import { LineChart, lineElementClasses } from '@mui/x-charts/LineChart';
+
+const initialItems = ["🍅 Tomato", "🥒 Cucumber", "🧀 Cheese", "🥬 Lettuce"];
 
 const Home = () => {
 
@@ -46,7 +50,7 @@ const Home = () => {
     transition: {
       type: "spring",
       bounce: 0.4,
-      duration: 0.8,
+      duration: 1.5,
     },
           opacity:1
   },
@@ -62,14 +66,14 @@ const Home = () => {
             transition: {
               type: "spring",
               bounce: 0.4,
-              duration: 1.2
+              duration: 1.5
             }
           }
     };
 
     const img2Variant: Variants = {
           offscreen: {
-            y: 150
+            y: 75
           },
           onscreen: {
             y: 0,
@@ -77,7 +81,7 @@ const Home = () => {
             transition: {
               type: "spring",
               bounce: 0.4,
-              duration: 1.2
+              duration: 1.5
             }
           }
     };
@@ -92,7 +96,37 @@ const Home = () => {
             transition: {
               type: "spring",
               bounce: 0.4,
-              duration: 1.2
+              duration: 1.5
+            }
+          }
+    };
+
+     const text1Variant: Variants = {
+          offscreen: {
+            y: 250
+          },
+          onscreen: {
+            y: 0,
+            //rotate: -100,
+            transition: {
+              type: "spring",
+              bounce: 0.4,
+              duration: 2.5
+            }
+          }
+    };
+
+     const text2Variant: Variants = {
+          offscreen: {
+            y: -250
+          },
+          onscreen: {
+            y: 0,
+            //rotate: -100,
+            transition: {
+              type: "spring",
+              bounce: 0.4,
+              duration: 2.5
             }
           }
     };
@@ -101,14 +135,31 @@ const Home = () => {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0, transition: { staggerChildren: 0.1 } },
   };
+  const [selectedId, setSelectedId] = useState(null)
 
+  const [items, setItems] = useState(initialItems);
+
+const Item = ({ item }: Props) => {
+  const y = useMotionValue(0);
+  return (
+    <Reorder.Item value={item} id={item} style={{ y }}>
+      <span>{item}</span>
+    </Reorder.Item>
+  );
+};
+   const constraintsRef = useRef(null);
   return (
   <body >
+    {/*<Reorder.Group axis="y" onReorder={setItems} values={items}>
+      {items.map((item) => (
+        <Item key={item} item={item} />
+      ))}
+    </Reorder.Group>*/}
   <section class="banner text-sm-start text-center p-4">
     <div class="container">
       <div class="d-sm-flex justify-content-center align-items-center ">
         <div>
-          <h1>A New Vision</h1>
+          <h1>A New Vision.</h1>
           <p>At <span style={{font:'bold'}}>MoCap</span> we believe that technology should empower athletes to push beyond limits, break barriers, and achieve greatness. We envision a future where AI becomes an indispensable ally in an athlete's journey, offering real-time analysis and strategic guidance to enhance performance across various sports disciplines.</p>
         </div>
         <img class="img-fluid" src="https://png.pngtree.com/png-vector/20231115/ourmid/pngtree-young-man-sprinter-runner-running-silhouette-studio-shot-png-image_10589362.png" />
@@ -128,6 +179,7 @@ const Home = () => {
       >
       <div className="container">
     <div className="row">
+        <h1 className="pb-5" > Reach New Heights. </h1>
         <div className="col-md-4 mb-4 mx-auto d-flex">
           <motion.div
             className="card homecards h-100 shadow-sm"
@@ -166,6 +218,8 @@ const Home = () => {
   </div>
       </motion.section>
 
+ <div class="b-example-divider"></div>
+
 {/* Animation Section */}
       <motion.section className="bike-fit-container"
            variants={cardVariants}
@@ -199,8 +253,8 @@ const Home = () => {
                    initial={{ opacity: 0 }}
       whileInView={{ opacity: 1 }}
       className="bike-fit-info">
-        <h2>#SPRINTFREE</h2>
-        <h1>Get personalized coaching from anywhere, anytime</h1>
+        <h2>#seeSPRINT.</h2>
+        <h1>Get personalized coaching from anywhere, anytime.</h1>
         <p>
 Elevate your sprinting and running performance with our cutting-edge platform that combines industry-leading techniques with powerful A.I. Get personalized recommendations on your form and technique, consistent with top professional trainers. Optimize your running style anytime, anywhere, right from your phone. No appointments, no travel, just better performance.
         </p>
@@ -210,14 +264,51 @@ Elevate your sprinting and running performance with our cutting-edge platform th
       </motion.div>
       </motion.section>
 
-    <div className="image-section">
+ <div class="b-example-divider"></div>
+
+      <motion.section className="team-section py-5 text-center" style={{display: "flex",flexDirection: "column",
+      alignItems: "center", minHeight:"50vh"}}
+                  variants={cardVariants}
+            initial="offscreen"
+            whileInView="onscreen"
+            viewport={{ once: true, amount: 0.5 }}
+      >
+      <div className="container" style={{flexDirection:"row"}}>
+
+        <h1 className="pb-5" > Quantify Improvement Over Time. </h1>
+        <motion.div variants={text1Variant} initial="offscreen"
+            whileInView="onscreen"
+            viewport={{ once: true, amount: 0.5 }}>
+            <p>Computer vision applied to sprinting biomechanics allows for precise analysis of an athlete's movements, capturing details that are imperceptible to the human eye. By processing high-speed video footage, it can quantify metrics like stride length, joint angles, and ground contact time with millisecond accuracy.</p>
+        </motion.div>
+        <div style={{ display: "flex", justifyContent: "center", width: "100%" }}>
+
+                <LineChart
+                  xAxis={[{ data: [1, 2, 3, 5, 8, 10] }]}
+                  series={[
+                    {
+                      data: [2, 5.5, 2, 8.5, 6.5, 12],
+                      area: true,
+                    },
+                  ]}
+                  width={800}
+                  height={450}
+        />
+
+        </div>
+        <motion.div variants={text2Variant} initial="offscreen"
+            whileInView="onscreen"
+            viewport={{ once: true, amount: 0.5 }}>
+            <p>These insights enable coaches to identify subtle inefficiencies in technique, monitor fatigue levels, and track performance improvements over time. The ability to obtain such detailed, data-driven analysis offers a significant advantage in optimizing training and minimizing injury risks, leading to faster and more efficient sprinting.</p>
+        </motion.div>
+
+      </div>
+      </motion.section>
+
+ <div class="b-example-divider"></div>
+    {/* <div className="image-section">
                 <img src={splitter} alt="Background" className="background-image" />
-                {/*<div className="overlay-container">
-                     <img
-                        src={bolt} className="overlay-image" />
-                     <img
-                        src={me} className="overlay-image2" />
-                 </div>*/}
+
                     <div className="text-overlay">
                         <h1>Compare</h1>
                         <p>with the very best</p>
@@ -225,7 +316,7 @@ Elevate your sprinting and running performance with our cutting-edge platform th
                 </div>
 
 
-      {/* News Section*/}
+     News Section
       <motion.section className="news-section py-5" style={{ minHeight: "80vh",display: "flex",
       alignItems: "center"}}
            variants={cardVariants}
@@ -309,8 +400,7 @@ Elevate your sprinting and running performance with our cutting-edge platform th
         <div className="container">
             <Reviews />
         </div>
-      </motion.section>
-
+      </motion.section>*/}
       {/* Team Section */}
       <motion.section className="team-section py-5" style={{display: "flex",
       alignItems: "center"}}
@@ -328,12 +418,12 @@ Elevate your sprinting and running performance with our cutting-edge platform th
                 whileHover={{ scale: 1.05, boxShadow: "0 8px 20px rgba(0, 0, 0, 0.15)" }}
                 style={{ minHeight: "50vh",alignItems: "center", display: "flex", flexDirection: "column"}}
               >
-                <h3>John Doe</h3>
-                 <img class="img-fluid team-image" src="https://t4.ftcdn.net/jpg/02/19/63/31/360_F_219633151_BW6TD8D1EA9OqZu4JgdmeJGg4JBaiAHj.jpg"
-                 style={{ maxHeight: "200px", objectFit: "cover", marginBottom: "1rem" }}
+                <h3>Brandon Tang</h3>
+                 <img class="img-fluid team-image" src="https://varsityblues.ca/images/2024/1/5/Tang_Brandon.jpg?width=300"
+                 style={{ maxHeight: "300px", objectFit: "contain", marginBottom: "1rem" }}
                  />
-                <p>Lead Developer</p>
-                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+                <p>CS Student</p>
+                <p>Student and track athlete at the University of Toronto</p>
               </motion.div>
             </div>
             <div className="col-md-4 mb-4">
@@ -342,13 +432,12 @@ Elevate your sprinting and running performance with our cutting-edge platform th
                 whileHover={{ scale: 1.05, boxShadow: "0 8px 20px rgba(0, 0, 0, 0.15)" }}
                 style={{display: "flex", flexDirection: "column", minHeight: "50vh",alignItems: "center"}}
               >
-                <h3>Jane Smith</h3>
-                 <img class="img-fluid team-image" src=" https://media.istockphoto.com/id/1317784594/photo/headshot-of-mature-50-years-old-asian-business-woman-on-grey-background.jpg?s=612x612&w=0&k=20&c=eOmdf5BbEG75m9MBSTvhjA5uMDmUj0zDtXd3lv0nm8U=
-                "
-                style={{ maxHeight: "200px", objectFit: "cover", marginBottom: "1rem" }}
+                <h3>Rostam Turner</h3>
+                 <img class="img-fluid team-image" src="https://dxbhsrqyrr690.cloudfront.net/sidearm.nextgen.sites/varsityblues.ca/images/2023/1/12/Turner_Rostam__Assistant_Coach_.jpg?width=300"
+                style={{ maxHeight: "300px", objectFit: "contain", marginBottom: "1rem" }}
                 />
-                <p>Project Manager</p>
-                <p>Vivamus luctus urna sed urna ultricies ac tempor dui sagittis.</p>
+                <p>Sprint Coach</p>
+                <p>Current sprint and middle distance coach at the University of Toronto</p>
               </motion.div>
             </div>
             <div className="col-md-4 mb-4">
@@ -357,19 +446,18 @@ Elevate your sprinting and running performance with our cutting-edge platform th
                 whileHover={{ scale: 1.05, boxShadow: "0 8px 20px rgba(0, 0, 0, 0.15)" }}
                 style={{ display: "flex", flexDirection: "column", minHeight: "50vh",alignItems: "center"}}
               >
-                <h3>Bob Johnson</h3>
-                 <img class="img-fluid team-image" src="https://media.istockphoto.com/id/1207856385/photo/joyful-happy-african-american-young-man-in-eyeglasses-portrait.jpg?s=612x612&w=0&k=20&c=M5sUFPE5xlF1fMxvNYgAqdpSZYKxSor3-SlF-o6IiJ0=
-              "
-              style={{ maxHeight: "200px", objectFit: "cover", marginBottom: "1rem" }}
+                <h3>Philipp Gulde</h3>
+                 <img class="img-fluid team-image" src="https://www.hs.mh.tum.de/fileadmin/_processed_/6/6/csm_HMS_Gulde_bcfad765e1.webp"
+              style={{ maxHeight: "300px", objectFit: "contain", marginBottom: "1rem" }}
               />
-                  <p>UI/UX Designer</p>
-                <p>Praesent dapibus, neque id cursus faucibus, tortor neque egestas auguae.</p>
+                  <p>Professor</p>
+                <p>Professor at the Chair of Human Movement Science, Technical University of Munich</p>
               </motion.div>
             </div>
           </div>
         </div>
       </motion.section>
-
+ <div class="b-example-divider"></div>
       {/* Call to Action Section */}
       <motion.section className="testimonials-section py-5" style={{ minHeight: "40vh",alignItems: "center"}}
            variants={cardVariants}

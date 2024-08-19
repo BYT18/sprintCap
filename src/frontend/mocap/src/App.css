@@ -1,3 +1,5 @@
+
+
 .App {
   text-align: center;
 }
@@ -33,6 +35,8 @@
 .nav .nav-link {
   color: white; /* Default color */
   text-decoration: none;
+  font-family: 'Quicksand', sans-serif;
+
 }
 
 /* Styles for the active navigation link */
@@ -197,7 +201,7 @@
 .get-started-button:hover {
     animation-duration: 1s;
     animation-name: test;
-    background-color: blue;
+    background-color: grey;
 }
 
 .homecards{
@@ -211,8 +215,8 @@
 }
 
 @keyframes test {
-  0%   {background-color: cornflowerblue;}
-  100% {background-color: blue;}
+  0%   {background-color: #66b2b2;}
+  100% {background-color: grey;}
 }
 
 @keyframes homeCard {

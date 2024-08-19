@@ -1,4 +1,12 @@
 /* App.css */
+h2,h1,h3 {
+   font-family: 'Montserrat', sans-serif;
+}
+
+p {
+    font-family: 'Quicksand', sans-serif;
+
+}
 
 body {
   font-family: 'Arial', sans-serif;
@@ -56,11 +64,11 @@ body {
 }
 
     .banner h1 {
-      font-size: 2.5rem;
+      font-size: 2.8rem;
     }
 
     .banner p {
-      font-size: 1.1rem;
+      font-size: 1.3rem;
     }
 
     /* Card Styling */
@@ -83,7 +91,7 @@ body {
 }
 
 .card-title {
-  font-size: 1.5rem;
+  font-size: 1.7rem;
   color: #343a40;
   transition: color 0.3s ease;
 }
@@ -94,11 +102,11 @@ body {
 }
 
 .card-text {
-  font-size: 1rem;
+  font-size: 1.2rem;
   color: #333;
-    opacity: 0;
+  /*opacity: 0;
   transform: translateY(20px);
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition: opacity 0.3s ease, transform 0.3s ease;*/
 }
 
 .card::before {
@@ -144,7 +152,7 @@ body {
 .news-panel h3 {
   color: #66b2b2;
   transition: color 0.3s ease;
-   font-size: 24px;
+  font-size: 24px;
   font-weight: 600;
   margin-bottom: 20px;
 }
@@ -261,7 +269,7 @@ body {
 
 .testimonials-section .btn:hover {
   background-color: #f8f9fa;
-  color: #0056b3;
+  color: gray;
 }
 
 .bike-fit-container {
@@ -342,7 +350,7 @@ body {
   }
 
   .bike-fit-info p {
-    font-size: 1rem;
+    font-size: 1.2rem;
   }
 
   .get-started-button {
@@ -414,10 +422,46 @@ body {
     text-align: center;
     z-index: 1;
 }
-/*.b-example-divider {
-    height: 3rem;
-    background-color: rgba(0, 0, 0, .1);
+.b-example-divider {
+    height: 6rem;
+    /*background-color: rgba(0, 0, 0, .1);
     border: solid rgba(0, 0, 0, .15);
     border-width: 1px 0;
-    box-shadow: inset 0 0.5em 1.5em rgba(0, 0, 0, .1), inset 0 0.125em 0.5em rgba(0, 0, 0, .15);
+    box-shadow: inset 0 0.5em 1.5em rgba(0, 0, 0, .1), inset 0 0.125em 0.5em rgba(0, 0, 0, .15);*/
+}
+
+/*
+ul,
+li {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-family: "Poppins", sans-serif;
+  font-weight: 500;
+  font-size: 24px;
+}
+
+ul {
+  position: relative;
+  width: 300px;
+}
+
+li {
+  border-radius: 10px;
+  margin-bottom: 10px;
+  width: 100%;
+  padding: 15px 18px;
+  background: white;
+  border-radius: 5px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+  cursor: grab;
+}
+
+li svg {
+  width: 18px;
+  height: 18px;
+  cursor: grab;
 }*/
