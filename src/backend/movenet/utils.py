@@ -72,7 +72,7 @@ def are_parallel(line1, line2, tolerance):
     return abs(slope1 - slope2) < tolerance
 
 #can do all the feedbakc checks in the seocnd interation fo the video using the key frames found already in the kinogram
-def toe_off_feedback(plantAnk, plantKnee, plantHip, swingAnk, swingKnee, swingHip, swingToe, swingHeel, ):
+def toe_off_feedback(plantAnk, plantKnee, plantHip, swingAnk, swingKnee, swingHip, swingToe, swingHeel):
     feedback = []
 
     # check knee bend
@@ -105,10 +105,11 @@ def toe_off_feedback(plantAnk, plantKnee, plantHip, swingAnk, swingKnee, swingHi
 
     # no arching back
     # check how much head x is in front of hips or shoulders?
+    #feedback.append("Torso angle: "+str(torsoAng))
 
     return feedback
 
-def max_vert_feedback(frontAnk, frontKnee, frontHip, frontToe, backAnk, backKnee, backHip):
+def max_vert_feedback(frontAnk, frontKnee, frontHip, frontToe, backAnk, backKnee, backHip,backShou):
     # check knee bend
     feedback = []
     #check 90 degree angle between thighs?
@@ -119,19 +120,24 @@ def max_vert_feedback(frontAnk, frontKnee, frontHip, frontToe, backAnk, backKnee
     #knee angle front leg
     knee_angle = compute_angle(frontHip,frontKnee,frontAnk)
     if knee_angle > 100:
-        feedback.append("Knees")
+        feedback.append(">110 degrees knee angle in front leg")
 
     #dorsiflexion of front foot
     # cant use heel vs toe y value since foot can be at an angle?
     footAng = compute_angle(frontToe,frontAnk,frontKnee)
-    if 75<footAng<105:
+    if 70<footAng<115:
         feedback.append("Dorsiflexion of swing foot")
 
     #peace?? fluidity
+    #look at sparc
 
     #neutral head
+    #torso angle?
 
     #straight line between rear leg knee and shoulder
+    if abs(backKnee[0]-backHip[0]) < 15 and abs(backHip[0]-backShou[0])< 15:
+        feedback.append("Straight line between rear knee, hips, and shoulders")
+
 
     #slight cross body arm swing - neutral rotation of spine
 
@@ -156,12 +162,13 @@ def strike_feedback(frontAnk, frontKnee, frontHip, frontToe, backAnk, backKnee, 
         feedback.append("Front foot beginning to supinate ")
 
     # knee extension comes from reflexive action???
+    feedback.append("Knee extension should come from strong reflexive action of posterior chain")
 
     # greater contraction in hammys???
 
     return feedback
 
-def touch_down_feedback(plantAnk, plantKnee, plantHip, plantHeel, plantToe, swingAnk, swingKnee, swingHip, swingToe, swingHeel):
+def touch_down_feedback(plantAnk, plantKnee, plantHip, plantHeel, plantToe, swingAnk, swingKnee, swingHip, swingToe, swingHeel, elbR_ang, elbL_ang):
     feedback = []
 
     # knee closeness
@@ -177,6 +184,8 @@ def touch_down_feedback(plantAnk, plantKnee, plantHip, plantHeel, plantToe, swin
         feedback.append("Shank of stance shin perpendicular to ground, heel directly underneath knee")
 
     #hands parallel to each other and ...
+    if abs(elbR_ang - elbL_ang)<20:
+        feedback.append("Hands paralllel to each other / similar elbow angles")
 
     #inital contact with outside of ball of foot / plantar flex
     if (plantToe[1] - plantHeel[1])<5:
@@ -194,15 +203,16 @@ def full_supp_feedback(plantAnk, plantKnee, plantHip, plantToe, plantHeel, swing
     # check y value of heel and how close it is to hips
     if swingHeel[1] - swingHip[1] < 30:
         feedback.append("Swing foot tucked under glutes")
-
+    else:
+        feedback.append("Heel not cycling high enough")
     # swing leg in front of hips (thigh 45 degrees from perpindicular)
     thigh_angle = compute_angle(swingAnk, swingKnee, swingHip)
     if thigh_angle < 55:
         feedback.append("Swing leg in front of hips (thigh 45 degrees from perpendicular)")
 
     # stance amortiation ? excess amortization
-    if plantKnee[0] - plantAnk[0] > 15:
-        feedback.append("Collapse at knee")
+    if plantKnee[0] - plantAnk[0] > 25:
+        feedback.append("Collapse at knee. Strength related or touch down too far in front of COM")
 
     # plantar flex prior to touchdown
     if abs(plantHeel[1] - plantToe[1]) < 5:
@@ -264,7 +274,6 @@ def contact_flight_analysis(frames, fps, true_fps_factor, duration):
 
 def step_len_anal(ank_pos, frames, output_frames, pic, leg_length_px, leg_length):
     imp_frames = frames
-    print(imp_frames)
     cap_frames = []
     s_lens = []
     initial = 0
@@ -360,10 +369,11 @@ def obj_detect(img, temp):
             top_left = max_loc
         bottom_right = (top_left[0] + w, top_left[1] + h)
 
-        cv2.rectangle(img, top_left, bottom_right, 255, 2)
+        cv2.rectangle(img, top_left, bottom_right, 255, 20)
+        #cv2.imshow("Image with Rectangle", img)
+        #cv2.waitKey(0)
+        #cv2.destroyAllWindows()
         mid = top_left[0] + (bottom_right[0] - top_left[0]) / 2
-        print(mid)
-        print(min_val)
 
         return (mid, bottom_right[1])
 
@@ -374,8 +384,6 @@ def euclidean_distance(point1, point2):
 def find_median_of_consecutive_keys(data):
     # Sort the dictionary by keys
     sorted_keys = sorted(data.keys())
-    print(data)
-    print(sorted_keys)
 
     # Initialize variables
     median_values = []
@@ -406,16 +414,17 @@ def torso_angles(start_points, end_points, fixed_line_points, frame_width):
     start = 0
     end = 0
 
-    # Iterate over the fixed line points to create segments
+    # Iterate over the fixed line points to create segments for the ground
     for i in range(len(fixed_line_points) - 1):
         # Define the fixed line vector
         vector_fixed = np.array([frame_width,
                                  fixed_line_points[i + 1][1] - fixed_line_points[i][1]])
-
-        #for start, end in zip(start_points, end_points):
-        while start_points[start][0] < fixed_line_points[i + 1][0] and end_points[end][0]<fixed_line_points[i + 1][0]:
+        # while the body is in between the x-coord of the ground line, compute the angle
+        # for start, end in zip(start_points, end_points):
+        while start_points[start][0] < fixed_line_points[i + 1][0] and end_points[end][0] < fixed_line_points[i + 1][0] and start < len(start_points)-1 and end < len(end_points)-1:
             # Define the vector for the current segment in the list
-            vector_segment = np.array([end_points[end][0] - start_points[start][0], end_points[end][1] - start_points[start][1]])
+            vector_segment = np.array(
+                [end_points[end][0] - start_points[start][0], end_points[end][1] - start_points[start][1]])
 
             # Calculate the angle between the fixed line and the current segment
             dot_product = np.dot(vector_segment, vector_fixed)
@@ -436,11 +445,12 @@ def torso_angles(start_points, end_points, fixed_line_points, frame_width):
             # Convert the angle to degrees
             angle_degrees = np.degrees(angle_radians)
 
-            angles.append(angle_degrees)
+            angles.append(180-angle_degrees)
             start += 1
             end += 1
 
     return angles
+
 import math
 from typing import Tuple
 
@@ -543,10 +553,26 @@ class Loess(object):
             y = a + b * n_x
         return self.denormalize_y(y)
 
+def pos_smooth(pos, win):
+    xx = range(len(pos))
+    x_values, y_values = zip(*pos)
+    # Create Loess objects for x and y values
+    loess_x = Loess(range(len(x_values)), list(x_values))
+    loess_y = Loess(range(len(y_values)), list(y_values))
+    ys1 = []
+    for x in xx:
+        wind = win
+        # Smooth x and y values separately
+        smoothed_x = loess_x.estimate(x, window=wind, use_matrix=False, degree=3)
+        smoothed_y = loess_y.estimate(x, window=wind, use_matrix=False, degree=3)
+        ys1.append((smoothed_x, smoothed_y))
+    return ys1
+
+
 """
 Main
 """
-def get_gif(vid, pic, ath_height,slowmo):
+def get_gif(vid, pic, ath_height,slowmo, step):
     # STEP 1: Import the necessary modules.
     import mediapipe as mp
     import tempfile
@@ -557,10 +583,10 @@ def get_gif(vid, pic, ath_height,slowmo):
     #video_path = 'C:\Users\hocke\Desktop\UofT\Third Year\CSC309\moveNet\src\fly.mov'
     video_path = vid
     #output_path = '/pics/output_video.mp4'
-    output_path = os.path.join('media/pics', 'output_video.mov')
+    output_path = os.path.join('media/pics', 'output_video.mp4')
     #output_path = os.path.join('/pics', 'output_video.mp4')
     # Save the uploaded file to a temporary file
-    with tempfile.NamedTemporaryFile(delete=False, suffix='.mov') as temp_file:
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as temp_file:
         for chunk in vid.chunks():
             temp_file.write(chunk)
         temp_file_path = temp_file.name
@@ -622,7 +648,7 @@ def get_gif(vid, pic, ath_height,slowmo):
     leg_length = 0.5  # in meters
     leg_length_px = []
 
-    with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tracking_confidence=0.3) as pose:
+    with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.7, min_tracking_confidence=0.7) as pose:
         while cap.isOpened():
             ret, frame = cap.read()
             if not ret:
@@ -657,7 +683,6 @@ def get_gif(vid, pic, ath_height,slowmo):
                 left_elbow = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_ELBOW]
                 # right_elbow = results.pose_world_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_ELBOW]
                 right_elbow = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_ELBOW]
-                # print(right_elbow)
 
                 left_wr = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_WRIST]
                 right_wr = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_WRIST]
@@ -777,10 +802,11 @@ def get_gif(vid, pic, ath_height,slowmo):
                     ground_points[frame_idx] = g1
 
             # Write the frame to the output video
-            out.write(frame)
+            #out.write(frame)
             output.append(frame)
 
         # Release resources
+        #out.release()
         cv2.destroyAllWindows()
 
     # variables for kinogram feedback
@@ -790,19 +816,20 @@ def get_gif(vid, pic, ath_height,slowmo):
     contact = False
     threshold = 100000
 
-    ground_points_smooth = find_median_of_consecutive_keys(ground_points)
+    #ground_points_smooth = find_median_of_consecutive_keys(ground_points)
     #tor_angles = torso_angles(nose_pos,mid_pelvis_pos, ground_points_smooth, frame_width)
 
-    cap = cv2.VideoCapture(video_path)
+    """cap = cv2.VideoCapture(video_path)
     # Get the frame rate and frame size of the video
     fps = cap.get(cv2.CAP_PROP_FPS)
     frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     # Define the codec and create VideoWriter object
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Codec for mp4 files
-    out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))
+    out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))"""
+    cap = cv2.VideoCapture(video_path)
 
-    with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.3, min_tracking_confidence=0.3) as pose:
+    with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.7, min_tracking_confidence=0.7) as pose:
         while cap.isOpened():
             ret, frame = cap.read()
             if not ret:
@@ -866,41 +893,34 @@ def get_gif(vid, pic, ath_height,slowmo):
                         if ankL[1] > ankR[1]:
                             f = toe_off_feedback(ankL, kneeL, hipL, ankR, kneeR, hipR, footR, heelR)
                         else:
+                            #f = toe_off_feedback(ankR, kneeR, hipR, ankL, kneeL, hipL, footL, heelL, tor_angles[ind])
                             f = toe_off_feedback(ankR, kneeR, hipR, ankL, kneeL, hipL, footL, heelL)
-                        print("Toe off")
-                        print(f)
                         feedback["TO"]=f
                     elif ind == 1:
                         if ankL[0] > ankR[0]:
-                            f = max_vert_feedback(ankL, kneeL, hipL, footL, ankR, kneeR, hipR)
+                            f = max_vert_feedback(ankL, kneeL, hipL, footL, ankR, kneeR, hipR, shouR)
                         else:
-                            f = max_vert_feedback(ankR, kneeR, hipR, footR, ankL, kneeL, hipL)
-                        print("MV")
-                        print(f)
+                            f = max_vert_feedback(ankR, kneeR, hipR, footR, ankL, kneeL, hipL, shouL)
                         feedback["MV"] = f
                     elif ind == 2:
                         if ankL[0] > ankR[0]:
                             f = strike_feedback(ankL, kneeL, hipL, footL, ankR, kneeR, hipR)
                         else:
                             f = strike_feedback(ankR, kneeR, hipR, footR, ankL, kneeL, hipL)
-                        print("Strike")
-                        print(f)
                         feedback["S"]=f
                     elif ind == 3:
+                        elbR_ang = compute_angle(wrR, elbR, shouR)
+                        elbL_ang = compute_angle(wrL, elbL, shouL)
                         if ankL[0] > ankR[0]:
-                            f = touch_down_feedback(ankL, kneeL, hipL, heelL, footL, ankR, kneeR, hipR, footR, heelR)
+                            f = touch_down_feedback(ankL, kneeL, hipL, heelL, footL, ankR, kneeR, hipR, footR, heelR, elbR_ang, elbL_ang)
                         else:
-                            f = touch_down_feedback(ankR, kneeR, hipR, heelR, footR, ankL, kneeL, hipL, footL, heelL)
-                        print("TD")
-                        print(f)
+                            f = touch_down_feedback(ankR, kneeR, hipR, heelR, footR, ankL, kneeL, hipL, footL, heelL, elbR_ang, elbL_ang)
                         feedback["TD"]=f
                     else:
                         if ankL[0] > ankR[0]:
                             f = full_supp_feedback(ankL, kneeL, hipL, footL, heelL, ankR, kneeR, hipR, footR, heelR)
                         else:
                             f = full_supp_feedback(ankR, kneeR, hipR, ankL, footR, heelR, kneeL, hipL, footL, heelL)
-                        print("FS")
-                        print(f)
                         feedback["FS"]=f
 
             # Draw the pose annotation on the frame
@@ -962,22 +982,58 @@ def get_gif(vid, pic, ath_height,slowmo):
                             contact = False
 
             # Write the frame to the output video
-            out.write(frame)
-            output.append(frame)
+            #out.write(frame)
+            #output.append(frame)
 
         # Release resources
         cap.release()
-        out.release()
+        #out.release()
         cv2.destroyAllWindows()
 
+    if slowmo == 0:
+        wind = 5
+    else:
+        wind = 20
+
+    kneeR_pos = pos_smooth(kneeR_pos,wind)
+    ankR_pos = pos_smooth(ankR_pos,wind)
+    hipR_pos = pos_smooth(hipR_pos,wind)
+
+    kneeR_angles = []
+    for i in range(len(kneeR_pos)):
+        a = compute_angle(hipR_pos[i], kneeR_pos[i], ankR_pos[i])
+        kneeR_angles.append(a)
+
+    signal = np.array(kneeR_angles)
+    # Compute Z-scores
+    mean = np.mean(signal)
+    std_dev = np.std(signal)
+    z_scores = (signal - mean) / std_dev
+
+    # Define a threshold for anomaly
+    threshold = 2
+    anomalies = np.where(np.abs(z_scores) > threshold)[0]
+
+    padding = math.ceil(len(output) * 0.05)
+    # Write the trimmed frames to the output video
+    #if len(anomalies)>0:
+    #    for i in range(anomalies[len(anomalies) - 1] + padding, len(output)):
+    #        out.write(output[i])
+    #else:
+    for i in range(len(output)):
+        out.write(output[i])
+    out.release()
+    #fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Codec for mp4 files
+    #out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))
+
         # Now, convert the output video to MP4 using ffmpeg
-    try:
+    """try:
             v_path = os.path.join('media/pics', 'output_video.mp4')
             subprocess.run(['ffmpeg', '-y', '-i', output_path, '-vcodec', 'h264', '-acodec', 'aac', v_path], check=True)
 
             print("Conversion to MP4 successful.")
     except subprocess.CalledProcessError as e:
-            print(f"Conversion to MP4 failed: {e}")
+            print(f"Conversion to MP4 failed: {e}")"""
 
     for i in range(len(kinogram)):
         # Convert the frame from BGR to RGB
@@ -1014,7 +1070,6 @@ def get_gif(vid, pic, ath_height,slowmo):
     # Calculate velocities
     velocitiesL = calculate_velocity(kneeL_pos, fps)
     velocitiesR = calculate_velocity(kneeR_pos, fps)
-    print(velocitiesL)
 
     # Compute velocity magnitudes
     # since velocities are in x and y direction, need to reduce to scalar that does not have direction
@@ -1043,8 +1098,11 @@ def get_gif(vid, pic, ath_height,slowmo):
     """
     Step Length Analysis 
     """
-    sLength = step_len_anal(ank_pos, imp_frames, output, pic, leg_length_px,leg_length)
-
+    if step == 1:
+        sLength = step_len_anal(ank_pos, imp_frames, output, pic, leg_length_px,leg_length)
+    else:
+        sLength = []
+    print("steps " + str(sLength))
     """
     Flight and ground contact time analysis 
     """
@@ -1058,7 +1116,7 @@ def get_gif(vid, pic, ath_height,slowmo):
 
     # watch out for last flight time is always 0
     if len(sLength) != 0:
-        max_step_len = max(sLength)
+        max_step_len = sum(sLength)/len(sLength)
         if len(ground_times) > 0 and len(flight_times) > 1:
             avg_ground_time = sum(ground_times) / len(ground_times)
             avg_flight_time = sum(flight_times) / (len(flight_times) - 1)
@@ -1068,7 +1126,7 @@ def get_gif(vid, pic, ath_height,slowmo):
             avg_ground_time = 0
             avg_flight_time = 0
     else:
-        max_step_len =0
+        max_step_len = 0
         avg_ground_time = 0
         avg_flight_time = 0
 
@@ -1088,6 +1146,33 @@ def get_gif(vid, pic, ath_height,slowmo):
         #'P_R_toe': toeR_pos,
         'P_head': nose_pos,
     }
+
+    """# Example x-coordinate positions (from pose estimation)
+    x_coords = [x for x, y in nose_pos]
+    # Example list of reference object sizes in pixels for each frame
+    reference_sizes_pixels = leg_length_px  # This changes per frame
+    reference_size_meters = leg_length # The real-world size of the object (e.g., 1 meter)
+
+    # Calculate displacements in pixels
+    displacements_pixels = np.diff(x_coords)
+
+    # Frame rate
+    fps = 30
+    time_interval = 1 / fps
+
+    # Initialize an empty list to store velocities
+    velocities_mps = []
+
+    # Calculate scale factor and velocities for each frame
+    for i in range(len(displacements_pixels)):
+        scale_factor_frame = reference_sizes_pixels[i] / reference_size_meters
+        displacement_meters = displacements_pixels[i] / scale_factor_frame
+        velocity_mps = displacement_meters / time_interval
+        velocities_mps.append(velocity_mps)
+
+    print("X Coordinates (pixels):", x_coords)
+    print("Displacements (meters):", displacements_pixels)
+    print("Horizontal Velocities (m/s):", velocities_mps)"""
 
     smoothed_data = {}
 

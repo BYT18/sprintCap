@@ -1,4 +1,13 @@
 /* src/VideoUploader.css */
+h2,h1,h3 {
+   font-family: 'Montserrat', sans-serif;
+}
+
+p {
+    font-family: 'Quicksand', sans-serif;
+
+}
+
 .bannerCards {
     background-image: linear-gradient(to right, #000000, #72c6cf);
       color: #ffffff;
@@ -30,7 +39,6 @@
 
 .video-uploader h2 {
   margin: 20px 0;
-  font-family: 'Arial', sans-serif;
   font-size: 24px;
   color: #333;
 }
@@ -64,8 +72,6 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 100%;
-
 }
 
 .chart-container {
@@ -269,7 +275,7 @@ circle {
   transition: background-color 0.3s ease, transform 0.2s ease;*/
   position: fixed;
   bottom: 20px;
-  right: 20px;
+  right: 80px;
   width: 50px;
   height: 50px;
   background-color: #007bff;
@@ -295,6 +301,35 @@ circle {
   transform: scale(1);
 }
 
+.help-button {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 50px;
+  height: 50px;
+  background-color: grey;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.help-button:hover {
+  background-color: #0056b3; /* Darker shade of primary color */
+  transform: scale(1.05);
+}
+
+.help-button:active {
+  background-color: #003f7f; /* Even darker shade of primary color */
+  transform: scale(1);
+}
+
 .textarea-styled {
   width: 100%;
   height: 45%;
@@ -302,7 +337,6 @@ circle {
   border: 1px solid #ccc;
   border-radius: 4px;
   font-size: 16px;
-  font-family: Arial, sans-serif;
   resize: vertical;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   outline: none;

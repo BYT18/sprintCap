@@ -13,6 +13,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework import permissions"""
 
 from .utils import get_gif
+from .block_kino import get_analysis
 from .scanner import get_dim
 from .models import Pose
 
@@ -45,7 +46,10 @@ class AnalysisView(generics.ListCreateAPIView):
         #return PetSeeker.objects.create(**serializer.validated_data, user=self.request.user)
         print(serializer.validated_data['vid'].file)
         print(serializer.validated_data['vid'])
-        g = get_gif(serializer.validated_data['vid'],serializer.validated_data['pic'], serializer.validated_data['height'], serializer.validated_data['slowmo'])
+        if serializer.validated_data['analysis_type'] == 0:
+            g = get_gif(serializer.validated_data['vid'],serializer.validated_data['pic'], serializer.validated_data['height'], serializer.validated_data['slowmo'],serializer.validated_data['step'])
+        else:
+            g = get_analysis(serializer.validated_data['vid'],serializer.validated_data['pic'], serializer.validated_data['height'], serializer.validated_data['slowmo'],serializer.validated_data['step'])
         #s = PoseSerializer
         #save(vid=g)#
 
@@ -63,7 +67,7 @@ class AnalysisView(generics.ListCreateAPIView):
                 './pics/key_frame_4.png',
                 './pics/key_frame_5.png'
             ],
-            "other": g
+            "other": g,
         }
 
         return Response(response_data, status=status.HTTP_201_CREATED)
@@ -108,6 +112,26 @@ class RegisterView(generics.CreateAPIView):
     permission_classes = (AllowAny,)
     serializer_class = RegisterSerializer
 
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+
+            # Generate tokens
+            refresh = RefreshToken.for_user(user)
+            access_token = str(refresh.access_token)
+            refresh_token = str(refresh)
+
+            return Response({
+                'user': {
+                    'email': user.email
+                },
+                'access': access_token,
+                'refresh': refresh_token
+            }, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 class LoginView(generics.GenericAPIView):
     permission_classes = (AllowAny,)
     serializer_class = LoginSerializer
@@ -150,13 +174,38 @@ class UserDetailView(generics.RetrieveUpdateAPIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def post(self, request, *args, **kwargs):
+    """def post(self, request, *args, **kwargs):
         profile = self.get_object()
-        leg_len = get_dim(request.data['img'],request.data['leg'])
-        #serializer = self.get_serializer(profile, data=request.data)
-        return Response(leg_len, status=status.HTTP_200_OK)
+        #leg_len = get_dim(request.data['img'],request.data['leg'])
+        serializer = self.get_serializer(profile, data=request.data, partial=True)
+        #return Response(leg_len, status=status.HTTP_200_OK)
 
-        #if serializer.is_valid():
-        #    serializer.save()
+        if serializer.is_valid():
+            serializer.save()
         #    return Response(serializer.data, status=status.HTTP_200_OK)
-        #return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)"""
+
+class UserProfileCreateView(generics.GenericAPIView):
+    permission_classes = (IsAuthenticated,)
+    serializer_class = UserProfileSerializer
+
+    """def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            profile, created = UserProfile.objects.get_or_create(user=request.user)
+            serializer.save(user=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            print("Validation Errors:", serializer.errors)  # Debugging line
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)"""
+
+    def post(self, request, *args, **kwargs):
+        # Attempt to get or create the UserProfile
+        profile, created = UserProfile.objects.get_or_create(user=request.user)
+
+        # Validate and save the profile with the provided data
+        serializer = self.get_serializer(instance=profile, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save(user=request.user)  # Save with the user set explicitly
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

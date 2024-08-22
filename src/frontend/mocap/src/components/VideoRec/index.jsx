@@ -73,11 +73,11 @@ const VideoRecorder = () => {
   }, [stream]);
 
   return (
-    <div>
+    <div className="container">
       <main>
-        <div className="video-controls">
+        <div className="video-button">
           {!permission && (
-            <Button variant="primary" className="mb-3" onClick={getCameraPermission}>
+            <Button variant="primary" className="mb-3" onClick={getCameraPermission} style={{fontFamily:"Quicksand, sans-serif"}}>
               Open Camera
             </Button>
           )}

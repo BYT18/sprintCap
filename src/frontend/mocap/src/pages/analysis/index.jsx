@@ -23,7 +23,7 @@ import Loader from '../../components/Loader/index.jsx';
 import PasteImage from '../../components/Dropdown/index.jsx';
 import Slider from '../../components/Slider/index.jsx';
 import VideoRec from '../../components/VideoRec/index.jsx';
-import VideoCrop from '../../components/VideoCrop/index.jsx';
+import VideoCrop from '../../components/VideoEditor/index.jsx';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 import "bootstrap-icons/font/bootstrap-icons.css";
@@ -36,6 +36,7 @@ import Modal from 'react-bootstrap/Modal';
 import Button from 'react-bootstrap/Button';
 import Carousel from 'react-bootstrap/Carousel';
 import Form from 'react-bootstrap/Form';
+import Offcanvas from 'react-bootstrap/Offcanvas';
 
 const data = []
 
@@ -67,6 +68,7 @@ const VideoUploader = () => {
   const [pasteImage, setPasteImage] = useState(null);
   const [isToggled, setIsToggled] = useState(false);
   const [isSlowToggled, setIsSlowToggled] = useState(false);
+  const [analType, setAnalType] = useState(0);
 
   const [datas, setDatas] = useState([]);
   const [chartData, setChartData] = useState({});
@@ -88,10 +90,15 @@ const VideoUploader = () => {
   const [textAreaFS, setTextAreaFS] = useState("");
 
   const [analData, setAnalData] = useState([]);
+  const [analData2, setAnalData2] = useState([]);
   const [avgG, setAvgG] = useState(null);
   const [avgF, setAvgF] = useState(null);
   const [contactLabels, setContactLabels] = useState(null);
   const [angLabels, setAngLabels] = useState(null);
+
+  const [showG1, setShowG1] = useState(false);
+  const handleCloseG1 = () => setShowG1(false);
+  const handleShowG1 = () => setShowG1(true);
 
   const handleToggleChange = (e) => {
         setIsToggled(e.target.checked);
@@ -99,6 +106,11 @@ const VideoUploader = () => {
 
   const handleSlowToggleChange = (e) => {
         setIsSlowToggled(e.target.checked);
+  };
+
+  const handleAnalType = (event) => {
+    setAnalType(event.target.value);
+    console.log(analType)
   };
 
   const addImage = (newImage) => {
@@ -251,14 +263,23 @@ const loadImage = (src) => {
 };
 
    const analyze = async (e,p) => {
+    /*const videoUrl = URL.createObjectURL(e);
+    const a = document.createElement('a');
+    a.href = videoUrl;
+    a.download = 'downloaded_video.mp4'; // Set the default file name
+    document.body.appendChild(a); // Append to the document to make the download work in some browsers
+    a.click(); // Trigger the download
+    document.body.removeChild(a); // Clean up*/
+        const video = new File([e], "blob.mov", { type: e.type });
+
         setLoading(true);
         const formData = new FormData();
-        formData.append("vid", e);
-
+        formData.append("vid", video);
         const blob = await fetch(p).then(res => res.blob()); // Convert base64 to Blob
         formData.append('pic', blob, 'image.png'); // Add blob to formData with filename
-
         formData.append('height', height);
+        console.log(analType)
+        formData.append('analysis_type', analType);
 
         // Check the value of slwomo and append the appropriate value to formData
         if (isSlowToggled) {
@@ -266,6 +287,14 @@ const loadImage = (src) => {
         } else {
             formData.append('slowmo', 0);
         }
+
+        if (isToggled) {
+            formData.append('step', 1);
+        } else {
+            formData.append('step', 0);
+        }
+
+
 
         //const payload = {
         //    e,
@@ -279,11 +308,11 @@ const loadImage = (src) => {
         try {
             // Create the POST request using the fetch API
             const token = localStorage.getItem('access_token');
-            //const response = await fetch('http://127.0.0.1:8000/test/', {
-            const response = await fetch('http://3.131.119.69:8000/test/', {
+            console.log(token)
+            const response = await fetch('http://127.0.0.1:8000/test/', {
+            //const response = await fetch('http://3.131.119.69:8000/test/', {
                 method: 'POST',
                 headers: {
-
                 'Authorization': `Bearer ${token}` // Include the Authorization header
                 },
                 body: formData,
@@ -293,14 +322,19 @@ const loadImage = (src) => {
                 const data = await response.json();
                 console.log(data)
                 console.log(data.pic);
+
                 setDatas(data.x_vals);
 
+                //if (isToggled) {
                 // Generate xAxis labels
                 const xAxisLabels = data.x_vals["ground"].map((_, index) => `C${index + 1}`);
                 setContactLabels(xAxisLabels)
+                //}
+
 
                 const xAxisData = Array.from({ length: data.x_vals["ang"].length }, (_, i) => i + 1);
                 setAngLabels(xAxisData)
+
 
                 /*const xValues = data.map(point => point.x_value);
                 const yValues = data.map(point => point.y_value);*/
@@ -319,6 +353,7 @@ const loadImage = (src) => {
                     }
                   ]
                 });*/
+
                 setResultVid(data.pic)
                 //setImages(data.pic)
                 setTestImg(data.pic)
@@ -349,22 +384,31 @@ const loadImage = (src) => {
                 formatItemsForTextarea(data.x_vals["feedback"]["FS"],setTextAreaFS);
                 //setToeFeed(data.x_vals["feedback"]["TO"])
 
+
                 //setAvgG(data.x_vals["feedback"]["avg_g"])
                 //setAvgF(data.x_vals["feedback"]["avg_F"])
-                setVelDataL([data.x_vals["ang"],data.x_vals["ang"]])
                 //setVelDataL([data.x_vals["vL"],data.x_vals["vR"][1]])
-                console.log(velDataL)
 
+
+                setVelDataL([data.x_vals["ang"],data.x_vals["ang"]])
                 const augmentedData = [
                   { title: 'Time between steps', value: '???', unit: 'SECONDS'},
-                  { title: 'Max step length', value: Number(data.x_vals["maxSL"]).toFixed(3), unit: 'METERS'},
+                  { title: 'Mean step length', value: Number(data.x_vals["maxSL"]).toFixed(3), unit: 'METERS'},
                   { title: 'Mean Ground Time', value: Number(data.x_vals["avg_g"]).toFixed(3), unit: 'SECONDS'},
                   { title: 'Mean Flight Time', value: Number(data.x_vals["avg_f"]).toFixed(3), unit: 'SECONDS'}
-                  // Add more mappings as needed
                 ];
-
                 setAnalData(augmentedData);
+
+                const augmentedData2 = [
+                  { title: 'Thigh ROM', value: '2', unit: 'SECONDS'},
+                  { title: 'Knee SPARC', value: '0.5', unit: 'METERS'},
+                  { title: 'Shoulder AV', value: '0.8', unit: 'SECONDS'},
+                  { title: 'Hip SE', value: '1.2', unit: 'SECONDS'}
+                ];
+                setAnalData2(augmentedData2);
+
                 setLoading(false);
+
                 //setGif1(data.pic)
                 //console.log(gif1)
             } else {
@@ -467,7 +511,7 @@ const loadImage = (src) => {
         const feedbacks = [textAreaToe,textAreaV,textAreaS,textAreaT,textAreaFS]
         console.log(feedbacks)
         const combinedImage = await createCombinedImage(images, feedbacks);
-        saveAs(combinedImage, 'womp.jpg')
+        saveAs(combinedImage, 'kino.jpg')
        // saveAs(images[0], 'womp.jpg') // Put your image URL here.
   }
 
@@ -491,9 +535,36 @@ const loadImage = (src) => {
     setHeight(event.target.value);
   };
 
+  const steps = [
+    {
+      image: 'path/to/image1.jpg', // Replace with the actual image path
+      description: 'Step 1: Open the camera or upload a video.',
+    },
+    {
+      image: 'path/to/image2.jpg',
+      description: 'Step 2: Crop it to desired length. Try to eliminate as much camera panning or distortion as possible.',
+    },
+    {
+      image: 'path/to/image3.jpg',
+      description: 'Step 3: Select the type of analysis to do.',
+    },
+    {
+      image: 'path/to/image4.jpg',
+      description: 'Step 4: Toggle slowmo if the video is in slowmo.',
+    },
+    {
+      image: 'path/to/image5.jpg',
+      description: 'Step 5: Toggle step analysis if you want to analyze step length and if your video includes a still frame of reference. You can then copy and paste this reference into the box.',
+    },
+     {
+      image: 'path/to/image5.jpg',
+      description: 'Step 6: Click analyze to get your results.',
+    }
+  ];
+
 
   return (
-  <body>
+  <body >
    <section class="bannerCards text-sm-start text-center p-4">
     <motion.div class="container" initial={{ opacity: 0, scale: 0.5 }}
       animate={{ opacity: 1, scale: 1 }}
@@ -505,31 +576,36 @@ const loadImage = (src) => {
       <div className="video-uploader">
           <h2>Upload and Display Video</h2>
           <VideoRec />
-           {/*<VideoCrop />*/}
-          <input class="form-control mb-2" type="file" id="formFileMultiple" accept="video/*" onChange={handleVideoUpload}/>
-          {/*<input style={{color:'black'}} class="pb-3" type="file" accept="video/*" onChange={handleVideoUpload} />*/}
+          {/*<input class="form-control mb-2" type="file" id="formFileMultiple" accept="video/*" onChange={handleVideoUpload}/>
+          <input style={{color:'black'}} class="pb-3" type="file" accept="video/*" onChange={handleVideoUpload} />*/}
+          <VideoCrop setParentVid={setVideoFile}  />
           {videoURL && (
             <div className="video-container">
-              <video controls src={videoURL}>
+            <video controls src={videoURL}>
                 Your browser does not support the video tag.
               </video>
+              {/*<video controls src={videoURL}>
+                Your browser does not support the video tag.
+              </video>
+              <VideoCrop VideoUrl={videoURL} onVideoEdit={handleEditedVideo}  />
+              */}
             </div>
           )}
         <div className="container mt-2" data-tooltip-id="my-tooltip" data-tooltip-content="Change analysis depending on sprinting phase being recorded">
-          <select class="form-select" aria-label="Default select example">
-              <option selected>Top End Analysis</option>
+          <select class="form-select" aria-label="Default select example" onChange={handleAnalType} value={analType} style={{fontFamily:"Quicksand, sans-serif"}}>
+              <option  value="0">Top End Analysis</option>
               <option value="1">Acceleration Analysis</option>
               <option value="2">Tempo Stride Analysis</option>
           </select>
           <Tooltip id="my-tooltip" />
         </div>
-        <div className="container mt-4">
+        <div className="container mt-4" >
             <Form>
             <Form.Check
                 type="switch"
                 id="custom-switch"
                 label="Slowmo"
-                style={{color:"black"}}
+                style={{color:"black", fontFamily:"Quicksand, sans-serif"}}
                 checked={isSlowToggled}
                 onChange={handleSlowToggleChange}
                 onChange={handleSlowToggleChange}
@@ -538,7 +614,7 @@ const loadImage = (src) => {
                 type="switch"
                 id="custom-switch"
                 label="Toggle Step Length Analysis"
-                style={{color:"black"}}
+                style={{color:"black",fontFamily:"Quicksand, sans-serif"}}
                 checked={isToggled}
                 onChange={handleToggleChange}
               />
@@ -546,20 +622,20 @@ const loadImage = (src) => {
           {isToggled && (<div
               className="paste-area"
               onPaste={handlePaste}
-              //onDoubleClick={handleDoubleClick}
+              onDoubleClick={handleDoubleClick}
               style={{ border: '2px dashed #ccc', padding: '20px', textAlign: 'center', cursor: 'pointer' }}
               data-tooltip-id="my-tooltip" data-tooltip-content="This is used to compute step length and velocity"
             >
               <p style={{color:"black"}}>Click here and press Ctrl+V to paste image of measuring device or double click to upload image</p>
                          <Tooltip id="my-tooltip" />
               {pasteImage && <img src={pasteImage} alt="Pasted" style={{ maxWidth: '100%', maxHeight: '400px', marginTop: '20px' }} />}
-{/*              <input
-        type="file"
-        accept="image/*"
-        style={{ display: 'none' }}
-        ref={fileInputRef}
-        onChange={handleFileChangePaste}
-     />*/}
+              <input
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                ref={fileInputRef}
+                onChange={handleFileChangePaste}
+             />
             </div>)}
         </div>
         {/*<div className="container mt-2">
@@ -577,15 +653,33 @@ const loadImage = (src) => {
             </div>
         </div>*/}
         <div className="container mt-2">
-          <button type="button" class="btn btn-secondary" onClick={handleAnalyze}>
+          <button type="button" class="btn btn-secondary" onClick={handleAnalyze} style={{fontFamily:"Quicksand, sans-serif"}}>
             Analyze
           </button>
         </div>
       </div>
     </motion.div>
+     <button onClick={handleShowG1} className="help-button"><i className="bi bi-question-circle"></i></button>
+     <Offcanvas show={showG1} onHide={handleCloseG1}>
+        <Offcanvas.Header closeButton>
+          <Offcanvas.Title>How to analyze your run</Offcanvas.Title>
+        </Offcanvas.Header>
+        <Offcanvas.Body>
+          <div className="steps-container">
+          {steps.map((step, index) => (
+            <div key={index} className="step">
+              <img src={step.image} alt={`Step ${index + 1}`} className="step-image" />
+              <p className="step-description">{step.description}</p>
+            </div>
+          ))}
+        </div>
+        </Offcanvas.Body>
+  </Offcanvas>
   </section>
    {loading && <Loader />}
-  {resultVid && (
+   {/*resultVid && */}
+  {resultVid &&(
+
   <div>
   <section class="bannerCards text-sm-start text-center p-4">
       <div class="container">
@@ -611,6 +705,7 @@ const loadImage = (src) => {
           </div>
       </div>
   </section>*/}
+
   <section class="bannerCards p-4">
   <motion.div className="container"
   variants={cardVariants}
@@ -750,14 +845,14 @@ const loadImage = (src) => {
   <div class="container">
   <h2 style={{color:'white'}}>Visualizations</h2>
   <div class="row" style={{justifyContent:"center"}}>
-  <motion.div class="col-auto text-center"
+  <motion.div onClick={handleShowG1} class="col-auto text-center"
   variants={cardVariants}
    initial="offscreen"
             whileInView="onscreen"
             viewport={{ once: true, amount: 0.5 }}
   >
       <p>Flight vs Ground Contact Times</p>
-          <div className="carder chart-container">
+          <div className="carder chart-container" style={{cursor: "pointer"}}>
               <BarChart
               series={[
                 //{ data: [0.3,0.4,0.25], label:'Ground'},
@@ -773,7 +868,7 @@ const loadImage = (src) => {
             />
           </div>
   </motion.div>
-  <motion.div class="col-auto text-center"
+   {isToggled && (<motion.div class="col-auto text-center"
   variants={cardVariants}
    initial="offscreen"
             whileInView="onscreen"
@@ -790,7 +885,7 @@ const loadImage = (src) => {
           margin={{ top: 30, bottom: 40, left: 40, right: 10 }}
         />
           </div>
-  </motion.div>
+  </motion.div>)}
   </div>
   <div class="row" style={{justifyContent:"center"}}>
   <motion.div class="col-auto text-center"
@@ -845,6 +940,7 @@ const loadImage = (src) => {
               key={index}
               className="analytics-card"
               whileHover={{ scale: 1.05 }}
+               style={{ cursor: 'pointer', backgroundColor: item.value > 1 ? 'green' : 'red', border: item.value > 1 ? '2px solid darkgreen' : '2px solid darkred'}}
             >
               <div className="anal-card-content">
                 <h4>{item.title}</h4>
@@ -855,9 +951,25 @@ const loadImage = (src) => {
           ))}
         </div>
   </div>
-    </div>
+  <div className="analytics-panel pb-5">
+          {analData2.map((item, index) => (
+            <motion.div
+             style={{ cursor: 'pointer',backgroundColor: item.value > 1 ? 'green' : 'red', border: item.value > 1 ? '2px solid darkgreen' : '2px solid darkred' }}
+              key={index}
+              className="analytics-card"
+              whileHover={{ scale: 1.05 }}
+            >
+              <div className="anal-card-content" >
+                <h4>{item.title}</h4>
+                <h1>{item.value}</h1>
+                <p>{item.unit}</p>
+              </div>
+            </motion.div>
+          ))}
+  </div>
+  </div>
   </section>
-   </div>
+  </div>
 )}
 
 

@@ -13,6 +13,8 @@ class Pose(models.Model):
     x_vals = models.JSONField(null=True, blank=True)  # Requires Django 3.1+
     height = models.FloatField(null = True, blank=True)
     slowmo = models.IntegerField(null=True, blank=True)
+    analysis_type = models.IntegerField(null=True, blank=True)
+    step = models.IntegerField(null=True, blank=True)
 
     def __str__(self):
         return "Pose"
@@ -27,4 +29,4 @@ class UserProfile(models.Model):
     profile_pic = models.ImageField(upload_to='profile_pictures/', blank=True, null=True)
 
     def __str__(self):
-        return self.user.username
+        return self.user.email

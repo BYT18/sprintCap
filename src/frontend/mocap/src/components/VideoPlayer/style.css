@@ -1,0 +1,24 @@
+.video-player-container {
+    width: 100%;
+    max-width: 1000px; /* Increase the max-width to make the video player larger */
+    margin: 0 auto; /* Center the video player */
+    padding: 20px;
+}
+
+.video-player {
+    width: 100%; /* Ensure the video player takes up the full width of its container */
+    height: auto;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.video-react .video-react-control-bar {
+    font-size: 1.2rem; /* Increase control bar size if necessary */
+}
+
+.video-react .video-react-big-play-button {
+    width: 70px; /* Increase the size of the play button */
+    height: 70px;
+    margin-left: -35px;
+    margin-top: -35px;
+}

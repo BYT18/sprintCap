@@ -15,12 +15,17 @@ class PoseSerializer(serializers.ModelSerializer):
 
         slowmo = serializers.IntegerField()
 
+        analysis_type = serializers.IntegerField()
+
+        step = serializers.IntegerField()
+
         image_urls = serializers.ListField(
             child=serializers.URLField(max_length=200)
         )
 
-        fields = ('pic','vid','kin1','kin2','kin3','kin4','kin5','x_vals','height', 'slowmo')
+        fields = ('pic','vid','kin1','kin2','kin3','kin4','kin5','x_vals','height', 'slowmo','analysis_type','step')
         #exclude = ('pic',)
+
 
 """from django.contrib.auth.models import User
 from .models import UserProfile
@@ -45,7 +50,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
-        fields = ['user', 'dob', 'height', 'profile_pic','name',"femur_len"]
+        fields = ['dob', 'height', 'profile_pic','name',"femur_len"]
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -55,11 +60,13 @@ class UserSerializer(serializers.ModelSerializer):
 class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('username', 'password', 'email')
+        fields = ('email','password')
         extra_kwargs = {'password': {'write_only': True}}
 
     def create(self, validated_data):
-        user = User.objects.create_user(validated_data['username'], validated_data['email'], validated_data['password'])
+        user = User.objects.create_user(validated_data['email'],validated_data['email'], validated_data['password'])
+
+        # Create tokens
         return user
 
 class LoginSerializer(serializers.Serializer):

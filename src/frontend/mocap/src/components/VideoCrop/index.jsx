@@ -1,4 +1,4 @@
-import React from 'react';
+{/*import React from 'react';
 //import './style.css'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faVolumeMute, faVolumeUp, faPause, faPlay, faGripLinesVertical, faSync, faStepBackward, faStepForward, faCamera, faDownload, faEraser } from '@fortawesome/free-solid-svg-icons'
@@ -335,4 +335,4 @@ class Editor extends React.Component {
     }
 }
 
-export default Editor
+export default Editor*/}
