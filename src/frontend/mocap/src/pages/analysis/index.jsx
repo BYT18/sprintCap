@@ -270,7 +270,8 @@ const loadImage = (src) => {
     document.body.appendChild(a); // Append to the document to make the download work in some browsers
     a.click(); // Trigger the download
     document.body.removeChild(a); // Clean up*/
-        const video = new File([e], "blob.mov", { type: e.type });
+
+        //const video = new File([e], "blob.mov", { type: e.type });
 
         setLoading(true);
         const formData = new FormData();
@@ -576,8 +577,8 @@ const loadImage = (src) => {
       <div className="video-uploader">
           <h2>Upload and Display Video</h2>
           <VideoRec />
-          {/*<input class="form-control mb-2" type="file" id="formFileMultiple" accept="video/*" onChange={handleVideoUpload}/>
-          <input style={{color:'black'}} class="pb-3" type="file" accept="video/*" onChange={handleVideoUpload} />*/}
+          <input class="form-control mb-2" type="file" id="formFileMultiple" accept="video/*" onChange={handleVideoUpload}/>
+          {/*<input style={{color:'black'}} class="pb-3" type="file" accept="video/*" onChange={handleVideoUpload} />*/}
           <VideoCrop setParentVid={setVideoFile}  />
           {videoURL && (
             <div className="video-container">
