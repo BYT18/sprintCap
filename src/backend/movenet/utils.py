@@ -1087,7 +1087,6 @@ def get_gif(vid, pic, ath_height,slowmo, step):
     kinogram[4] = full_supps[4][1]
 
     from django.conf import settings  # To use MEDIA_ROOT and MEDIA_URL
-    from PIL import Image
 
     # Ensure the directory exists
     output_dir = os.path.join(settings.MEDIA_ROOT, 'pics')
@@ -1099,9 +1098,13 @@ def get_gif(vid, pic, ath_height,slowmo, step):
     # First set of images
     for i in range(len(kinogram)):
         rgb_frame = cv2.cvtColor(output[kinogram[i]], cv2.COLOR_BGR2RGB)
-        img = Image.fromarray(rgb_frame)
+        plt.figure(figsize=(10, 6))
+        plt.imshow(rgb_frame)
+        plt.axis('off')
+
         plot_path = os.path.join(output_dir, f'key_frame_{i + 1}.png')
-        img.save(plot_path)
+        plt.savefig(plot_path, bbox_inches='tight', pad_inches=0)
+        plt.close()  # Close the figure
 
     # Second set of images (from heaps)
     images_heaps = [toe_offs, max_verts, strikes, tdowns, full_supps]
@@ -1110,10 +1113,14 @@ def get_gif(vid, pic, ath_height,slowmo, step):
         for y in x:
             i = y[1]
             rgb_frame = cv2.cvtColor(output[i], cv2.COLOR_BGR2RGB)
-            img = Image.fromarray(rgb_frame)
+            plt.figure(figsize=(10, 6))
+            plt.imshow(rgb_frame)
+            plt.axis('off')
+
             plot_path = os.path.join(output_dir, f'out_{counter}.png')
             counter += 1
-            img.save(plot_path)
+            plt.savefig(plot_path, bbox_inches='tight', pad_inches=0)
+            plt.close()  # Close the figure
 
             # Generate the URL to be returned to the frontend
             image_url = os.path.join(settings.MEDIA_URL, 'pics', os.path.basename(plot_path))
