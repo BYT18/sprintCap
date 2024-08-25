@@ -355,9 +355,9 @@ const loadImage = (src) => {
             // Create the POST request using the fetch API
             const token = localStorage.getItem('access_token');
             console.log(token)
-            const response = await fetch('http://127.0.0.1:8000/api/test/', {
+            //const response = await fetch('http://127.0.0.1:8000/api/test/', {
             //const response = await fetch('http://3.131.119.69:8000/test/', {
-            //const response = await fetch('/api/test/', {
+            const response = await fetch('/api/test/', {
                 method: 'POST',
                 headers: {
                 'Authorization': `Bearer ${token}` // Include the Authorization header
