@@ -33,7 +33,7 @@ const Register = () => {
         try {
             //const response = await fetch('http://127.0.0.1:8000/register/', {
             //const response = await fetch('http://3.131.119.69:8000/login/', {
-            const response = await fetch('/register/', {
+            const response = await fetch('/api/register/', {
                 method: 'POST',
                 headers: {},
                 body: formData,
@@ -73,7 +73,7 @@ const Register = () => {
         try {
             //const response = await fetch('http://127.0.0.1:8000/create/', {
             //const response = await fetch('http://3.131.119.69:8000/create/', {
-            const response = await fetch('/create/', {
+            const response = await fetch('/api/create/', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,

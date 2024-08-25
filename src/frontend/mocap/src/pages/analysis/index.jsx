@@ -357,7 +357,7 @@ const loadImage = (src) => {
             console.log(token)
             //const response = await fetch('http://127.0.0.1:8000/test/', {
             //const response = await fetch('http://3.131.119.69:8000/test/', {
-            const response = await fetch('/test/', {
+            const response = await fetch('/api/test/', {
                 method: 'POST',
                 headers: {
                 'Authorization': `Bearer ${token}` // Include the Authorization header

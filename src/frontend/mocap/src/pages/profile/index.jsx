@@ -41,7 +41,7 @@ const Profile = () => {
             try {
                 //const response = await fetch('http://127.0.0.1:8000/prof/', {
                 //const response = await fetch('http://3.131.119.69:8000/prof/', {
-                const response = await fetch('/prof/', {
+                const response = await fetch('/api/prof/', {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
@@ -93,7 +93,7 @@ const Profile = () => {
         try {
             //const response = await fetch('http://127.0.0.1:8000/prof/', {
             //const response = await fetch('http://3.131.119.69:8000/prof/', {
-            const response = await fetch('/prof/', {
+            const response = await fetch('/api/prof/', {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -132,7 +132,7 @@ const Profile = () => {
         try {
             //const response = await fetch('http://127.0.0.1:8000/prof/', {
             //const response = await fetch('http://3.131.119.69:8000/prof/', {
-            const response = await fetch('/prof/', {
+            const response = await fetch('/api/prof/', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,

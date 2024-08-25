@@ -10,12 +10,12 @@ from .views import RegisterView, LoginView, UserProfileView, UserDetailView, Use
 urlpatterns = [
     #newuser
     #path('create/', UserCreateView.as_view(), name='user-create'),
-    path('test/', AnalysisView.as_view(), name='user-create'),
+    path('api/test/', AnalysisView.as_view(), name='user-create'),
     #path('api/profiles/', UserProfileList.as_view(), name='userprofile-list'),
     #path('api/profiles/<int:pk>/', UserProfileDetail.as_view(), name='userprofile-detail'),
-    path('register/', RegisterView.as_view(), name='register'),
-    path('login/', LoginView.as_view(), name='login'),
-    path('profile/', UserProfileView.as_view(), name='profile'),
-    path('prof/', UserDetailView.as_view(), name='profile'),
-    path('create/', UserProfileCreateView.as_view(), name='create'),
+    path('api/register/', RegisterView.as_view(), name='register'),
+    path('api/login/', LoginView.as_view(), name='login'),
+    path('api/profile/', UserProfileView.as_view(), name='profile'),
+    path('api/prof/', UserDetailView.as_view(), name='profile'),
+    path('api/create/', UserProfileCreateView.as_view(), name='create'),
 ]
