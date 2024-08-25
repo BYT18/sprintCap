@@ -318,7 +318,7 @@ const loadImage = (src) => {
 
         setLoading(true);
         const formData = new FormData();
-        //formData.append("vid", video);
+        formData.append("vid", video);
         //formData.append("vid", e);
         const blob = await fetch(p).then(res => res.blob()); // Convert base64 to Blob
         formData.append('pic', blob, 'image.png'); // Add blob to formData with filename
