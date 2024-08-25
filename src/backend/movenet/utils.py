@@ -1109,7 +1109,7 @@ def get_gif(vid, pic, ath_height,slowmo, step):
     # Second set of images (from heaps)
     images_heaps = [toe_offs, max_verts, strikes, tdowns, full_supps]
 
-    for x in images_heaps:
+    """for x in images_heaps:
         for y in x:
             i = y[1]
             rgb_frame = cv2.cvtColor(output[i], cv2.COLOR_BGR2RGB)
@@ -1124,7 +1124,7 @@ def get_gif(vid, pic, ath_height,slowmo, step):
 
             # Generate the URL to be returned to the frontend
             image_url = os.path.join(settings.MEDIA_URL, 'pics', os.path.basename(plot_path))
-            image_urls.append(image_url)
+            image_urls.append(image_url)"""
 
     """
     Velocity and Smoothness Analysis 
