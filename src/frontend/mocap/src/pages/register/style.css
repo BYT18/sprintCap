@@ -38,3 +38,8 @@
     text-decoration: none; /* Optional: Remove underline on hover */
     color: darkblue; /* Optional: Change color on hover */
 }
+
+.custom-form {
+    font-family: 'Quicksand', sans-serif;
+    font-size: 16px;
+}

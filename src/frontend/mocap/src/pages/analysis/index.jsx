@@ -473,11 +473,13 @@ const loadImage = (src) => {
             } else {
                 // Handle error responses
                 console.error('Error:', response.statusText);
+                alert(`Error: ${response.message} or a network error has occured`);
                 setLoading(false);
             }
         } catch (error) {
             // Handle network errors
             console.error('Network error:', error.message);
+            alert(`Error: ${error.message} or a network error has occured`);
             setLoading(false);
         }
     };
@@ -635,8 +637,8 @@ const loadImage = (src) => {
       <div className="video-uploader">
           <h2>Upload and Display Video</h2>
           <VideoRec />
-          <input class="form-control mb-2" type="file" id="formFileMultiple" accept="video/*" onChange={handleVideoUpload}/>
-          {/*<input style={{color:'black'}} class="pb-3" type="file" accept="video/*" onChange={handleVideoUpload} />*/}
+          {/*<input class="form-control mb-2" type="file" id="formFileMultiple" accept="video/*" onChange={handleVideoUpload}/>
+          <input style={{color:'black'}} class="pb-3" type="file" accept="video/*" onChange={handleVideoUpload} />*/}
           <VideoCrop setParentVid={setVideoFile}  />
           {videoURL && (
             <div className="video-container">

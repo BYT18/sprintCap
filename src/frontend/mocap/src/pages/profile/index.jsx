@@ -8,6 +8,7 @@ import {
   useTransform,
   MotionValue
 } from "framer-motion";
+import pf from "../../assets/pf_pic.jpg";
 
 const Profile = () => {
     const [profile, setProfile] = useState(null);
@@ -182,7 +183,7 @@ const Profile = () => {
                                         />
                                          <img
                                         alt="Profile Pic"
-                                        src="https://varsityblues.ca/images/2024/1/5/Tang_Brandon.jpg?width=300"
+                                        src={pf}
                                         className="circular-image mt-3"
                                     />
                                     </Form.Group>

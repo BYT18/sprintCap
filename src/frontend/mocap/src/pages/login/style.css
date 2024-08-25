@@ -25,7 +25,7 @@
 .text-button {
     background: none;
     border: none;
-    color: blue;
+    color: #66b2b2;
     text-decoration: underline;
     cursor: pointer;
     font-size: 16px; /* Adjust font size as needed */
@@ -36,5 +36,10 @@
 
 .text-button:hover {
     text-decoration: none; /* Optional: Remove underline on hover */
-    color: darkblue; /* Optional: Change color on hover */
+    color: #66b2b2; /* Optional: Change color on hover */
+}
+
+.custom-form {
+    font-family: 'Quicksand', sans-serif;
+    font-size: 16px;
 }

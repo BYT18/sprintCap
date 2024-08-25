@@ -73,14 +73,15 @@ const Login = () => {
     };
 
     return (
-  <div className="container full-height">
-            <Row className="justify-content-center w-100">
+  <div className="container full-height"
+  >
+   <Row className="justify-content-center w-100">
                 <Col md={6} lg={4} md={8} lg={6} className="d-flex justify-content-center">
                     <Card className="shadow-lg p-4 min-width-card">
                         <Card.Body>
                             <h2 className="text-center mb-4">Login</h2>
                             {error && <Alert variant="danger">{error}</Alert>}
-                            <Form>
+                            <Form className="custom-form">
                                 <Form.Group controlId="formUsername">
                                     <Form.Label>Email</Form.Label>
                                     <Form.Control
@@ -101,7 +102,7 @@ const Login = () => {
                                 </Form.Group>
 
                                 <div className="button-container mt-3">
-                                    <Button variant="primary" onClick={handleLogin} block>
+                                    <Button style={{backgroundColor:"#66b2b2", border:"none"}} onClick={handleLogin} block>
                                       Login
                                      </Button>
                                     <Link className="text-button" to="/api/register/">Register here</Link>

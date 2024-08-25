@@ -86,10 +86,12 @@ const Register = () => {
                 //setMessage('Profile updated successfully');
             } else {
                 console.error('Failed to update profile');
+                alert(`Failed to update profile`);
                 //setMessage('Failed to update profile');
             }
         } catch (error) {
             console.error('Network error', error);
+            alert(`Error: ${error.message} or a network error has occured`);
             //setMessage('Network error');
         }
     };
@@ -110,7 +112,7 @@ const Register = () => {
                         <Card.Body>
                             <h2 className="text-center mb-4">Register</h2>
                             {error && <Alert variant="danger">{error}</Alert>}
-                            <Form onSubmit={handleRegister}>
+                            <Form onSubmit={handleRegister} className="custom-form">
             <Form.Group controlId="formUsername">
                 <Form.Label>Email</Form.Label>
                 <Form.Control
@@ -155,7 +157,7 @@ const Register = () => {
                 />
             </Form.Group>
             <div className="button-container mt-3">
-                <Button variant="primary" type="submit" block>
+                <Button style={{backgroundColor:"#66b2b2", border:"none"}}  type="submit" block>
                     Register
                 </Button>
                 <Link className="text-button" to="/api/user/">Login</Link>
