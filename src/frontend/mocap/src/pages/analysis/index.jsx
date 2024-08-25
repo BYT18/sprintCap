@@ -314,12 +314,12 @@ const loadImage = (src) => {
     a.click(); // Trigger the download
     document.body.removeChild(a); // Clean up*/
 
-        //const video = new File([e], "blob.mov", { type: e.type });
+        const video = new File([e], "blob.mov", { type: e.type });
 
         setLoading(true);
         const formData = new FormData();
         //formData.append("vid", video);
-        formData.append("vid", e);
+        //formData.append("vid", e);
         const blob = await fetch(p).then(res => res.blob()); // Convert base64 to Blob
         formData.append('pic', blob, 'image.png'); // Add blob to formData with filename
         formData.append('height', height);
@@ -355,9 +355,9 @@ const loadImage = (src) => {
             // Create the POST request using the fetch API
             const token = localStorage.getItem('access_token');
             console.log(token)
-            //const response = await fetch('http://127.0.0.1:8000/test/', {
+            const response = await fetch('http://127.0.0.1:8000/api/test/', {
             //const response = await fetch('http://3.131.119.69:8000/test/', {
-            const response = await fetch('/api/test/', {
+            //const response = await fetch('/api/test/', {
                 method: 'POST',
                 headers: {
                 'Authorization': `Bearer ${token}` // Include the Authorization header
@@ -417,9 +417,10 @@ const loadImage = (src) => {
                 addImage(data.kin4);
                 addImage(data.kin5);
                 const imageUrls = Array.from({ length: 25 }, (_, index) =>
-                    `http://127.0.0.1:8000/media/pics/out_${index + 1}.png`
+                    `https://mocapltd.xyz/api/media/pics/out_${index + 1}.png`
                   );
                 setAllImages(imageUrls)
+                                    //`http://127.0.0.1:8000/media/pics/out_${index + 1}.png`
 
                         const augmentedData = [
                   { title: 'Time between steps', value: '???', unit: 'SECONDS'},

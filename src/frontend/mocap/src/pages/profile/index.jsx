@@ -181,7 +181,7 @@ const Profile = () => {
                                             className="text-box-as-h2"
                                         />
                                          <img
-                                        alt="https://img.freepik.com/premium-vector/man-avatar-profile-picture-vector-illustration_268834-538.jpg"
+                                        alt="Profile Pic"
                                         src="https://varsityblues.ca/images/2024/1/5/Tang_Brandon.jpg?width=300"
                                         className="circular-image mt-3"
                                     />
