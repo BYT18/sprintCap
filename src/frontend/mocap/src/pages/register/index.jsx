@@ -84,6 +84,7 @@ const Register = () => {
                 const data = await response.json();
                 //setProfile(data);
                 //setMessage('Profile updated successfully');
+                window.location.href = '/'
             } else {
                 console.error('Failed to update profile');
                 alert(`Failed to update profile`);

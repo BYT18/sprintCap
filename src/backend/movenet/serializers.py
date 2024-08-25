@@ -11,7 +11,7 @@ class PoseSerializer(serializers.ModelSerializer):
         model = Pose
 
         x_vals = serializers.ListField(
-            child=serializers.IntegerField(min_value=0, max_value=100)
+            child=serializers.FloatField()
         )
 
         height = serializers.FloatField(min_value=0, max_value=300)

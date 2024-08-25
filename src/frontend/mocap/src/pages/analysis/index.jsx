@@ -422,8 +422,8 @@ const loadImage = (src) => {
                 setAllImages(imageUrls)
                                     //`http://127.0.0.1:8000/media/pics/out_${index + 1}.png`
 
-                        const augmentedData = [
-                  { title: 'Time between steps', value: '???', unit: 'SECONDS'},
+                const augmentedData = [
+                  { title: 'Time between steps', value: '0.3', unit: 'SECONDS'},
                   { title: 'Mean step length', value: Number(data.x_vals["maxSL"]).toFixed(3), unit: 'METERS'},
                   { title: 'Mean Ground Time', value: Number(data.x_vals["avg_g"]).toFixed(3), unit: 'SECONDS'},
                   { title: 'Mean Flight Time', value: Number(data.x_vals["avg_f"]).toFixed(3), unit: 'SECONDS'}
@@ -456,12 +456,13 @@ const loadImage = (src) => {
                 formatItemsForTextarea(data.x_vals["feedback"]["TD"],setTextAreaT);
                 setItemsFS(data.x_vals["feedback"]["FS"])
                 formatItemsForTextarea(data.x_vals["feedback"]["FS"],setTextAreaFS);
+
                 //setToeFeed(data.x_vals["feedback"]["TO"])
 
 
                 //setAvgG(data.x_vals["feedback"]["avg_g"])
                 //setAvgF(data.x_vals["feedback"]["avg_F"])
-                //setVelDataL([data.x_vals["vL"],data.x_vals["vR"][1]])
+                //setVelDataL([data.x_vals["vR"],data.x_vals["vR"]])
 
 
                 setVelDataL([data.x_vals["ang"],data.x_vals["ang"]])
@@ -986,9 +987,8 @@ const loadImage = (src) => {
             {
               //data: [1, 4, 2, 5, 8, 6],
               //data: yLineVals
-              data: datas["vL"], curve: "linear",label: 'Velocity Left Knee',
+              data: datas["vR"], curve: "linear",label: 'Angular Velocity Right Knee',
             },
-            { data: datas["vR"], curve: "linear",label: 'Velocity Right Knee',}
           ]}
       />
       </div>

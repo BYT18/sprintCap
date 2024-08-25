@@ -330,6 +330,21 @@ def calculate_velocity(positions, fps):
         # velocities = np.diff(positions, axis=0) * fps
     return velocities
 
+def angular_velocity(angles, fps):
+    # Calculate angular velocity
+    fps = fps
+    angular_velocity = [(angles[i + 1] - angles[i]) * fps for i in range(len(angles) - 1)]
+    # angular_velocity = [(angles[i+1] - angles[i]) for i in range(len(angles) - 1)]
+    # angular_velocity = angles
+
+    # Generate x-values for angular velocity (indices start from 0 to len(angular_velocity) - 1)
+    frames_x = range(len(angular_velocity))
+
+    x = [(frame_index / fps) for frame_index in frames_x]
+
+    return angular_velocity
+
+
 
 """
 might not work if the pole is not always in frame? eg: since we are calling this whenever interested in initial position, 
@@ -753,8 +768,8 @@ def get_gif(vid, pic, ath_height,slowmo, step):
                 tAng = compute_angle(hipR, kneeR, ankR)
                 kneeR_angles.append(tAng)
 
-                tAng = compute_angle(kneeL, midPelvis, kneeR)
-                thigh_angles.append(tAng)
+                #tAng = compute_angle(kneeL, midPelvis, kneeR)
+                #thigh_angles.append(tAng)
 
                 # toeoff
                 if footL[1] + 5 > ground:
@@ -856,6 +871,11 @@ def get_gif(vid, pic, ath_height,slowmo, step):
 
     # variables for kinogram feedback
     feedback = {}
+    kinogram[0] = toe_offs[4][1]
+    kinogram[1] = max_verts[4][1]
+    kinogram[2] = strikes[4][1]
+    kinogram[3] = tdowns[4][1]
+    kinogram[4] = full_supps[4][1]
 
     imp_frames = []
     contact = False
@@ -942,19 +962,28 @@ def get_gif(vid, pic, ath_height,slowmo, step):
                         else:
                             #f = toe_off_feedback(ankR, kneeR, hipR, ankL, kneeL, hipL, footL, heelL, tor_angles[ind])
                             f = toe_off_feedback(ankR, kneeR, hipR, ankL, kneeL, hipL, footL, heelL)
-                        feedback["TO"]=f
+                        if len(f) < 2:
+                            feedback["TO"] = ['Error: nothing detected']
+                        else:
+                            feedback["TO"]=f
                     elif ind == 1:
                         if ankL[0] > ankR[0]:
                             f = max_vert_feedback(ankL, kneeL, hipL, footL, ankR, kneeR, hipR, shouR)
                         else:
                             f = max_vert_feedback(ankR, kneeR, hipR, footR, ankL, kneeL, hipL, shouL)
-                        feedback["MV"] = f
+                        if len(f) < 2:
+                            feedback["MV"] = ['Error: nothing detected']
+                        else:
+                            feedback["MV"] = f
                     elif ind == 2:
                         if ankL[0] > ankR[0]:
                             f = strike_feedback(ankL, kneeL, hipL, footL, ankR, kneeR, hipR)
                         else:
                             f = strike_feedback(ankR, kneeR, hipR, footR, ankL, kneeL, hipL)
-                        feedback["S"]=f
+                        if len(f) < 2:
+                            feedback["S"] = ['Error: nothing detected']
+                        else:
+                            feedback["S"]=f
                     elif ind == 3:
                         elbR_ang = compute_angle(wrR, elbR, shouR)
                         elbL_ang = compute_angle(wrL, elbL, shouL)
@@ -962,13 +991,19 @@ def get_gif(vid, pic, ath_height,slowmo, step):
                             f = touch_down_feedback(ankL, kneeL, hipL, heelL, footL, ankR, kneeR, hipR, footR, heelR, elbR_ang, elbL_ang)
                         else:
                             f = touch_down_feedback(ankR, kneeR, hipR, heelR, footR, ankL, kneeL, hipL, footL, heelL, elbR_ang, elbL_ang)
-                        feedback["TD"]=f
+                        if len(f) <2 :
+                            feedback["TD"] = ['Error: nothing detected']
+                        else:
+                            feedback["TD"]=f
                     else:
                         if ankL[0] > ankR[0]:
                             f = full_supp_feedback(ankL, kneeL, hipL, footL, heelL, ankR, kneeR, hipR, footR, heelR)
                         else:
                             f = full_supp_feedback(ankR, kneeR, hipR, ankL, footR, heelR, kneeL, hipL, footL, heelL)
-                        feedback["FS"]=f
+                        if len(f) < 2:
+                            feedback["FS"] = ['Error: nothing detected']
+                        else:
+                            feedback["FS"]=f
 
             # Draw the pose annotation on the frame
             if results.pose_landmarks and contact == True:
@@ -1042,13 +1077,13 @@ def get_gif(vid, pic, ath_height,slowmo, step):
     else:
         wind = 20
 
-    kneeR_pos = pos_smooth(kneeR_pos,wind)
-    ankR_pos = pos_smooth(ankR_pos,wind)
-    hipR_pos = pos_smooth(hipR_pos,wind)
+    kneeR_pos2 = pos_smooth(kneeR_pos,wind)
+    ankR_pos2 = pos_smooth(ankR_pos,wind)
+    hipR_pos2 = pos_smooth(hipR_pos,wind)
 
     kneeR_angles = []
     for i in range(len(kneeR_pos)):
-        a = compute_angle(hipR_pos[i], kneeR_pos[i], ankR_pos[i])
+        a = compute_angle(hipR_pos2[i], kneeR_pos2[i], ankR_pos2[i])
         kneeR_angles.append(a)
 
     signal = np.array(kneeR_angles)
@@ -1125,7 +1160,7 @@ def get_gif(vid, pic, ath_height,slowmo, step):
     Velocity and Smoothness Analysis 
     """
     # Calculate velocities
-    velocitiesL = calculate_velocity(kneeL_pos, fps)
+    """velocitiesL = calculate_velocity(kneeL_pos, fps)
     velocitiesR = calculate_velocity(kneeR_pos, fps)
 
     # Compute velocity magnitudes
@@ -1139,7 +1174,7 @@ def get_gif(vid, pic, ath_height,slowmo, step):
     # Convert numpy arrays to lists for serialization
     velocity_magnitudeL_list = velocity_magnitudeL.tolist()
     velocity_magnitudeR_list = velocity_magnitudeR.tolist()
-    time_velocity_list = time_velocity.tolist()
+    time_velocity_list = time_velocity.tolist()"""
 
     """num_frames = len(imp_frames)
     fig, axs = plt.subplots(1, num_frames, figsize=(num_frames * 5, 5))
@@ -1172,18 +1207,17 @@ def get_gif(vid, pic, ath_height,slowmo, step):
     flight_times = f_g_times[0]
 
     # watch out for last flight time is always 0
-    if len(sLength) != 0:
-        max_step_len = sum(sLength)/len(sLength)
-        if len(ground_times) > 0 and len(flight_times) > 1:
-            avg_ground_time = sum(ground_times) / len(ground_times)
-            avg_flight_time = sum(flight_times) / (len(flight_times) - 1)
-            time_btw_steps = 0
-            print(avg_ground_time)
-        else:
-            avg_ground_time = 0
-            avg_flight_time = 0
-    else:
+    if len(sLength) == 0:
         max_step_len = 0
+    else:
+        max_step_len = sum(sLength)/len(sLength)
+
+    if len(ground_times) > 0 and len(flight_times) > 1:
+        avg_ground_time = sum(ground_times) / len(ground_times)
+        avg_flight_time = sum(flight_times) / (len(flight_times) - 1)
+        time_btw_steps = 0
+        print(avg_ground_time)
+    else:
         avg_ground_time = 0
         avg_flight_time = 0
 
@@ -1194,15 +1228,17 @@ def get_gif(vid, pic, ath_height,slowmo, step):
         'P_L_hip': hipL_pos,
         'P_pelv': mid_pelvis_pos,
         'P_R_elbow': elbR_pos,
+        #'P_R_toe': toeR_pos,
         # 'P_L_elbow': elbL_pos,
         'P_R_shou': shouR_pos,
         # 'P_L_shou': shouL_pos,
         'P_R_ankle': ankR_pos,
         'P_R_wr': wrR_pos,
-        # 'P_L_ankle': ankL_pos,
+        'P_L_ankle': ankL_pos,
         #'P_R_toe': toeR_pos,
         'P_head': nose_pos,
     }
+    print("test")
 
     """# Example x-coordinate positions (from pose estimation)
     x_coords = [x for x, y in nose_pos]
@@ -1231,10 +1267,41 @@ def get_gif(vid, pic, ath_height,slowmo, step):
     print("Displacements (meters):", displacements_pixels)
     print("Horizontal Velocities (m/s):", velocities_mps)"""
 
+    from scipy.interpolate import interp1d
+
+    # Define the upsampling function using interpolation
+    def upsample_coordinates(coord_array, upsample_factor):
+        # Convert array of tuples to separate arrays
+        x_coords, y_coords = zip(*coord_array)
+        x_coords = np.array(x_coords)
+        y_coords = np.array(y_coords)
+
+        # Create new indices for upsampling
+        original_indices = np.arange(len(x_coords))
+        new_indices = np.linspace(0, len(x_coords) - 1, len(x_coords) * upsample_factor)
+
+        # Interpolate x and y coordinates
+        x_interpolator = interp1d(original_indices, x_coords, kind='linear', fill_value="extrapolate")
+        y_interpolator = interp1d(original_indices, y_coords, kind='linear', fill_value="extrapolate")
+
+        x_upsampled = x_interpolator(new_indices)
+        y_upsampled = y_interpolator(new_indices)
+
+        # Combine back into array of tuples
+        upsampled_coords = np.vstack((x_upsampled, y_upsampled)).T
+
+        return [tuple(coord) for coord in upsampled_coords]
+
     smoothed_data = {}
+
+    if slowmo == 1:
+        window_size = 20
+    else:
+        window_size = 5
 
     for key, value in pos_data.items():
         # Split the tuples into two lists: one for x coordinates, one for y coordinates
+        # print(key)
         x_values, y_values = zip(*value)
 
         # Create Loess objects for x and y values
@@ -1242,8 +1309,8 @@ def get_gif(vid, pic, ath_height,slowmo, step):
         loess_y = Loess(range(len(y_values)), list(y_values))
 
         # Smooth x and y values separately
-        smoothed_x = [loess_x.estimate(i, window=12, use_matrix=False, degree=3) for i in range(len(x_values))]
-        smoothed_y = [loess_y.estimate(i, window=12, use_matrix=False, degree=3) for i in range(len(y_values))]
+        smoothed_x = [loess_x.estimate(i, window=window_size, use_matrix=False, degree=3) for i in range(len(x_values))]
+        smoothed_y = [loess_y.estimate(i, window=window_size, use_matrix=False, degree=3) for i in range(len(y_values))]
 
         # Combine smoothed x and y values back into tuples
         smoothed_positions = list(zip(smoothed_x, smoothed_y))
@@ -1252,6 +1319,25 @@ def get_gif(vid, pic, ath_height,slowmo, step):
         smoothed_data[key] = smoothed_positions
 
 
-    return [{"ground":ground_times,"flight":flight_times,"kneePos":kneeL_pos,"feedback":feedback,
+    upsample_factor = 8
+    if slowmo == 0:
+        smoothed_data = {key: upsample_coordinates(value, upsample_factor) for key, value in smoothed_data.items()}
+
+
+    # Angular velocities
+    thigh_angles = []
+    for i in range(len(smoothed_data["P_R_knee"])):
+        a = compute_angle(smoothed_data["P_R_knee"][i], smoothed_data["P_pelv"][i], smoothed_data["P_L_knee"][i])
+        thigh_angles.append(a)
+
+    kneeR_angles = []
+    for i in range(len(smoothed_data['P_R_knee'])):
+        a = compute_angle(smoothed_data['P_R_hip'][i], smoothed_data['P_R_knee'][i], smoothed_data['P_R_ankle'][i])
+        kneeR_angles.append(a)
+    AV_R_knee = angular_velocity(kneeR_angles, fps)
+    time_velocity = np.arange(len(AV_R_knee)) / fps
+    time_velocity_list = time_velocity.tolist()
+
+    return [{"ground":ground_times,"flight":flight_times,"kneePos":kneeR_pos,"feedback":feedback,
             "avg_f":avg_flight_time, "avg_g":avg_ground_time, "maxSL":max_step_len, "sLen" : sLength, "ang":thigh_angles,
-            "vL": velocity_magnitudeL_list, "vR": velocity_magnitudeR_list, "vT": time_velocity_list}, image_urls]
+            "vL": [], "vR": AV_R_knee, "vT": time_velocity_list}, image_urls]
