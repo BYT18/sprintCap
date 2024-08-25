@@ -167,6 +167,8 @@ CORS_ALLOWED_ORIGINS = [
 "http://3.131.119.69:8000"
 ]
 
+CSRF_TRUSTED_ORIGINS = ['https://mocapltd.xyz','https://*.127.0.0.1', 'http://localhost:3000','http://localhost:8000']
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
