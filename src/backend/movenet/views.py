@@ -7,6 +7,7 @@ import os
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.exceptions import APIException
+from django.views.decorators.csrf import csrf_exempt
 
 #from rest_framework.viewsets import ViewSet
 from rest_framework import status
@@ -113,6 +114,7 @@ class RegisterView(generics.CreateAPIView):
     permission_classes = (AllowAny,)
     serializer_class = RegisterSerializer
 
+    @csrf_exempt
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
@@ -137,6 +139,7 @@ class LoginView(generics.GenericAPIView):
     permission_classes = (AllowAny,)
     serializer_class = LoginSerializer
 
+    @csrf_exempt
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
