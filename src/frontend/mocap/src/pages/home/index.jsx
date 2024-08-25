@@ -9,6 +9,10 @@ import myImage2 from "../../assets/max_ver3.png";
 import myImage3 from "../../assets/strike_R2.png";
 import myImage4 from "../../assets/toe_off_L2.png";
 import myImage5 from "../../assets/full_sup_L2.png";
+import phil from "../../assets/philipp.webp";
+import rosty from "../../assets/rostam.jpg";
+import bran from "../../assets/bran.jpg";
+import stock_sprint from "../../assets/stock_sprinter.png";
 import me from "../../assets/tang.png";
 import bolt from "../../assets/usain.png";
 import splitter from "../../assets/Untitled.png";
@@ -162,7 +166,7 @@ const Item = ({ item }: Props) => {
           <h1>A New Vision.</h1>
           <p>At <span style={{font:'bold'}}>MoCap</span> we believe that technology should empower athletes to push beyond limits, break barriers, and achieve greatness. We envision a future where AI becomes an indispensable ally in an athlete's journey, offering real-time analysis and strategic guidance to enhance performance across various sports disciplines.</p>
         </div>
-        <img class="img-fluid" src="https://png.pngtree.com/png-vector/20231115/ourmid/pngtree-young-man-sprinter-runner-running-silhouette-studio-shot-png-image_10589362.png" />
+        <img class="img-fluid" src={stock_sprint}/>
       </div>
     </div>
   </section>
@@ -419,7 +423,7 @@ Elevate your sprinting and running performance with our cutting-edge platform th
                 style={{ minHeight: "50vh",alignItems: "center", display: "flex", flexDirection: "column"}}
               >
                 <h3>Brandon Tang</h3>
-                 <img class="img-fluid team-image" src="https://varsityblues.ca/images/2024/1/5/Tang_Brandon.jpg?width=300"
+                 <img class="img-fluid team-image" src={bran}
                  style={{ maxHeight: "300px", objectFit: "contain", marginBottom: "1rem" }}
                  />
                 <p>CS Student</p>
@@ -433,7 +437,7 @@ Elevate your sprinting and running performance with our cutting-edge platform th
                 style={{display: "flex", flexDirection: "column", minHeight: "50vh",alignItems: "center"}}
               >
                 <h3>Rostam Turner</h3>
-                 <img class="img-fluid team-image" src="https://dxbhsrqyrr690.cloudfront.net/sidearm.nextgen.sites/varsityblues.ca/images/2023/1/12/Turner_Rostam__Assistant_Coach_.jpg?width=300"
+                 <img class="img-fluid team-image" src={rosty}
                 style={{ maxHeight: "300px", objectFit: "contain", marginBottom: "1rem" }}
                 />
                 <p>Sprint Coach</p>
@@ -447,7 +451,7 @@ Elevate your sprinting and running performance with our cutting-edge platform th
                 style={{ display: "flex", flexDirection: "column", minHeight: "50vh",alignItems: "center"}}
               >
                 <h3>Philipp Gulde</h3>
-                 <img class="img-fluid team-image" src="https://www.hs.mh.tum.de/fileadmin/_processed_/6/6/csm_HMS_Gulde_bcfad765e1.webp"
+                 <img class="img-fluid team-image" src={phil}
               style={{ maxHeight: "300px", objectFit: "contain", marginBottom: "1rem" }}
               />
                   <p>Professor</p>

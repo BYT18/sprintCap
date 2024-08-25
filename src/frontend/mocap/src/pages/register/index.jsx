@@ -31,8 +31,8 @@ const Register = () => {
         formData.append("email", email);
         formData.append('password', password);
         try {
-            //const response = await fetch('http://127.0.0.1:8000/register/', {
-            const response = await fetch('http://3.131.119.69:8000/login/', {
+            const response = await fetch('http://127.0.0.1:8000/register/', {
+            //const response = await fetch('http://3.131.119.69:8000/login/', {
                 method: 'POST',
                 headers: {},
                 body: formData,
@@ -70,8 +70,8 @@ const Register = () => {
 
         const token = localStorage.getItem('access_token');
         try {
-            //const response = await fetch('http://127.0.0.1:8000/create/', {
-            const response = await fetch('http://3.131.119.69:8000/create/', {
+            const response = await fetch('http://127.0.0.1:8000/create/', {
+            //const response = await fetch('http://3.131.119.69:8000/create/', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
