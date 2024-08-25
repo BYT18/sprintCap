@@ -4,6 +4,9 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.http import FileResponse
 import os
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.exceptions import APIException
 
 #from rest_framework.viewsets import ViewSet
 from rest_framework import status
@@ -32,45 +35,43 @@ import math"""
 
 # view for registering users
 class AnalysisView(generics.ListCreateAPIView):
-#class AnalysisView(views.APIView):
-#class AnalysisView(ViewSet):
     serializer_class = PoseSerializer
     queryset = Pose.objects.all()
 
     def perform_create(self, serializer):
-    #    serializer.save(vid=self.request.kwar)
+        try:
+            #print(serializer.validated_data['vid'].file)
+            #print(serializer.validated_data['vid'])
+            if serializer.validated_data['analysis_type'] == 0:
+                g = get_gif(serializer.validated_data['vid'],serializer.validated_data['pic'], serializer.validated_data['height'], serializer.validated_data['slowmo'],serializer.validated_data['step'])
+            else:
+                g = get_analysis(serializer.validated_data['vid'],serializer.validated_data['pic'], serializer.validated_data['height'], serializer.validated_data['slowmo'],serializer.validated_data['step'])
+            serializer.save(pic='./pics/output_video.mp4',kin1='./pics/key_frame_1.png',kin2='./pics/key_frame_2.png',kin3='./pics/key_frame_3.png',kin4='./pics/key_frame_4.png',kin5='./pics/key_frame_5.png', x_vals = g[0])
 
-    #def get_queryset(self):
-    #def get(self, request, format=None):
+            # Construct the response
+            response_data = {
+                "output_video": './pics/output_video.mp4',
+                "key_frames": [
+                    './pics/key_frame_1.png',
+                    './pics/key_frame_2.png',
+                    './pics/key_frame_3.png',
+                    './pics/key_frame_4.png',
+                    './pics/key_frame_5.png'
+                ],
+                "other": g,
+            }
 
-        #return PetSeeker.objects.create(**serializer.validated_data, user=self.request.user)
-        print(serializer.validated_data['vid'].file)
-        print(serializer.validated_data['vid'])
-        if serializer.validated_data['analysis_type'] == 0:
-            g = get_gif(serializer.validated_data['vid'],serializer.validated_data['pic'], serializer.validated_data['height'], serializer.validated_data['slowmo'],serializer.validated_data['step'])
-        else:
-            g = get_analysis(serializer.validated_data['vid'],serializer.validated_data['pic'], serializer.validated_data['height'], serializer.validated_data['slowmo'],serializer.validated_data['step'])
-        #s = PoseSerializer
-        #save(vid=g)#
+            return Response(response_data, status=status.HTTP_201_CREATED)
 
-        #serializer.save(pic='./pics/output_video.mp4')
-        #serializer.save(pic='./pics/output_video.mov')
-        serializer.save(pic='./pics/output_video.mp4',kin1='./pics/key_frame_1.png',kin2='./pics/key_frame_2.png',kin3='./pics/key_frame_3.png',kin4='./pics/key_frame_4.png',kin5='./pics/key_frame_5.png', x_vals = g[0])
+        except ValueError as e:
+            raise APIException(f"Value Error: {str(e)}")
+        except FileNotFoundError as e:
+            raise APIException(f"File Not Found Error: {str(e)}")
+        except Exception as e:
+            # Handle unexpected errors
+            raise APIException(f"An unexpected error occurred: {str(e)}")
 
-        # Construct the response
-        response_data = {
-            "output_video": './pics/output_video.mp4',
-            "key_frames": [
-                './pics/key_frame_1.png',
-                './pics/key_frame_2.png',
-                './pics/key_frame_3.png',
-                './pics/key_frame_4.png',
-                './pics/key_frame_5.png'
-            ],
-            "other": g,
-        }
 
-        return Response(response_data, status=status.HTTP_201_CREATED)
 #serializer.save(pic=g)
         #return Response(r'C:\Users\hocke\Desktop\UofT\Third Year\CSC309\moveNet\src\backend\movenet\test.mp4')
         #return Response(r'C:\Users\hocke\Desktop\UofT\Third Year\CSC309\moveNet\src\backend\media\pics\output_video.mp4')
