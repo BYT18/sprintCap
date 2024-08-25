@@ -55,13 +55,16 @@ const xLabels = [
 const VideoUploader = () => {
   const [show, setShow] = useState(false);
   const handleClose = () => setShow(false);
-  const handleShow = () => setShow(true);
 
   const ref = useRef(null);
   const { scrollXProgress } = useScroll({ container: ref });
   const [videoFile, setVideoFile] = useState(null);
   const [videoURL, setVideoURL] = useState('');
   const [images, setImages] = useState([]);
+  const [displayedImages, setDisplayedImages] = useState([]);
+  const [allImages, setAllImages] = useState([]);
+  const [selectedIndex, setSelectedIndex] = useState(null);
+  const [selectedSaveIndex, setSelectedSaveIndex] = useState(null);
   const [testImg, setTestImg] = useState(null);
   const [resultVid, setResultVid] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -99,6 +102,46 @@ const VideoUploader = () => {
   const [showG1, setShowG1] = useState(false);
   const handleCloseG1 = () => setShowG1(false);
   const handleShowG1 = () => setShowG1(true);
+  const [showFeed, setShowFeed] = useState(false);
+  const [feedInd, setFeedInd] = useState(null);
+  const handleCloseFeed = () => setShowFeed(false);
+  const handleShowFeed = (i) => {
+    setFeedInd(i);
+    setShowFeed(true);
+  }
+
+  const getFeedbackMessage = (index) => {
+        switch (index) {
+            case 0:
+                return 'Thigh ROM is crucial to generate power. Lack of ROM could be due weakness in glutes and quad.';
+            case 1:
+                return 'Knee SPARC measures the smoothness of movment in knees. It is highly dependent on quad to hamstring strength ratio.';
+            case 2:
+                return 'Nice';
+            case 3:
+                return 'Bad';
+            default:
+                return 'No feedback';
+        }
+    };
+
+   // Handler function for carousel image click
+  const handleCarouselClick = (index) => {
+    setSelectedSaveIndex(index)
+    const start = index * 5;
+    const end = start + 5;
+    setDisplayedImages(allImages.slice(start, end));
+    console.log(displayedImages)
+    setShow(true);
+  };
+
+  const handleSaveImage = () => {
+    console.log(images[0])
+    console.log(selectedIndex)
+    images[selectedSaveIndex] = displayedImages[selectedIndex]
+    console.log(images[0])
+    setShow(false);
+  };
 
   const handleToggleChange = (e) => {
         setIsToggled(e.target.checked);
@@ -280,6 +323,7 @@ const loadImage = (src) => {
         const blob = await fetch(p).then(res => res.blob()); // Convert base64 to Blob
         formData.append('pic', blob, 'image.png'); // Add blob to formData with filename
         formData.append('height', height);
+        formData.append('image_urls',[])
         console.log(analType)
         formData.append('analysis_type', analType);
 
@@ -311,8 +355,8 @@ const loadImage = (src) => {
             // Create the POST request using the fetch API
             const token = localStorage.getItem('access_token');
             console.log(token)
-            //const response = await fetch('http://127.0.0.1:8000/test/', {
-            const response = await fetch('http://3.131.119.69:8000/test/', {
+            const response = await fetch('http://127.0.0.1:8000/test/', {
+            //const response = await fetch('http://3.131.119.69:8000/test/', {
                 method: 'POST',
                 headers: {
                 'Authorization': `Bearer ${token}` // Include the Authorization header
@@ -360,11 +404,37 @@ const loadImage = (src) => {
                 //setImages(data.pic)
                 setTestImg(data.pic)
                 setImages([])
+                //console.log("After clearing:", images);
+                setDisplayedImages([]);
+                setAllImages([]);
+                setSelectedIndex(null);
+                setSelectedSaveIndex(null);
+
                 addImage(data.kin1);
                 addImage(data.kin2);
                 addImage(data.kin3);
                 addImage(data.kin4);
                 addImage(data.kin5);
+                const imageUrls = Array.from({ length: 25 }, (_, index) =>
+                    `http://127.0.0.1:8000/media/pics/out_${index + 1}.png`
+                  );
+                setAllImages(imageUrls)
+
+                        const augmentedData = [
+                  { title: 'Time between steps', value: '???', unit: 'SECONDS'},
+                  { title: 'Mean step length', value: Number(data.x_vals["maxSL"]).toFixed(3), unit: 'METERS'},
+                  { title: 'Mean Ground Time', value: Number(data.x_vals["avg_g"]).toFixed(3), unit: 'SECONDS'},
+                  { title: 'Mean Flight Time', value: Number(data.x_vals["avg_f"]).toFixed(3), unit: 'SECONDS'}
+                ];
+                setAnalData(augmentedData);
+
+                const augmentedData2 = [
+                  { title: 'Thigh ROM', value: '2', unit: 'SECONDS'},
+                  { title: 'Knee SPARC', value: '0.5', unit: 'METERS'},
+                  { title: 'Shoulder AV', value: '0.8', unit: 'SECONDS'},
+                  { title: 'Hip SE', value: '1.2', unit: 'SECONDS'}
+                ];
+                setAnalData2(augmentedData2);
 
 
                 // Convert kneePos array to an array of objects with x and y properties
@@ -393,21 +463,6 @@ const loadImage = (src) => {
 
 
                 setVelDataL([data.x_vals["ang"],data.x_vals["ang"]])
-                const augmentedData = [
-                  { title: 'Time between steps', value: '???', unit: 'SECONDS'},
-                  { title: 'Mean step length', value: Number(data.x_vals["maxSL"]).toFixed(3), unit: 'METERS'},
-                  { title: 'Mean Ground Time', value: Number(data.x_vals["avg_g"]).toFixed(3), unit: 'SECONDS'},
-                  { title: 'Mean Flight Time', value: Number(data.x_vals["avg_f"]).toFixed(3), unit: 'SECONDS'}
-                ];
-                setAnalData(augmentedData);
-
-                const augmentedData2 = [
-                  { title: 'Thigh ROM', value: '2', unit: 'SECONDS'},
-                  { title: 'Knee SPARC', value: '0.5', unit: 'METERS'},
-                  { title: 'Shoulder AV', value: '0.8', unit: 'SECONDS'},
-                  { title: 'Hip SE', value: '1.2', unit: 'SECONDS'}
-                ];
-                setAnalData2(augmentedData2);
 
                 setLoading(false);
 
@@ -585,7 +640,7 @@ const loadImage = (src) => {
             <div className="video-container">
             <video controls src={videoURL}>
                 Your browser does not support the video tag.
-              </video>
+            </video>
               {/*<video controls src={videoURL}>
                 Your browser does not support the video tag.
               </video>
@@ -730,7 +785,7 @@ const loadImage = (src) => {
         <motion.li class="anli"
             whileHover={{scale:1.02}}
         >
-          <img src={images[0]} className="img-fluid" alt="Image" onClick={handleShow} style={{ cursor: 'pointer' }}/>
+          <img src={images[0]} className="img-fluid" alt="Image" onClick={() => handleCarouselClick(0)} style={{ cursor: 'pointer' }}/>
           <div class="text-container">
               <h3 >Toe Off</h3>
               <textarea
@@ -745,7 +800,7 @@ const loadImage = (src) => {
          <motion.li class="anli"
             whileHover={{scale:1.02}}
         >
-            <img src={images[1]} onClick={handleShow} style={{ cursor: 'pointer' }}/>
+            <img src={images[1]} onClick={() => handleCarouselClick(1)} style={{ cursor: 'pointer' }}/>
             <div class="text-container">
               <h3 >Max Vertical Projection</h3>
               {/*<div class="scrollable-list" contenteditable="true">
@@ -769,7 +824,7 @@ const loadImage = (src) => {
          <motion.li class="anli"
             whileHover={{scale:1.02}}
         >
-            <img src={images[2]} onClick={handleShow} style={{ cursor: 'pointer' }}/>
+            <img src={images[2]} onClick={() => handleCarouselClick(2)} style={{ cursor: 'pointer' }}/>
             <div class="text-container">
               <h3 >Strike</h3>
               <textarea
@@ -784,7 +839,7 @@ const loadImage = (src) => {
          <motion.li class="anli"
             whileHover={{scale:1.02}}
         >
-            <img src={images[3]} onClick={handleShow} style={{ cursor: 'pointer' }}/>
+            <img src={images[3]} onClick={() => handleCarouselClick(3)} style={{ cursor: 'pointer' }}/>
             <div class="text-container">
               <h3 >Touch Down</h3>
               <textarea
@@ -799,7 +854,7 @@ const loadImage = (src) => {
          <motion.li class="anli"
             whileHover={{scale:1.02}}
         >
-            <img src={images[4]} onClick={handleShow} style={{ cursor: 'pointer' }}/>
+            <img src={images[4]} onClick={() => handleCarouselClick(4)} style={{ cursor: 'pointer' }}/>
             <div class="text-container">
               <h3 >Full Support</h3>
               <textarea
@@ -821,8 +876,8 @@ const loadImage = (src) => {
           <Modal.Title>Select Image</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-            <Carousel data-bs-theme="dark" interval={null}>
-              {images.map((image, index) => (
+            <Carousel data-bs-theme="dark" interval={null} onSelect={(index) => setSelectedIndex(index)}>
+              {displayedImages.map((image, index) => (
                 <Carousel.Item key={index}>
                     <img
                         className="d-block w-100 carousel-image" // Apply custom CSS class
@@ -837,7 +892,7 @@ const loadImage = (src) => {
           <Button variant="secondary" onClick={handleClose}>
             Close
           </Button>
-          <Button variant="primary" onClick={handleClose}>
+          <Button variant="primary" onClick={handleSaveImage}>
             Save Changes
           </Button>
         </Modal.Footer>
@@ -960,6 +1015,7 @@ const loadImage = (src) => {
               key={index}
               className="analytics-card"
               whileHover={{ scale: 1.05 }}
+              onClick={() => handleShowFeed(index)}
             >
               <div className="anal-card-content" >
                 <h4>{item.title}</h4>
@@ -970,6 +1026,16 @@ const loadImage = (src) => {
           ))}
   </div>
   </div>
+  <Modal show={showFeed} onHide={handleCloseFeed} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Feedback</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+         {getFeedbackMessage(feedInd)}
+        </Modal.Body>
+        <Modal.Footer>
+        </Modal.Footer>
+      </Modal>
   </section>
   </div>
 )}

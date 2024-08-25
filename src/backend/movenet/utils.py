@@ -1,5 +1,6 @@
 #!pip install -q mediapipe
 #!wget -O pose_landmarker.task -q https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_heavy/float16/1/pose_landmarker_heavy.task
+import heapq
 import statistics
 
 from mediapipe import solutions
@@ -583,10 +584,10 @@ def get_gif(vid, pic, ath_height,slowmo, step):
     #video_path = 'C:\Users\hocke\Desktop\UofT\Third Year\CSC309\moveNet\src\fly.mov'
     video_path = vid
     #output_path = '/pics/output_video.mp4'
-    output_path = os.path.join('media/pics', 'output_video.mp4')
+    output_path = os.path.join('media/pics', 'output_video.mov')
     #output_path = os.path.join('/pics', 'output_video.mp4')
     # Save the uploaded file to a temporary file
-    with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as temp_file:
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.mov') as temp_file:
         for chunk in vid.chunks():
             temp_file.write(chunk)
         temp_file_path = temp_file.name
@@ -604,6 +605,11 @@ def get_gif(vid, pic, ath_height,slowmo, step):
     out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))
 
     # variables for frame analysis
+    toe_offs = []
+    max_verts = []
+    strikes = []
+    tdowns = []
+    full_supps = []
     kinogram = [0,0,0,0,0]
     max_knee_seperation = 0
     output = []
@@ -751,43 +757,82 @@ def get_gif(vid, pic, ath_height,slowmo, step):
                 thigh_angles.append(tAng)
 
                 # toeoff
-                # max thigh seperation
-                # works for toe off, could also do max distance between ankle and opposite knee
-                # to get different feet/sides, just check which foot is in front of pelvis
-                if ((kneeR[0] - kneeL[0]) ** 2 + (kneeR[1] - kneeL[1]) ** 2) ** 0.5 > max_knee_seperation and footL[
-                    1] + 5 > ground:
+                if footL[1] + 5 > ground:
                     max_knee_seperation = ((kneeR[0] - kneeL[0]) ** 2 + (kneeR[1] - kneeL[1]) ** 2) ** 0.5
-                    # key_frames = frame_idx
                     kinogram[0] = frame_idx
+                    if toe_offs and any(abs(frame_idx - fn) < 2 for _, fn in toe_offs):
+                        pass
+                    if len(toe_offs) < 5:
+                        heapq.heappush(toe_offs, (max_knee_seperation, frame_idx))
+                    else:
+                        # Check if the new value is larger than the smallest value in the heap
+                        if max_knee_seperation > toe_offs[0][0]:  # Compare based on the value
+                            # Replace the smallest value with the new tuple
+                            heapq.heappushpop(toe_offs, (max_knee_seperation, frame_idx))
 
-                # max proj / vert
-                # if abs(kneeL[0] - kneeR[0]) > 30 and abs(footL[1] - footR[1]) < height and abs(kneeL[1] - ankL[1]) < 50 and abs(kneeR[0] - ankR[0]) < 50:
-                if abs(kneeL[0] - kneeR[0]) > 30 and abs(footL[1] - footR[1]) < height:
+                # max proj /
+                if abs(kneeL[0] - kneeR[0]) > 20:
                     height = abs(footL[1] - footR[1])
                     kinogram[1] = frame_idx
 
+                    if max_verts and any(abs(frame_idx - fn) < 2 for _, fn in max_verts):
+                        pass
+                    else:
+                        if len(max_verts) < 5:
+                            heapq.heappush(max_verts, (-height, frame_idx))
+                        else:
+                            if -height > max_verts[0][0]:
+                                heapq.heappushpop(max_verts, (-height, frame_idx))
+
                 # full support left
-                # should also check foot is on ground
-                # possible check ankle score too
-                if abs(ankL[0] - midPelvis[0]) < knee_hip_alignment_support and ankR[1] < ankL[1]:
+                if ankR[1] < ankL[1]:
                     knee_hip_alignment_support = abs(ankL[0] - midPelvis[0])
                     knee_ank_alignment_support = abs(kneeL[0] - ankL[0])
                     pix = footL[1] - nose[1]
                     if pix > height_in_pixels:
                         height_in_pixels = pix
                     kinogram[4] = frame_idx
+                    if full_supps and any(abs(frame_idx - fn) < 2 for _, fn in full_supps):
+                        pass
+                    if len(full_supps) < 5:
+                        heapq.heappush(full_supps, (-knee_hip_alignment_support, frame_idx))
+                    else:
+                        if -knee_hip_alignment_support > full_supps[0][0]:
+                            heapq.heappushpop(full_supps, (-knee_hip_alignment_support, frame_idx))
 
                 # strike R
-                # opposite leg is close to underneath COM and strike foot is infront of body and opposite foot higher than strike knee
-                if abs(kneeL[0] - hipL[0]) < knee_hip_alignment_strike and ankL[1] + 15 < ground and ankR[0] > hipR[0]:
+                if ankL[1] + 15 < ground and ankR[0] > hipR[0]:
                     # and ankL[1]<kneeR[1]
                     knee_hip_alignment_strike = abs(kneeL[0] - hipL[0])
                     kinogram[2] = frame_idx
 
+                    if strikes and any(abs(frame_idx - fn) < 2 for _, fn in strikes):
+                        pass  # Skip this frame if it's too close to an existing one
+
+                    if len(strikes) < 5:
+                        # Add the new value to the heap if we have fewer than 5 elements
+                        heapq.heappush(strikes, (-knee_hip_alignment_strike, frame_idx))
+                    else:
+                        # Check if the new value is larger than the smallest value in the heap
+                        if -knee_hip_alignment_strike > strikes[0][0]:  # Compare based on the value
+                            # Replace the smallest value with the new tuple
+                            heapq.heappushpop(strikes, (-knee_hip_alignment_strike, frame_idx))
+
                 # touch down
-                if ((ankR[1] - ankL[1]) ** 2) ** 0.5 > max_y:
-                    max_y = ((ankR[1] - ankL[1]) ** 2) ** 0.5
-                    kinogram[3] = frame_idx
+                max_y = ((ankR[1] - ankL[1]) ** 2) ** 0.5
+                kinogram[3] = frame_idx
+
+                if tdowns and any(abs(frame_idx - fn) < 2 for _, fn in tdowns):
+                    pass  # Skip this frame if it's too close to an existing one
+
+                if len(tdowns) < 5:
+                    # Add the new value to the heap if we have fewer than 5 elements
+                    heapq.heappush(tdowns, (max_y, frame_idx))
+                else:
+                    # Check if the new value is larger than the smallest value in the heap
+                    if max_y > tdowns[0][0]:  # Compare based on the value
+                        # Replace the smallest value with the new tuple
+                        heapq.heappushpop(tdowns, (max_y, frame_idx))
 
                 # if abs(kneeL[0] - kneeR[0]) < 10 or (abs(elbL[0] - elbR[0]) < 10 and abs(kneeL[0] - kneeR[0]) < 25):
                 if abs(kneeL[0] - kneeR[0]) < 25 and (abs(footL[1] - heelL[1]) < 10 or abs(footR[1] - heelR[1]) < 10):
@@ -828,6 +873,8 @@ def get_gif(vid, pic, ath_height,slowmo, step):
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Codec for mp4 files
     out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))"""
     cap = cv2.VideoCapture(video_path)
+    #fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Codec for mp4 files
+    #out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))
 
     with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.7, min_tracking_confidence=0.7) as pose:
         while cap.isOpened():
@@ -1016,24 +1063,28 @@ def get_gif(vid, pic, ath_height,slowmo, step):
 
     padding = math.ceil(len(output) * 0.05)
     # Write the trimmed frames to the output video
-    #if len(anomalies)>0:
-    #    for i in range(anomalies[len(anomalies) - 1] + padding, len(output)):
-    #        out.write(output[i])
-    #else:
-    for i in range(len(output)):
-        out.write(output[i])
+    if len(anomalies)>0:
+        for i in range(anomalies[len(anomalies) - 1] + padding, len(output)):
+            out.write(output[i])
+    else:
+        for i in range(len(output)):
+            out.write(output[i])
     out.release()
-    #fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Codec for mp4 files
-    #out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))
 
         # Now, convert the output video to MP4 using ffmpeg
-    """try:
+    try:
             v_path = os.path.join('media/pics', 'output_video.mp4')
             subprocess.run(['ffmpeg', '-y', '-i', output_path, '-vcodec', 'h264', '-acodec', 'aac', v_path], check=True)
 
             print("Conversion to MP4 successful.")
     except subprocess.CalledProcessError as e:
-            print(f"Conversion to MP4 failed: {e}")"""
+            print(f"Conversion to MP4 failed: {e}")
+
+    kinogram[0] = toe_offs[4][1]
+    kinogram[1] = max_verts[4][1]
+    kinogram[2] = strikes[4][1]
+    kinogram[3] = tdowns[4][1]
+    kinogram[4] = full_supps[4][1]
 
     for i in range(len(kinogram)):
         # Convert the frame from BGR to RGB
@@ -1048,21 +1099,25 @@ def get_gif(vid, pic, ath_height,slowmo, step):
         plot_path = os.path.join('media/pics', f'key_frame_{i + 1}.png')
         plt.savefig(plot_path, bbox_inches='tight', pad_inches=0)
 
-    """image_urls = []
-    for i in range(len(output)):
-        # Convert the frame from BGR to RGB
-        rgb_frame = cv2.cvtColor(output[i], cv2.COLOR_BGR2RGB)
+    image_urls = []
+    images_heaps = [toe_offs,max_verts,strikes,tdowns, full_supps]
+    counter = 1
+    for x in images_heaps:
+        print(x)
+        for y in x:
+            i = y[1]
+            # Convert the frame from BGR to RGB
+            rgb_frame = cv2.cvtColor(output[i], cv2.COLOR_BGR2RGB)
+            # Create a plot
+            plt.figure(figsize=(10, 6))
+            plt.imshow(rgb_frame)
+            plt.axis('off')
+            # Save the plot
+            plot_path = os.path.join('media/pics', f'out_{counter}.png')
+            counter += 1
+            image_urls.append(plot_path)
+            plt.savefig(plot_path, bbox_inches='tight', pad_inches=0)
 
-        # Create a plot
-        plt.figure(figsize=(10, 6))
-        plt.imshow(rgb_frame)
-        plt.axis('off')
-
-        # Save the plot
-        plot_path = os.path.join('media/pics', f'out_{i + 1}.png')
-        image_urls.append(plot_path)
-        plt.savefig(plot_path, bbox_inches='tight', pad_inches=0)
-        plt.close()"""
 
     """
     Velocity and Smoothness Analysis 
@@ -1195,6 +1250,6 @@ def get_gif(vid, pic, ath_height,slowmo, step):
         smoothed_data[key] = smoothed_positions
 
 
-    return {"ground":ground_times,"flight":flight_times,"kneePos":kneeL_pos,"feedback":feedback,
+    return [{"ground":ground_times,"flight":flight_times,"kneePos":kneeL_pos,"feedback":feedback,
             "avg_f":avg_flight_time, "avg_g":avg_ground_time, "maxSL":max_step_len, "sLen" : sLength, "ang":thigh_angles,
-            "vL": velocity_magnitudeL_list, "vR": velocity_magnitudeR_list, "vT": time_velocity_list}
+            "vL": velocity_magnitudeL_list, "vR": velocity_magnitudeR_list, "vT": time_velocity_list}, image_urls]

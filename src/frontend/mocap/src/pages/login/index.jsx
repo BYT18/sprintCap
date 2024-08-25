@@ -16,8 +16,8 @@ const Login = () => {
         formData.append("username", u);
         formData.append('password', p);
         try {
-            //const response = await fetch('http://127.0.0.1:8000/login/', {
-            const response = await fetch('http://3.131.119.69:8000/login/', {
+            const response = await fetch('http://127.0.0.1:8000/login/', {
+            //const response = await fetch('http://3.131.119.69:8000/login/', {
                 method: 'POST',
                 headers: {},
                 body: formData,
@@ -40,8 +40,8 @@ const Login = () => {
 
     const fetch_profile = async (accessToken) => {
         try {
-            //const response = await fetch('http://127.0.0.1:8000/prof/', {
-            const response = await fetch('http://3.131.119.69:8000/prof/', {
+            const response = await fetch('http://127.0.0.1:8000/prof/', {
+            //const response = await fetch('http://3.131.119.69:8000/prof/', {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',

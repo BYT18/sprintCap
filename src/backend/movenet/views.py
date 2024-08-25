@@ -55,7 +55,7 @@ class AnalysisView(generics.ListCreateAPIView):
 
         #serializer.save(pic='./pics/output_video.mp4')
         #serializer.save(pic='./pics/output_video.mov')
-        serializer.save(pic='./pics/output_video.mp4',kin1='./pics/key_frame_1.png',kin2='./pics/key_frame_2.png',kin3='./pics/key_frame_3.png',kin4='./pics/key_frame_4.png',kin5='./pics/key_frame_5.png', x_vals = g)
+        serializer.save(pic='./pics/output_video.mp4',kin1='./pics/key_frame_1.png',kin2='./pics/key_frame_2.png',kin3='./pics/key_frame_3.png',kin4='./pics/key_frame_4.png',kin5='./pics/key_frame_5.png', x_vals = g[0])
 
         # Construct the response
         response_data = {

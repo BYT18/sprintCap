@@ -4,6 +4,9 @@ from rest_framework import serializers
 from .models import Pose,UserProfile
 
 class PoseSerializer(serializers.ModelSerializer):
+    """image_urls = serializers.ListField(
+        child=serializers.URLField(max_length=200)
+    )"""
     class Meta:
         model = Pose
 
@@ -18,10 +21,6 @@ class PoseSerializer(serializers.ModelSerializer):
         analysis_type = serializers.IntegerField()
 
         step = serializers.IntegerField()
-
-        image_urls = serializers.ListField(
-            child=serializers.URLField(max_length=200)
-        )
 
         fields = ('pic','vid','kin1','kin2','kin3','kin4','kin5','x_vals','height', 'slowmo','analysis_type','step')
         #exclude = ('pic',)

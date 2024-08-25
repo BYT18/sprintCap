@@ -1069,7 +1069,7 @@ def get_analysis(vid, pic, ath_height,slowmo,step_len):
         plot_path = os.path.join('media/pics', f'key_frame_{i + 1}.png')
         plt.savefig(plot_path, bbox_inches='tight', pad_inches=0)
 
-    return {"ground":[0,1],"flight":[0,1],"kneePos":kneeR_pos,"feedback":["1","1","1","1","1"],
+    return [{"ground":[0,1],"flight":[0,1],"kneePos":kneeR_pos,"feedback":["1","1","1","1","1"],
             "avg_f":1, "avg_g":1, "maxSL": 1, "sLen" : [0,1], "ang":thigh_angles,
-            "vL": [0,1], "vR": [0,1], "vT":[0,1]}
+            "vL": [0,1], "vR": [0,1], "vT":[0,1]},[]]
 
