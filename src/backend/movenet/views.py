@@ -8,6 +8,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.exceptions import APIException
 from django.views.decorators.csrf import csrf_exempt
+from rest_framework.permissions import AllowAny
 
 #from rest_framework.viewsets import ViewSet
 from rest_framework import status
@@ -98,6 +99,52 @@ class UserProfileDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
 """
+
+
+class DemoView(generics.ListCreateAPIView):
+    serializer_class = PoseSerializer
+    queryset = Pose.objects.all()
+    permission_classes = [AllowAny]  # Allow access without authentication
+
+    @csrf_exempt
+    def perform_create(self, serializer):
+        try:
+            if serializer.validated_data['analysis_type'] == 0:
+                g = get_gif(serializer.validated_data['vid'],serializer.validated_data['pic'], serializer.validated_data['height'], serializer.validated_data['slowmo'],serializer.validated_data['step'])
+            else:
+                g = get_analysis(serializer.validated_data['vid'],serializer.validated_data['pic'], serializer.validated_data['height'], serializer.validated_data['slowmo'],serializer.validated_data['step'])
+            serializer.save(pic='./pics/output_video.mp4',kin1='./pics/key_frame_1.png',kin2='./pics/key_frame_2.png',kin3='./pics/key_frame_3.png',kin4='./pics/key_frame_4.png',kin5='./pics/key_frame_5.png', x_vals = g[0])
+
+            # Construct the response
+            response_data = {
+                "output_video": './pics/output_video.mp4',
+                "key_frames": [
+                    './pics/key_frame_1.png',
+                    './pics/key_frame_2.png',
+                    './pics/key_frame_3.png',
+                    './pics/key_frame_4.png',
+                    './pics/key_frame_5.png'
+                ],
+                "other": g,
+            }
+
+            return Response(response_data, status=status.HTTP_201_CREATED)
+
+        except ValueError as e:
+            raise APIException(f"Value Error: {str(e)}")
+        except FileNotFoundError as e:
+            raise APIException(f"File Not Found Error: {str(e)}")
+        except Exception as e:
+            # Handle unexpected errors
+            raise APIException(f"An unexpected error occurred: {str(e)}")
+
+    @action(detail=True, methods=['get'])
+    def download(self, request, pk=None):
+        instance = self.get_object()
+        file_path = instance.pic
+        if not os.path.exists(file_path):
+            return Response({"message": "File not found"}, status=status.HTTP_404_NOT_FOUND)
+        return FileResponse(open(file_path, 'rb'), content_type='video/mov')
 
 from rest_framework import generics, status
 from rest_framework.response import Response

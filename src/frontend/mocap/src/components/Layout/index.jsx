@@ -81,6 +81,14 @@ const location = useLocation();
             Analyze
            </NavLink>
         </li>*/}
+        <li className="nav-item mx-2">
+          <NavLink
+            to="/demo/"
+           className={({ isActive }) => (isActive ? "nav-link active-link" : "nav-link")}
+          >
+            Demo
+           </NavLink>
+        </li>
 
         <li className="nav-item mx-2">
           <NavLink

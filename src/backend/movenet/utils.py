@@ -963,7 +963,7 @@ def get_gif(vid, pic, ath_height,slowmo, step):
                             #f = toe_off_feedback(ankR, kneeR, hipR, ankL, kneeL, hipL, footL, heelL, tor_angles[ind])
                             f = toe_off_feedback(ankR, kneeR, hipR, ankL, kneeL, hipL, footL, heelL)
                         if len(f) < 2:
-                            feedback["TO"] = ['Error: nothing detected']
+                            feedback["TO"] = ['Looks good!']
                         else:
                             feedback["TO"]=f
                     elif ind == 1:
@@ -972,7 +972,7 @@ def get_gif(vid, pic, ath_height,slowmo, step):
                         else:
                             f = max_vert_feedback(ankR, kneeR, hipR, footR, ankL, kneeL, hipL, shouL)
                         if len(f) < 2:
-                            feedback["MV"] = ['Error: nothing detected']
+                            feedback["MV"] = ['Looks good!']
                         else:
                             feedback["MV"] = f
                     elif ind == 2:
@@ -981,7 +981,7 @@ def get_gif(vid, pic, ath_height,slowmo, step):
                         else:
                             f = strike_feedback(ankR, kneeR, hipR, footR, ankL, kneeL, hipL)
                         if len(f) < 2:
-                            feedback["S"] = ['Error: nothing detected']
+                            feedback["S"] = ['Looks good!']
                         else:
                             feedback["S"]=f
                     elif ind == 3:
@@ -992,7 +992,7 @@ def get_gif(vid, pic, ath_height,slowmo, step):
                         else:
                             f = touch_down_feedback(ankR, kneeR, hipR, heelR, footR, ankL, kneeL, hipL, footL, heelL, elbR_ang, elbL_ang)
                         if len(f) <2 :
-                            feedback["TD"] = ['Error: nothing detected']
+                            feedback["TD"] = ['Looks good!']
                         else:
                             feedback["TD"]=f
                     else:
@@ -1001,7 +1001,7 @@ def get_gif(vid, pic, ath_height,slowmo, step):
                         else:
                             f = full_supp_feedback(ankR, kneeR, hipR, ankL, footR, heelR, kneeL, hipL, footL, heelL)
                         if len(f) < 2:
-                            feedback["FS"] = ['Error: nothing detected']
+                            feedback["FS"] = ['Looks good!']
                         else:
                             feedback["FS"]=f
 
@@ -1340,4 +1340,4 @@ def get_gif(vid, pic, ath_height,slowmo, step):
 
     return [{"ground":ground_times,"flight":flight_times,"kneePos":kneeR_pos,"feedback":feedback,
             "avg_f":avg_flight_time, "avg_g":avg_ground_time, "maxSL":max_step_len, "sLen" : sLength, "ang":thigh_angles,
-            "vL": [], "vR": AV_R_knee, "vT": time_velocity_list}, image_urls]
+            "vL": [], "vR": AV_R_knee, "vT": time_velocity_list, "colors": [0,0,1,1,0,1,0,0]}, image_urls]
