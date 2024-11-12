@@ -352,9 +352,9 @@ const loadImage = (src) => {
             // Create the POST request using the fetch API
             const token = localStorage.getItem('access_token');
             console.log(token)
-            const response = await fetch('http://127.0.0.1:8000/api/demo/', {
+            //const response = await fetch('http://127.0.0.1:8000/api/demo/', {
             //const response = await fetch('http://3.131.119.69:8000/test/', {
-            //const response = await fetch('/api/test/', {
+            const response = await fetch('/api/demo/', {
                 method: 'POST',
                 headers: {
 
@@ -647,7 +647,7 @@ const loadImage = (src) => {
             </div>
           )}
         <div className="container mt-2" data-tooltip-id="my-tooltip" data-tooltip-content="Change analysis depending on sprinting phase being recorded">
-          <select class="form-select" aria-label="Default select example" onChange={handleAnalType} value={analType} style={{fontFamily:"Quicksand, sans-serif"}}>
+          <select class="form-select" disabled aria-label="Default select example" onChange={handleAnalType} value={analType} style={{fontFamily:"Quicksand, sans-serif"}}>
               <option  value="0">Top End Analysis</option>
               <option value="1">Acceleration Analysis</option>
               <option value="2">Tempo Stride Analysis</option>
@@ -661,7 +661,8 @@ const loadImage = (src) => {
                 id="custom-switch"
                 label="Slowmo"
                 style={{color:"black", fontFamily:"Quicksand, sans-serif"}}
-                checked={isSlowToggled}
+                checked={true}
+                disabled
                 onChange={handleSlowToggleChange}
                 onChange={handleSlowToggleChange}
               />
@@ -671,6 +672,7 @@ const loadImage = (src) => {
                 label="Toggle Step Length Analysis"
                 style={{color:"black",fontFamily:"Quicksand, sans-serif"}}
                 checked={isToggled}
+                disabled
                 onChange={handleToggleChange}
               />
             </Form>

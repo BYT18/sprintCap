@@ -81,6 +81,7 @@ const location = useLocation();
             Analyze
            </NavLink>
         </li>*/}
+         {!isAuth && (
         <li className="nav-item mx-2">
           <NavLink
             to="/demo/"
@@ -89,7 +90,7 @@ const location = useLocation();
             Demo
            </NavLink>
         </li>
-
+        )}
         <li className="nav-item mx-2">
           <NavLink
             to="/about/"
