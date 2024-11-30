@@ -262,9 +262,15 @@ const Item = ({ item }: Props) => {
         <p>
 Elevate your sprinting and running performance with our cutting-edge platform that combines industry-leading techniques with powerful A.I. Get personalized recommendations on your form and technique, consistent with top professional trainers. Optimize your running style anytime, anywhere, right from your phone. No appointments, no travel, just better performance.
         </p>
+        <Link style={{textDecoration: "none"}} to="/api/user/">
         <div className="bike-fit-buttons">
+
+
           <button className="get-started-button">Get Started</button>
+
+
         </div>
+           </Link>
       </motion.div>
       </motion.section>
 
@@ -417,6 +423,7 @@ Elevate your sprinting and running performance with our cutting-edge platform th
           <h2 className="text-center mb-4">Our Team</h2>
           <div className="row text-center">
             <div className="col-md-4 mb-4">
+             <Link style={{textDecoration: "none"}} to="https://linkedin.com/in/brandon-tang-127b01274">
               <motion.div
                 className="team-member p-3 border rounded shadow-sm"
                 whileHover={{ scale: 1.05, boxShadow: "0 8px 20px rgba(0, 0, 0, 0.15)" }}
@@ -429,8 +436,10 @@ Elevate your sprinting and running performance with our cutting-edge platform th
                 <p>CS Student</p>
                 <p>Student and track athlete at the University of Toronto</p>
               </motion.div>
+               </Link>
             </div>
             <div className="col-md-4 mb-4">
+            <Link style={{textDecoration: "none"}} to="https://varsityblues.ca/sports/mens-track-and-field/roster/coaches/rostam-turner/7012">
               <motion.div
                 className="team-member p-3 border rounded shadow-sm"
                 whileHover={{ scale: 1.05, boxShadow: "0 8px 20px rgba(0, 0, 0, 0.15)" }}
@@ -443,8 +452,11 @@ Elevate your sprinting and running performance with our cutting-edge platform th
                 <p>Sprint Coach</p>
                 <p>Current sprint and middle distance coach at the University of Toronto</p>
               </motion.div>
+               </Link>
             </div>
             <div className="col-md-4 mb-4">
+
+            <Link style={{textDecoration: "none"}} to="https://www.researchgate.net/profile/Philipp-Gulde">
               <motion.div
                 className="team-member p-3 border rounded shadow-sm"
                 whileHover={{ scale: 1.05, boxShadow: "0 8px 20px rgba(0, 0, 0, 0.15)" }}
@@ -457,6 +469,7 @@ Elevate your sprinting and running performance with our cutting-edge platform th
                   <p>Professor</p>
                 <p>Professor at the Chair of Human Movement Science, Technical University of Munich</p>
               </motion.div>
+              </Link>
             </div>
           </div>
         </div>
@@ -472,7 +485,7 @@ Elevate your sprinting and running performance with our cutting-edge platform th
         <div className="container text-center">
           <h2 className="mb-4">What Our Clients Say</h2>
           <p style={{color:'black'}}className="lead mb-4">"MoCap has transformed the way we train and perform. The AI-driven insights are a game-changer."</p>
-           <Link to="/about/">
+           <Link to="/demo/">
           <button className="btn btn-lg btn-light">Learn More</button>
              </Link>
         </div>
