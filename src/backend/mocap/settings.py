@@ -26,7 +26,7 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['18.216.114.197', 'localhost', '127.0.0.1','18.216.114.197:3000','3.19.221.161:3000','3.131.119.69','3.131.119.69:8000']
+ALLOWED_HOSTS = ['18.216.114.197', 'localhost', '127.0.0.1','18.216.114.197:3000','3.19.221.161:3000','3.131.119.69','3.131.119.69:8000','.vercel.app']
 
 
 MEDIA_URL = '/media/'
