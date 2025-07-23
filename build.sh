@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-cd backend
+cd src/backend
 
 set -o errexit
 
