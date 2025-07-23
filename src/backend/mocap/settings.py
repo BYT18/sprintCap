@@ -193,4 +193,4 @@ CSRF_TRUSTED_ORIGINS = ['https://mocapltd.xyz','https://*.mocapltd.xyz','https:/
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-STATIC_ROOT = '/var/www/mysite/assets/'
+#STATIC_ROOT = '/var/www/mysite/assets/'
