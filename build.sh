@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+cd backend
+
 set -o errexit
 
 pip install -r requirements.txt
