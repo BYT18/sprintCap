@@ -1,7 +1,7 @@
 databases:
   - name: mocapdb
     plan: free
-    databaseName: mocoap
+    databaseName: mocap
     user: mocap
 
 services:
@@ -10,7 +10,7 @@ services:
     name: mocap
     runtime: python
     buildCommand: './build.sh'
-    startCommand: 'python -m gunicorn backend.mocap.asgi:application -k uvicorn.workers.UvicornWorker'
+    startCommand: 'python -m gunicorn mocap.asgi:application -k uvicorn.workers.UvicornWorker'
     envVars:
       - key: DATABASE_URL
         fromDatabase:
