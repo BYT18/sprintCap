@@ -18,7 +18,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework import permissions"""
 
 from .utils import get_gif
-from .block_kino import get_analysis
+#from .block_kino import get_analysis
 from .scanner import get_dim
 from .models import Pose
 
@@ -46,8 +46,8 @@ class AnalysisView(generics.ListCreateAPIView):
             #print(serializer.validated_data['vid'])
             if serializer.validated_data['analysis_type'] == 0:
                 g = get_gif(serializer.validated_data['vid'],serializer.validated_data['pic'], serializer.validated_data['height'], serializer.validated_data['slowmo'],serializer.validated_data['step'])
-            else:
-                g = get_analysis(serializer.validated_data['vid'],serializer.validated_data['pic'], serializer.validated_data['height'], serializer.validated_data['slowmo'],serializer.validated_data['step'])
+            #else:
+            #    g = get_analysis(serializer.validated_data['vid'],serializer.validated_data['pic'], serializer.validated_data['height'], serializer.validated_data['slowmo'],serializer.validated_data['step'])
             serializer.save(pic='./pics/output_video.mp4',kin1='./pics/key_frame_1.png',kin2='./pics/key_frame_2.png',kin3='./pics/key_frame_3.png',kin4='./pics/key_frame_4.png',kin5='./pics/key_frame_5.png', x_vals = g[0])
 
             # Construct the response
@@ -111,8 +111,8 @@ class DemoView(generics.ListCreateAPIView):
         try:
             if serializer.validated_data['analysis_type'] == 0:
                 g = get_gif(serializer.validated_data['vid'],serializer.validated_data['pic'], serializer.validated_data['height'], serializer.validated_data['slowmo'],serializer.validated_data['step'])
-            else:
-                g = get_analysis(serializer.validated_data['vid'],serializer.validated_data['pic'], serializer.validated_data['height'], serializer.validated_data['slowmo'],serializer.validated_data['step'])
+            #else:
+            #    g = get_analysis(serializer.validated_data['vid'],serializer.validated_data['pic'], serializer.validated_data['height'], serializer.validated_data['slowmo'],serializer.validated_data['step'])
             serializer.save(pic='./pics/output_video.mp4',kin1='./pics/key_frame_1.png',kin2='./pics/key_frame_2.png',kin3='./pics/key_frame_3.png',kin4='./pics/key_frame_4.png',kin5='./pics/key_frame_5.png', x_vals = g[0])
 
             # Construct the response
