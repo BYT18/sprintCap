@@ -10,7 +10,7 @@ services:
     name: mocap
     runtime: python
     buildCommand: './build.sh'
-    startCommand: 'python -m gunicorn mocap.asgi:application -k uvicorn.workers.UvicornWorker'
+    startCommand: 'python -m gunicorn src.mocap.asgi:application -k uvicorn.workers.UvicornWorker'
     envVars:
       - key: DATABASE_URL
         fromDatabase:
