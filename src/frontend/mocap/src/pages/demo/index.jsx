@@ -59,7 +59,8 @@ const VideoUploader = () => {
   const ref = useRef(null);
   const { scrollXProgress } = useScroll({ container: ref });
   const [videoFile, setVideoFile] = useState(null);
-  const [videoURL, setVideoURL] = useState('https://mocapltd.xyz/api/media/pics/adam.mov');
+  //const [videoURL, setVideoURL] = useState('https://mocapltd.xyz/api/media/pics/adam.mov');
+  const [videoURL, setVideoURL] = useState('https://mocap.onrender.com/media/pics/adam.mov');
   const [images, setImages] = useState([]);
   const [displayedImages, setDisplayedImages] = useState([]);
   const [allImages, setAllImages] = useState([]);
