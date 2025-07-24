@@ -27,7 +27,7 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['18.216.114.197', 'localhost', '127.0.0.1','18.216.114.197:3000','3.19.221.161:3000','3.131.119.69','3.131.119.69:8000','.vercel.app']
+ALLOWED_HOSTS = ['18.216.114.197', 'localhost', '127.0.0.1','18.216.114.197:3000','3.19.221.161:3000','3.131.119.69','3.131.119.69:8000','.vercel.app', 'mocap.onrender.com']
 
 
 MEDIA_URL = '/media/'
@@ -183,7 +183,8 @@ CORS_ALLOWED_ORIGINS = [
 "http://18.216.114.197:3000",
 "http://3.131.119.69",
 "http://3.131.119.69:3000",
-"http://3.131.119.69:8000"
+"http://3.131.119.69:8000",
+'mocap.onrender.com',
 ]
 
 CSRF_TRUSTED_ORIGINS = ['https://mocapltd.xyz','https://*.mocapltd.xyz','https://*.127.0.0.1', 'http://localhost:3000','http://localhost:8000']
