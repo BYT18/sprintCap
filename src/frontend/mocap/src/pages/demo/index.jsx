@@ -355,7 +355,8 @@ const loadImage = (src) => {
             console.log(token)
             //const response = await fetch('http://127.0.0.1:8000/api/demo/', {
             //const response = await fetch('http://3.131.119.69:8000/test/', {
-            const response = await fetch('/api/demo/', {
+            //const response = await fetch('/api/demo/', {
+            const response = await fetch('/demo/', {
                 method: 'POST',
                 headers: {
 
