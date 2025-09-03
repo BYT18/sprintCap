@@ -115,7 +115,8 @@ WSGI_APPLICATION = 'mocap.wsgi.application'
 
 DATABASES = {
     'default': dj_database_url.config(
-        default='postgresql://postgres:postgres@localhost:5432/mysite',
+        #default='postgresql://postgres:postgres@localhost:5432/mysite',
+        default='postgresql://mocap:ZmfYLkDJduO3ERvDx7MUfyEvKdoduIaX@dpg-d2s37ajipnbc73e6fkvg-a/mocap_4bf7',
         conn_max_age=600
     )
 }
