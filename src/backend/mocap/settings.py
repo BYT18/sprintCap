@@ -185,6 +185,7 @@ CORS_ALLOWED_ORIGINS = [
 "http://3.131.119.69:3000",
 "http://3.131.119.69:8000",
 'http://mocap.onrender',
+'https://sprint-cap.vercel.app'
 ]
 
 CSRF_TRUSTED_ORIGINS = ['https://mocapltd.xyz','https://*.mocapltd.xyz','https://*.127.0.0.1', 'http://localhost:3000','http://localhost:8000']
