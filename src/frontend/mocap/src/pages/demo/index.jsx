@@ -373,7 +373,7 @@ const loadImage = (src) => {
             if (true) {
                 //const data = await response.json();
                 const data = {
-                  pic: "/adam_overlay.mp4", // or any video/image path in your public folder
+                  pic: "/output.mp4", // or any video/image path in your public folder
                   x_vals: {
                     ground: [0.3, 0.4, 0.25],
                     flight: [0.8, 0.9, 0.76],
