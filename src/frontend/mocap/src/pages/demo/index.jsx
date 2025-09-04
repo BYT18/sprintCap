@@ -506,9 +506,10 @@ const loadImage = (src) => {
                 //console.log(gif1)
             } else {
                 // Handle error responses
-                console.error('Error:', response.statusText);
+                console.error('Error');
+                /* console.error('Error:', response.statusText);
                 alert(`Error: ${response.message} or a network error has occured`);
-                setLoading(false);
+                setLoading(false); */
             }
         } catch (error) {
             // Handle network errors
