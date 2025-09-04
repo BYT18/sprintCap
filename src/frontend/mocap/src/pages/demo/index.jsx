@@ -61,7 +61,7 @@ const VideoUploader = () => {
   const [videoFile, setVideoFile] = useState(null);
   //const [videoURL, setVideoURL] = useState('https://mocapltd.xyz/api/media/pics/adam.mov');
   //const [videoURL, setVideoURL] = useState('https://mocap.onrender.com/media/pics/adam.mov');
-  const [videoURL, setVideoURL] = useState('/adam_overlay.mp4');
+  const [videoURL, setVideoURL] = useState('/output.mp4');
   const [images, setImages] = useState([]);
   const [displayedImages, setDisplayedImages] = useState([]);
   const [allImages, setAllImages] = useState([]);
