@@ -60,7 +60,8 @@ const VideoUploader = () => {
   const { scrollXProgress } = useScroll({ container: ref });
   const [videoFile, setVideoFile] = useState(null);
   //const [videoURL, setVideoURL] = useState('https://mocapltd.xyz/api/media/pics/adam.mov');
-  const [videoURL, setVideoURL] = useState('https://mocap.onrender.com/media/pics/adam.mov');
+  //const [videoURL, setVideoURL] = useState('https://mocap.onrender.com/media/pics/adam.mov');
+  const [videoURL, setVideoURL] = useState('/adam.mov');
   const [images, setImages] = useState([]);
   const [displayedImages, setDisplayedImages] = useState([]);
   const [allImages, setAllImages] = useState([]);
@@ -665,7 +666,6 @@ const loadImage = (src) => {
                 style={{color:"black", fontFamily:"Quicksand, sans-serif"}}
                 checked={true}
                 disabled
-                onChange={handleSlowToggleChange}
                 onChange={handleSlowToggleChange}
               />
              `<Form.Check
