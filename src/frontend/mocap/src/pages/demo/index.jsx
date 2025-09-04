@@ -13,11 +13,16 @@ import {
   MotionValue
 } from "framer-motion";
 import { saveAs } from 'file-saver'
-import myImage1 from "../../assets/touchdown_R2.png";
+/* import myImage1 from "../../assets/touchdown_R2.png";
 import myImage2 from "../../assets/max_ver3.png";
 import myImage3 from "../../assets/strike_R2.png";
 import myImage4 from "../../assets/toe_off_L2.png";
-import myImage5 from "../../assets/full_sup_L2.png";
+import myImage5 from "../../assets/full_sup_L2.png"; */
+import myImage1 from "/touchdown.png";
+import myImage2 from "/height.png";
+import myImage3 from "/strike.png";
+import myImage4 from "/toe_off.png";
+import myImage5 from "/full_sup.png";
 
 import Loader from '../../components/Loader/index.jsx';
 import PasteImage from '../../components/Dropdown/index.jsx';
