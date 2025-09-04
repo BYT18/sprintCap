@@ -324,7 +324,7 @@ const loadImage = (src) => {
         // Create a File object from the blob
         //used 
         //const video = new File([videoBlob], "blob.mov", { type: videoBlob.type });
-        const video = './output.mp4'
+        /* const video = './output.mp4'
         console.log(video)
 
 
@@ -337,10 +337,11 @@ const loadImage = (src) => {
         formData.append('height', height);
         formData.append('image_urls',[])
         console.log(analType)
-        formData.append('analysis_type', analType);
+        formData.append('analysis_type', analType); */
 
         // Check the value of slwomo and append the appropriate value to formData
-        if (isSlowToggled) {
+        //used
+       /*  if (isSlowToggled) {
             formData.append('slowmo', 1);
         } else {
             formData.append('slowmo', 0);
@@ -350,7 +351,7 @@ const loadImage = (src) => {
             formData.append('step', 1);
         } else {
             formData.append('step', 0);
-        }
+        } */
         try {
             // Create the POST request using the fetch API
             const token = localStorage.getItem('access_token');
@@ -398,6 +399,7 @@ const loadImage = (src) => {
                   kin4: myImage4,
                   kin5: myImage5
                 };
+
                 console.log(data)
                 console.log(data.pic);
 
