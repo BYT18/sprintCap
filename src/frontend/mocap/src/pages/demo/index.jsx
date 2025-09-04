@@ -18,11 +18,11 @@ import myImage2 from "../../assets/max_ver3.png";
 import myImage3 from "../../assets/strike_R2.png";
 import myImage4 from "../../assets/toe_off_L2.png";
 import myImage5 from "../../assets/full_sup_L2.png"; */
-import myImage1 from "../../../public/touchdown.png";
-import myImage2 from "../../../public/height.png";
-import myImage3 from "../../../public/strike.png";
-import myImage4 from "../../../public/toe_off.png";
-import myImage5 from "../../../public/full_sup.png";
+import myImage1 from "../../assets/touchdown.png";
+import myImage2 from "../../assets/height.png";
+import myImage3 from "../../assets/strike.png";
+import myImage4 from "../../assets/toe.png";
+import myImage5 from "../../assets/full_sup.png";
 
 import Loader from '../../components/Loader/index.jsx';
 import PasteImage from '../../components/Dropdown/index.jsx';
