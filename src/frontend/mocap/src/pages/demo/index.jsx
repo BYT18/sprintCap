@@ -61,7 +61,7 @@ const VideoUploader = () => {
   const [videoFile, setVideoFile] = useState(null);
   //const [videoURL, setVideoURL] = useState('https://mocapltd.xyz/api/media/pics/adam.mov');
   //const [videoURL, setVideoURL] = useState('https://mocap.onrender.com/media/pics/adam.mov');
-  const [videoURL, setVideoURL] = useState('/output.mp4');
+  const [videoURL, setVideoURL] = useState('/adam.mov');
   const [images, setImages] = useState([]);
   const [displayedImages, setDisplayedImages] = useState([]);
   const [allImages, setAllImages] = useState([]);
@@ -318,12 +318,13 @@ const loadImage = (src) => {
 
         //const video = new File([e], "blob.mov", { type: e.type });
 
-
-        const videoBlob = await fetchVideoBlob(videoURL);
+        //used
+        //const videoBlob = await fetchVideoBlob(videoURL);
 
         // Create a File object from the blob
-        const video = new File([videoBlob], "blob.mov", { type: videoBlob.type });
-
+        //used 
+        //const video = new File([videoBlob], "blob.mov", { type: videoBlob.type });
+        const video = './output.mp4'
         console.log(video)
 
 
@@ -357,16 +358,46 @@ const loadImage = (src) => {
             //const response = await fetch('http://127.0.0.1:8000/api/demo/', {
             //const response = await fetch('http://3.131.119.69:8000/test/', {
             //const response = await fetch('/api/demo/', {
-            const response = await fetch('https://mocap.onrender.com/api/demo/', {
+            
+            //used 
+            /* const response = await fetch('https://mocap.onrender.com/api/demo/', {
                 method: 'POST',
                 headers: {
 
                 },
                 body: formData,
-            });
+            }); */
             // Check if the request was successful (status code in the range 200-299)
-            if (response.ok) {
-                const data = await response.json();
+            //if (response.ok) {
+            if (true) {
+                //const data = await response.json();
+                const data = {
+                  pic: "/adam_overlay.mp4", // or any video/image path in your public folder
+                  x_vals: {
+                    ground: [0.3, 0.4, 0.25],
+                    flight: [0.8, 0.9, 0.76],
+                    ang: [45, 50, 55, 60, 65],
+                    vT: [0, 1, 2, 3, 4],
+                    vR: [1, 4, 2, 5, 8],
+                    kneePos: [[10, 20], [15, 25], [20, 30]],
+                    feedback: {
+                      TO: ["Good toe off", "Try to extend more"],
+                      MV: ["Nice vertical", "Keep head neutral"],
+                      S: ["Strike is solid"],
+                      TD: ["Touchdown timing is good"],
+                      FS: ["Full support achieved"]
+                    },
+                    colors: [1, 0.8, 1, 0.7, 1, 0.5, 0.8, 1],
+                    maxSL: 1.23,
+                    avg_g: 0.35,
+                    avg_f: 0.85
+                  },
+                  kin1: myImage1,
+                  kin2: myImage2,
+                  kin3: myImage3,
+                  kin4: myImage4,
+                  kin5: myImage5
+                };
                 console.log(data)
                 console.log(data.pic);
 
