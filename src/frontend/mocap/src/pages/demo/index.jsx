@@ -18,10 +18,10 @@ import myImage2 from "../../assets/max_ver3.png";
 import myImage3 from "../../assets/strike_R2.png";
 import myImage4 from "../../assets/toe_off_L2.png";
 import myImage5 from "../../assets/full_sup_L2.png"; */
-import myImage1 from "../../assets/touchdown.png";
+import myImage1 from "../../assets/toe.png";
 import myImage2 from "../../assets/height.png";
 import myImage3 from "../../assets/strike.png";
-import myImage4 from "../../assets/toe.png";
+import myImage4 from "../../assets/touchdown.png";
 import myImage5 from "../../assets/full_sup.png";
 
 import Loader from '../../components/Loader/index.jsx';
@@ -375,7 +375,12 @@ const loadImage = (src) => {
             }); */
             // Check if the request was successful (status code in the range 200-299)
             //if (response.ok) {
+
+            setLoading(true);
+
+        
             if (true) {
+              setTimeout(() => {
                 //const data = await response.json();
                 const data = {
                   pic: "/output.mp4", // or any video/image path in your public folder
@@ -506,6 +511,7 @@ const loadImage = (src) => {
                 setVelDataL([data.x_vals["ang"],data.x_vals["ang"]])
 
                 setLoading(false);
+              }, 3000);
 
                 //setGif1(data.pic)
                 //console.log(gif1)
